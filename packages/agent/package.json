@@ -4,15 +4,15 @@
   "type": "module",
   "private": true,
   "scripts": {
-     "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "^1.4.1"
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "dependencies": {
     "@anvia/core": "^1.1.2",
-    "@anvia/openai": "^1.1.2"
+    "@anvia/openai": "^1.1.2",
+    "dotenv": "^17.4.2"
   }
 }
