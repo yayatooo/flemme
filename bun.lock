@@ -9,16 +9,6 @@
         "typescript": "^7.0.2",
       },
     },
-    "apps/agent": {
-      "name": "@flemme/agent",
-      "dependencies": {
-        "@anvia/core": "^1.1.2",
-        "@anvia/openai": "^1.1.2",
-      },
-      "devDependencies": {
-        "@types/bun": "^1.4.1",
-      },
-    },
     "apps/api": {
       "name": "@flemme/api",
       "dependencies": {
@@ -59,6 +49,16 @@
         "oxlint": "^1.79.0",
         "tailwindcss": "^4.3.3",
         "vite": "^8.2.2",
+      },
+    },
+    "packages/agent": {
+      "name": "@flemme/agent",
+      "dependencies": {
+        "@anvia/core": "^1.1.2",
+        "@anvia/openai": "^1.1.2",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.1",
       },
     },
     "packages/contracts": {
@@ -231,7 +231,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
 
-    "@flemme/agent": ["@flemme/agent@workspace:apps/agent"],
+    "@flemme/agent": ["@flemme/agent@workspace:packages/agent"],
 
     "@flemme/api": ["@flemme/api@workspace:apps/api"],
 
