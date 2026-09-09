@@ -35,6 +35,12 @@ implementing the API application layer.
 - Agent is treated as a reusable capability rather than an independent
   application.
 
+### Agent Foundation
+
+- Base folders and implementation-light module boundaries created for intents,
+  prompts, context, policies, providers, runtime, vision tools, and evals.
+- All agent source modules are included in package typechecking.
+
 ## In Progress
 
 ### Agent Foundation
@@ -55,7 +61,8 @@ Current sequence:
 
 ## Next Up
 
-Define the first Flemme cooking agent instruction.
+Define the Flemme agent responsibility boundary (A1), then implement the first
+cooking agent instruction (A2).
 
 ## Open Questions
 
@@ -85,7 +92,8 @@ become implementation assumptions.
 
 ## Session Notes
 
-Current focus is agent design.
+Base agent structure checkpoint completed. No new runtime behavior, provider
+configuration, tools, or product contracts were implemented in this setup.
 
 Do not begin API feature implementation until the Agent Foundation reaches a
 stable baseline.
