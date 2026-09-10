@@ -48,7 +48,6 @@ if (arguments_.includes("--help")) {
 	process.exit(0);
 }
 
-const input = arguments_.join(" ").trim() || BASE_PROMPT;
 
 const model = createOpenAIModel({
 	apiKey: getRequiredEnvironmentVariable("MUX_API_KEY"),
