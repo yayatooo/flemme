@@ -1,7 +1,7 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "types": ["bun"]
-  },
-  "include": ["index.ts", "src/**/*.ts"]
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"types": ["bun"]
+	},
+	"include": ["index.ts", "runner.ts", "src/**/*.ts"]
 }

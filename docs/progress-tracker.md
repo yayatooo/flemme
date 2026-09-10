@@ -40,6 +40,11 @@ implementing the API application layer.
 - Base folders and implementation-light module boundaries created for intents,
   prompts, context, policies, providers, runtime, vision tools, and evals.
 - All agent source modules are included in package typechecking.
+- OpenAI-compatible model creation is isolated in `packages/agent/src/providers`
+  and receives provider credentials from the invoking application.
+- A local one-off completion runner accepts prompts from the command line and
+  loads development provider values from the repository environment file. It
+  includes a documented-flow default prompt for quick provider testing.
 
 ## In Progress
 
@@ -66,7 +71,6 @@ cooking agent instruction (A2).
 
 ## Open Questions
 
-- Final OpenAI/OpenRouter provider configuration strategy.
 - Initial model choice for development.
 - Which agent tools are actually required for MVP recommendation.
 - Nutrition estimation implementation boundary.
@@ -90,10 +94,18 @@ authentication, authorization, and invocation of AI capabilities.
 Product behavior and architecture decisions must be documented before they
 become implementation assumptions.
 
+### Agent providers receive credentials from the application
+
+Reason:
+
+The agent package owns provider and model configuration, while secret loading
+remains with the invoking application boundary.
+
 ## Session Notes
 
-Base agent structure checkpoint completed. No new runtime behavior, provider
-configuration, tools, or product contracts were implemented in this setup.
+The OpenAI-compatible provider factory is available from the `@flemme/agent`
+package entry point. A separate local runner can exercise the provider without
+adding environment loading or completion side effects to package imports.
 
 Do not begin API feature implementation until the Agent Foundation reaches a
 stable baseline.

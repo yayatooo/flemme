@@ -1,2 +1,4 @@
-/** Public exports for provider capabilities used by the agent runtime. */
-export {}
+export {
+	createOpenAIModel,
+	type OpenAIModelConfig,
+} from "./openai";
