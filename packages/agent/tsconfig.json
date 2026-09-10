@@ -3,5 +3,10 @@
 	"compilerOptions": {
 		"types": ["bun"]
 	},
-	"include": ["index.ts", "runner.ts", "src/**/*.ts"]
+	"include": [
+		"index.ts",
+		"runner.ts",
+		"structured-output-probe.ts",
+		"src/**/*.ts"
+	]
 }

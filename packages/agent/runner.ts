@@ -1,33 +1,58 @@
-import { createOpenAIModel } from "./index";
-import { runCookingAgent } from "./src/runtime/cooking-agent";
+import {
+	type CookingRecommendationInput,
+	CookingRecommendationInputSchema,
+	createOpenAIModel,
+	runCookingAgent,
+} from "./index";
 
-const BASE_PROMPT = `
-Current inventory:
-- eggs
-- cooked rice
-- garlic
-- spring onions
-- chili
+const BASE_CONTEXT: CookingRecommendationInput = {
+	inventory: [
+		{ name: "skipjack tuna" },
+		{ name: "banana leaf" },
+		{ name: "shallot" },
+		{ name: "garlic" },
+		{ name: "spring onions" },
+		{ name: "chili" },
+		{ name: "tomato" },
+		{ name: "lime" },
+		{ name: "palm oil" },
+		{ name: "salt" },
+		{ name: "MSG" },
+		{ name: "turmeric" },
+	],
 
-Kitchen equipment:
-- one frying pan
-- gas stove
+	kitchen: {
+		equipment: [
+			"frying pan",
+			"gas stove",
+			"fish grill",
+			"charcoal",
+		],
+	},
 
-Household:
-- 2 adults
-- 1 child
+	household: {
+		adults: 2,
+		children: 0,
+		toddlers: 0,
+	},
 
-Food preferences:
-- likes spicy food
-- prefers Asian-style meals
+	foodPreferences: [
+		"likes spicy food",
+		"likes North Sulawesi cuisine",
+		"likes Japanese cuisine",
+		"likes Thai cuisine",
+	],
 
-Cooking preferences:
-- usually prefers meals under 30 minutes
+	cookingPreferences: [
+		"usually prefers meals under 60 minutes",
+	],
 
-Current request:
-- cooking only for one person tonight
-- has 20 minutes
-`;
+	session: {
+		request: "I want a savory dinner using the fish I already have.",
+		servings: 2,
+		availableMinutes: 60,
+	},
+};
 
 function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
 	const value = Bun.env[name];
@@ -38,25 +63,17 @@ function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
 
 	return value;
 }
-
-const arguments_ = Bun.argv.slice(2);
-
-const usage = 'Usage: bun run runner -- ["Suggest a meal with eggs and rice"]';
-
-if (arguments_.includes("--help")) {
-	console.log(usage);
-	process.exit(0);
-}
-
-
 const model = createOpenAIModel({
 	apiKey: getRequiredEnvironmentVariable("MUX_API_KEY"),
 	baseUrl: getRequiredEnvironmentVariable("BASE_URL"),
+	modelId: "gpt-5.6-luna",
 });
+
+const context = CookingRecommendationInputSchema.parse(BASE_CONTEXT);
 
 const result = await runCookingAgent({
 	model,
-	context: BASE_PROMPT,
+	context,
 });
 
-console.log(result.output);
+console.dir(result, { depth: null });

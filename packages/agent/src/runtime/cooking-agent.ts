@@ -1,17 +1,19 @@
 import { runCookingRecommendation } from "../intents/cooking-recommendation";
-import { createOpenAIModel } from "../providers";
+import type { createOpenAIModel } from "../providers";
+import type { CookingRecommendationInput } from "../schemas/cooking-recommendation-input";
+import type { CookingRecommendationOutput } from "../schemas/cooking-recommendation-output";
 
 type CookingModel = ReturnType<typeof createOpenAIModel>;
 
 interface RunCookingAgentInput {
 	model: CookingModel;
-	context: string;
+	context: CookingRecommendationInput;
 }
 
 export function runCookingAgent({
 	model,
 	context,
-}: RunCookingAgentInput) {
+}: RunCookingAgentInput): Promise<CookingRecommendationOutput> {
 	return runCookingRecommendation({
 		model,
 		context,

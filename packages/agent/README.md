@@ -26,13 +26,23 @@ Run a one-off completion using the provider values from the repository `.env`:
 bun run --filter @flemme/agent runner
 ```
 
-The runner contains a default ingredient-based test prompt. Pass an argument to
-override it:
-
-```bash
-bun run --filter @flemme/agent runner -- "Suggest a meal with eggs and rice"
-```
+The runner validates its built-in structured cooking context with
+`CookingRecommendationInputSchema` before invoking the agent and prints the
+schema-validated cooking recommendation output. Free-form command line prompt
+overrides are not currently supported. The development runner explicitly uses
+`gpt-5.6-luna`, which passed the native structured-output compatibility probe;
+this does not change the provider factory's default model.
 
 The runner requires `MUX_API_KEY` and `BASE_URL`. It is only a local development
 entry point; importing `@flemme/agent` does not load the environment file or run
 a completion.
+
+Run the development-only structured-output compatibility probe against the
+configured OpenAI-compatible gateway:
+
+```bash
+bun run --filter @flemme/agent probe:structured-output
+```
+
+The probe tests `glm-5.3-flash`, `deepseek-v4-flash-0731`, and `gpt-5.6-luna`
+individually with the same minimal native Anvia output schema.
