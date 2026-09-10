@@ -1,8 +1,33 @@
 import { createOpenAIModel } from "./index";
 import { runCookingAgent } from "./src/runtime/cooking-agent";
 
-const BASE_PROMPT = `I have eggs, cooked rice, garlic, and spring onions.
-I have one frying pan and 20 minutes to cook for one person.`;
+const BASE_PROMPT = `
+Current inventory:
+- eggs
+- cooked rice
+- garlic
+- spring onions
+- chili
+
+Kitchen equipment:
+- one frying pan
+- gas stove
+
+Household:
+- 2 adults
+- 1 child
+
+Food preferences:
+- likes spicy food
+- prefers Asian-style meals
+
+Cooking preferences:
+- usually prefers meals under 30 minutes
+
+Current request:
+- cooking only for one person tonight
+- has 20 minutes
+`;
 
 function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
 	const value = Bun.env[name];
@@ -32,7 +57,7 @@ const model = createOpenAIModel({
 
 const result = await runCookingAgent({
 	model,
-	input,
+	context: BASE_PROMPT,
 });
 
 console.log(result.output);

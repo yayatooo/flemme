@@ -1,19 +1,30 @@
-/** Boundary for the cooking recommendation intent. */
-import { COOKING_INSTRUCTIONS } from "../prompts/cooking-instructions";
+import { generateCompletion } from "@anvia/core";
 
-export function createRecommendationPrompt(input: string) {
-	return `
+import { COOKING_INSTRUCTIONS } from "../prompts/cooking-instructions";
+import { createCookingRecommendationPrompt } from "../prompts/recommendation";
+import { createOpenAIModel } from "../providers";
+
+type CookingModel = ReturnType<typeof createOpenAIModel>;
+
+interface RunCookingRecommendationInput {
+	model: CookingModel;
+	context: string;
+}
+
+export async function runCookingRecommendation({
+	model,
+	context,
+}: RunCookingRecommendationInput) {
+	const recommendationPrompt = createCookingRecommendationPrompt(context);
+
+	const prompt = `
 ${COOKING_INSTRUCTIONS}
 
-Current cooking request:
-
-${input}
-
-Recommend one practical meal.
-
-Explain briefly:
-- what the meal is
-- why it fits the available ingredients
-- why it fits the user's current cooking situation
+${recommendationPrompt}
 `.trim();
+
+	return generateCompletion({
+		model,
+		prompt,
+	});
 }

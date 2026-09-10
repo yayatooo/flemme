@@ -1,23 +1,19 @@
-/** Composition boundary for the Flemme cooking agent runtime. */
-import { generateCompletion } from "@anvia/core";
+import { runCookingRecommendation } from "../intents/cooking-recommendation";
 import { createOpenAIModel } from "../providers";
-import { createRecommendationPrompt } from "../intents/cooking-recommendation";
 
 type CookingModel = ReturnType<typeof createOpenAIModel>;
 
 interface RunCookingAgentInput {
 	model: CookingModel;
-	input: string;
+	context: string;
 }
 
-export async function runCookingAgent({
+export function runCookingAgent({
 	model,
-	input,
+	context,
 }: RunCookingAgentInput) {
-	const prompt = createRecommendationPrompt(input);
-
-	return generateCompletion({
+	return runCookingRecommendation({
 		model,
-		prompt,
+		context,
 	});
 }
