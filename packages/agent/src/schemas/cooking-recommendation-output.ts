@@ -15,7 +15,7 @@ const EquipmentRequirementSchema = z.object({
 	note: z.string().optional(),
 });
 
-const CookingRecommendationSchema = z.object({
+export const CookingRecommendationSchema = z.object({
 	name: z.string(),
 	description: z.string(),
 	reason: z.string(),
@@ -37,6 +37,8 @@ const CookingRecommendationSchema = z.object({
 	),
 	warnings: z.array(z.string()),
 });
+
+export type CookingRecommendation = z.infer<typeof CookingRecommendationSchema>;
 
 export const CookingRecommendationOutputSchema = z.discriminatedUnion("type", [
 	z.object({

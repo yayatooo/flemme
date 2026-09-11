@@ -14,3 +14,13 @@ export {
 	type CookingRecommendationOutput,
 	CookingRecommendationOutputSchema,
 } from "./src/schemas/cooking-recommendation-output";
+
+export {
+	type PreCookingInput,
+	PreCookingInputSchema,
+} from "./src/schemas/pre-cooking-input";
+
+export {
+	type PreCookingOutput,
+	PreCookingOutputSchema,
+} from "./src/schemas/pre-cooking-output";
