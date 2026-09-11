@@ -46,3 +46,13 @@ bun run --filter @flemme/agent probe:structured-output
 
 The probe tests `glm-5.3-flash`, `deepseek-v4-flash-0731`, and `gpt-5.6-luna`
 individually with the same minimal native Anvia output schema.
+
+Run Pre-Cooking independently with the deterministic Ayam Kecap development
+fixture:
+
+```bash
+bun run --filter @flemme/agent runner:pre-cooking
+```
+
+The runner validates the fixture with `PreCookingInputSchema`, invokes
+`runPreCooking` with `gpt-5.6-luna`, and prints the complete structured plan.

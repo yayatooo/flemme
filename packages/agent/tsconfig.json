@@ -5,6 +5,7 @@
 	},
 	"include": [
 		"index.ts",
+		"pre-cooking-runner.ts",
 		"runner.ts",
 		"structured-output-probe.ts",
 		"src/**/*.ts"

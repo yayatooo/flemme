@@ -36,6 +36,18 @@ Plan semantics:
 - cookingStages groups the complete cooking process into meaningful phases. Each
   stage must contain ordered, atomic steps that are understandable without
   another model generation.
+- Add timing to a step only when qualitative timing guidance helps the user
+  execute it. Leave timing absent for immediate actions that do not benefit from
+  waiting guidance.
+- Use timing levels qualitatively without assigning strict minute ranges:
+  very-short means an immediate or brief action, short means a brief preparation
+  or cooking period, medium means a noticeable waiting or cooking period, and
+  long means one of the longer periods in this recipe.
+- When a useful observable state exists, pair the timing level with a concise cue
+  based on smell, color, texture, sound, consistency, or visible cooking state.
+  The observable cue is more important than elapsed time.
+- Do not invent precise step durations or assume the same heat level produces the
+  same result in every kitchen.
 - Treat actions involving active heat or the primary cooking process, such as
   heating, boiling, frying, sauteing, simmering, baking, steaming, or reducing,
   as cooking steps rather than preparation steps.

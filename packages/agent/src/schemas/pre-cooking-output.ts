@@ -14,7 +14,12 @@ const EquipmentSchema = z.object({
 const PlanStepSchema = z.object({
 	id: z.string().trim().min(1),
 	instruction: z.string().trim().min(1),
-	estimatedMinutes: z.number().int().positive().optional(),
+	timing: z
+		.object({
+			level: z.enum(["very-short", "short", "medium", "long"]),
+			cue: z.string().trim().min(1).optional(),
+		})
+		.optional(),
 });
 
 const CookingStageSchema = z.object({

@@ -116,6 +116,17 @@ implementing the API application layer.
 - The pre-cooking intent passes `PreCookingOutputSchema` to Anvia's native
   structured-output mechanism and returns only the typed, validated
   `PreCookingOutput`. Malformed output remains an explicit generation error.
+- An isolated local Pre-Cooking runner validates a deterministic Ayam Kecap
+  fixture, invokes `runPreCooking` with `gpt-5.6-luna`, and prints the complete
+  structured plan without adding intent routing or cooking intelligence to the
+  runner.
+- Pre-cooking plan steps use optional qualitative timing guidance with
+  `very-short`, `short`, `medium`, or `long` levels and an optional observable
+  completion cue. Step-level minute estimates have been removed while summary
+  timing remains a high-level estimate.
+- The pre-cooking prompt prioritizes observable cooking state over elapsed time,
+  avoids strict timing ranges, and omits timing from steps where it does not help
+  execution.
 
 ## In Progress
 
@@ -145,13 +156,15 @@ Remaining sequence:
 - The dedicated v0.1 output contract is defined and exported.
 - Complete-plan prompt semantics and structured model generation are
   implemented.
-- The intent is not yet routed through `runCookingAgent` or a development
-  runner.
+- The intent has an isolated development runner but is not yet routed through
+  `runCookingAgent`.
+- The Pre-Cooking v0.1 runner output is stable enough to proceed to Active
+  Cooking contract design.
 
 ## Next Up
 
-Connect Pre-Cooking to the local development runner so a real generated cooking
-plan can be inspected before Active Cooking is designed.
+Lock the current Pre-Cooking v0.1 boundary and define the first Active Cooking
+input and output contracts without adding runtime progress behavior yet.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.
@@ -205,7 +218,8 @@ result. A7 is complete, and the development runner uses the verified
 pre-cooking intent now establishes the post-selection boundary while reusing
 the validated recommendation and cooking-context structures. Its v0.1 input and
 output contracts, complete-plan prompt, and native structured generation are now
-connected. Runtime routing and Active Cooking remain intentionally deferred.
+connected. An isolated Ayam Kecap runner confirms the flow with a real plan.
+Runtime routing and Active Cooking remain intentionally deferred.
 
 ## Validation
 
@@ -246,6 +260,20 @@ connected. Runtime routing and Active Cooking remain intentionally deferred.
   missing required fields, empty cooking stages, and stages without steps, and
   verify that the prompt preserves the selected recipe without claiming active
   cooking progress.
+- Step timing checks confirm timed and untimed steps are valid, unknown timing
+  levels and blank cues are rejected, and legacy `estimatedMinutes` is no longer
+  retained in parsed step output.
+- The unchanged Ayam Kecap runner fixture produced a validated complete plan with
+  qualitative timing only on useful cooking periods, observable cues for every
+  timed step, and no step-level minute estimates. Immediate actions and all
+  preparation steps correctly omitted timing.
+- One live Pre-Cooking run with `gpt-5.6-luna` returned a schema-valid Ayam Kecap
+  plan with preserved ingredient quantities, supplied equipment, four ordered
+  preparation steps, and three meaningful cooking stages.
+- The live quality review found three prompt-level issues: unsafe raw-chicken
+  washing guidance, summary times that do not match summed step estimates, and
+  a conditional wok cover not present in the supplied equipment context. No
+  schema or prompt change was made automatically from these observations.
 - No package-specific build or automated test script is currently defined.
 
 Do not begin API feature implementation until the Agent Foundation reaches a

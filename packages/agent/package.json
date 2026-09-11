@@ -6,6 +6,7 @@
 	"scripts": {
 		"probe:structured-output": "bun --env-file=../../.env run structured-output-probe.ts",
 		"runner": "bun --env-file=../../.env run runner.ts",
+		"runner:pre-cooking": "bun --env-file=../../.env run pre-cooking-runner.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
