@@ -2,6 +2,10 @@
 
 Reusable AI capabilities for Flemme.
 
+Repository-level setup, environment configuration, runner commands, Active
+Cooking scenarios, and programmatic usage are documented in the root
+[`README.md`](../../README.md#using-the-agent-locally).
+
 Provider credentials are supplied by the application that invokes the agent.
 The package does not load environment files or own secrets.
 

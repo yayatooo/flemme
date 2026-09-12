@@ -704,13 +704,10 @@ Run the workspace development environment:
 bun run dev
 ```
 
-Individual workspace commands should be executed from the relevant application or package when needed.
-
-Example:
+Run a command for one workspace from the repository root with Bun's filter:
 
 ```bash
-cd packages/agent
-bun run dev
+bun run --filter @flemme/agent typecheck
 ```
 
 Refer to each workspace package for its current scripts and environment requirements.
@@ -721,17 +718,131 @@ Refer to each workspace package for its current scripts and environment requirem
 
 Never commit credentials into the repository.
 
-Local provider credentials should be stored in the relevant `.env` file.
-
-Example:
+The local agent runners load provider configuration from the repository root
+`.env` file:
 
 ```env
-OPENAI_API_KEY=
+MUX_API_KEY=
+BASE_URL=
 ```
 
-When using an OpenAI-compatible provider, additional configuration such as a base URL or model identifier may also be required.
+The development runners currently select `gpt-5.6-luna`, which has been verified
+against the configured OpenAI-compatible gateway. Importing `@flemme/agent`
+does not read `.env`; application code must pass provider credentials explicitly.
 
 Keep local secrets out of Git.
+
+---
+
+# Using the Agent Locally
+
+Run all commands in this section from the repository root.
+
+The agent package currently exposes three runnable cooking phases:
+
+| Phase | Purpose | Command |
+| --- | --- | --- |
+| Recommendation | Generate structured recipe recommendations from cooking context | `bun run --filter @flemme/agent runner` |
+| Pre-Cooking | Convert a selected recipe into an immutable cooking plan | `bun run --filter @flemme/agent runner:pre-cooking` |
+| Active Cooking | Reason from a cooking plan and session, then propose actions | `bun run --filter @flemme/agent runner:active-cooking` |
+
+These runners are development tools with built-in fixtures. They invoke the AI
+model and print schema-validated output; they do not start an API server or own
+application persistence.
+
+## Active Cooking Scenarios
+
+List the available scenarios without invoking the model:
+
+```bash
+bun run --filter @flemme/agent runner:active-cooking -- --list
+```
+
+Run one scenario:
+
+```bash
+bun run --filter @flemme/agent runner:active-cooking -- guidance
+bun run --filter @flemme/agent runner:active-cooking -- missing-ingredient
+bun run --filter @flemme/agent runner:active-cooking -- resume
+```
+
+Run all ten scenarios sequentially:
+
+```bash
+bun run --filter @flemme/agent runner:active-cooking -- all
+```
+
+Available names are:
+
+```text
+guidance
+advance
+pause
+missing-ingredient
+resume
+equipment-interruption
+previous-step
+clarify
+complete
+abandon
+```
+
+The Active Cooking runner prints the input position, reply, and proposed
+actions. It never applies actions, advances a step, or mutates the session.
+
+## Programmatic Active Cooking Usage
+
+Application code supplies the model and validated state explicitly:
+
+```ts
+import {
+  ActiveCookingInputSchema,
+  createOpenAIModel,
+  runActiveCooking,
+} from "@flemme/agent";
+
+const apiKey = process.env.MUX_API_KEY;
+const baseUrl = process.env.BASE_URL;
+
+if (!apiKey || !baseUrl) {
+  throw new Error("MUX_API_KEY and BASE_URL are required");
+}
+
+const model = createOpenAIModel({
+  apiKey,
+  baseUrl,
+  modelId: "gpt-5.6-luna",
+});
+
+const input = ActiveCookingInputSchema.parse({
+  cookingPlan,
+  session,
+  message: "pause dulu",
+});
+
+const output = await runActiveCooking({ model, input });
+```
+
+`output` contains a user-facing `reply` and zero or more proposed `actions`.
+The calling application remains responsible for validating whether those
+actions are currently allowed, applying session changes, and persisting them.
+
+## Agent Validation
+
+```bash
+bun test
+bun run typecheck
+bun run build
+```
+
+The development-only structured-output provider probe is also available:
+
+```bash
+bun run --filter @flemme/agent probe:structured-output
+```
+
+More package-level detail is available in
+[`packages/agent/README.md`](packages/agent/README.md).
 
 ---
 

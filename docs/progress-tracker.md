@@ -154,6 +154,9 @@ implementing the API application layer.
   guidance, advance, manual pause, missing ingredients, resume, equipment
   interruption, previous step, clarification, completion, and abandonment. The
   runner prints proposals without resolving navigation or mutating the session.
+- The repository README is the primary entry point for agent setup and usage. It
+  documents the actual provider environment variables, all phase runners,
+  Active Cooking scenarios, programmatic invocation, and validation commands.
 
 ## In Progress
 
