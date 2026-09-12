@@ -767,6 +767,12 @@ Apply the existing Drizzle migration:
 bun run --filter @flemme/db db:migrate
 ```
 
+Open Drizzle Studio for the configured local database:
+
+```bash
+bun run --filter @flemme/db db:studio
+```
+
 Stop local infrastructure without deleting database data:
 
 ```bash
@@ -783,6 +789,23 @@ bun run --filter @flemme/db db:migrate
 ```
 
 Do not use `down -v` during normal development.
+
+---
+
+## Local API and Swagger
+
+Create the minimal development user/context and start the API:
+
+```bash
+bun run --filter @flemme/db db:seed
+bun run --filter @flemme/api dev
+```
+
+Open [http://localhost:3000/docs](http://localhost:3000/docs) for Swagger UI.
+The Recommendation route is `POST /cooking/recommendations`; it requires the
+seeded user's UUID in `x-flemme-user-id` and uses `MUX_API_KEY` plus `BASE_URL`
+for real Agent calls. The complete incremental walkthrough is in
+[`docs/testing/swagger-cooking-flow.md`](docs/testing/swagger-cooking-flow.md).
 
 ---
 

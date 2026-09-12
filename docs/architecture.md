@@ -64,6 +64,23 @@ Web
 The web application must not directly access the database or private AI
 provider credentials.
 
+## API Foundation
+
+API features use colocated Hono route, transport schema, and service modules.
+Routes validate HTTP input with Zod, services coordinate domain rules and
+`@flemme/db`, and database schema definitions remain inside `packages/db`.
+Hono OpenAPI route definitions generate the specification served at
+`/openapi.json`; Swagger UI is available at `/docs`.
+
+Persisted agent and nutrition JSONB snapshots are untrusted when restored. The
+API parses them through the runtime schema exported by the package that owns
+the snapshot before returning or using them.
+
+Until production authentication is implemented as a separate milestone,
+cooking routes use an isolated development middleware that accepts a real user
+UUID and verifies it against PostgreSQL. The API refuses to start that adapter
+when `NODE_ENV=production`.
+
 ## Agent Boundary
 
 The agent is a reusable capability, not an independent backend.

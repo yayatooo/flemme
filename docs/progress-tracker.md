@@ -4,13 +4,13 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-PostgreSQL + Drizzle Schema v0.1 — Stable
+Cooking Context + Recommendation API v0.1 — Complete
 
 ## Current Goal
 
-Provide a validated persistence foundation for the main cooking lifecycle and
-make it ready for later API integration without moving application behavior
-into the database package.
+Aggregate authenticated persistent cooking context with current-request
+overrides, invoke the existing Recommendation Agent, and return only
+schema-validated output without mutating inventory or cooking-session state.
 
 ## Completed
 
@@ -263,6 +263,8 @@ into the database package.
   This verifies that persisted snapshots can resume without AI regeneration.
 - The initial migration, Drizzle schema check, seed, lifecycle validation,
   package-local Biome check, workspace tests, typecheck, and build all pass.
+- `db:studio` loads the root `.env`, supplies `DATABASE_URL` through the shared
+  Drizzle configuration, and starts Drizzle Studio for local inspection.
 
 ### Local PostgreSQL Infrastructure
 
@@ -276,6 +278,73 @@ into the database package.
   container while its existing named volume was preserved.
 - The Compose configuration is valid, PostgreSQL reports healthy, and the
   existing Drizzle migration applies successfully through the Compose service.
+
+### API Foundation + Cooking Session Vertical Slice
+
+- `apps/api` now exposes an import-safe Hono app factory and a Bun entry point
+  that requires `DATABASE_URL`, validates `PORT`, and refuses to run the
+  development authentication adapter in production.
+- `GET /health` provides a minimal process health response.
+- Hono OpenAPI definitions generate `/openapi.json`, and `/docs` serves an
+  interactive Swagger UI backed by that specification.
+- Cooking-session modules follow the colocated route → Zod validation → service
+  → `@flemme/db` flow without a speculative repository or dependency-injection
+  layer.
+- `POST /cooking-sessions` persists an existing validated recommendation,
+  selected recipe, immutable Pre-Cooking plan, and initial Active Cooking
+  progress without invoking AI.
+- `GET /cooking-sessions/:id` restores relational progress and parses every
+  present recommendation, selected-recipe, plan, completion, and nutrition
+  snapshot through its owning package schema.
+- `PATCH /cooking-sessions/:id/progress` changes only relational progress after
+  validating current and completed step IDs against the persisted immutable
+  plan.
+- `POST /cooking-sessions/:id/complete` requires an active session positioned
+  at a recorded-complete final step, then stores completion state and snapshots
+  on the existing cooking-session history row.
+- Development auth is isolated middleware using `x-flemme-user-id`; the value
+  must be a valid UUID for a real PostgreSQL user. All cooking reads and writes
+  enforce ownership.
+- API errors use a stable `{ error: { code, message } }` shape and do not expose
+  database or validation internals. Invalid persisted snapshots return a
+  controlled error.
+- Eight real-PostgreSQL integration tests cover health, authentication, create,
+  restore, progress, completion, completed restore, missing sessions,
+  ownership denial, invalid progress, and corrupted JSONB handling.
+
+### Cooking Context + Recommendation API v0.1
+
+- `POST /cooking/recommendations` authenticates through the existing
+  development user adapter, loads Profile, Household, Kitchen/Equipment, and
+  Inventory context from PostgreSQL, and invokes the existing
+  `@flemme/agent` Recommendation runtime.
+- The request requires only current-attempt `session` context and optionally
+  overrides complete inventory, kitchen, household, food-preference, or
+  cooking-preference fields. Supplied fields deterministically replace their
+  persisted counterparts; omitted fields use persisted context.
+- Missing household, kitchen, or inventory state is reported as controlled
+  incomplete-context errors rather than fabricated. An absent profile means no
+  known stored preferences.
+- Persisted inventory remains canonical-key based and each key is validated
+  through `@flemme/ingredients` before entering the name-based Agent contract.
+  Explicit request inventory remains raw because no production ingredient
+  catalog exists yet.
+- Agent invocation is injected at one narrow service boundary for offline
+  tests. The Bun entry point builds the existing `@flemme/agent` provider from
+  `MUX_API_KEY` and `BASE_URL`; missing configuration and provider/output
+  failures return controlled API errors without exposing secrets.
+- Recommendation output is parsed through
+  `CookingRecommendationOutputSchema`, published in `/openapi.json`, and
+  executable from Swagger at `/docs`. Recommendation reads do not mutate
+  inventory, persist a recommendation, or create a cooking session.
+- The Swagger cooking-flow guide documents real provider prerequisites and the
+  currently implemented Recommendation and persistence endpoints without
+  presenting future Pre-Cooking endpoints as available.
+- Nine real-PostgreSQL Recommendation API integration tests cover persistent
+  aggregation, deterministic overrides, canonical-key inventory handoff,
+  response validation, invalid requests, authentication, missing context,
+  provider failure mapping, invalid Agent output, missing configuration, and
+  OpenAPI registration.
 
 ## In Progress
 
@@ -329,8 +398,9 @@ Remaining sequence:
 
 ## Next Up
 
-The validated Schema v0.1 may now be used as input for a separately bounded API
-integration milestone. Production catalog data, natural-language quantity
+Review and lock Recommendation API v0.1 before selecting the next bounded API
+domain. Pre-Cooking HTTP orchestration, full context APIs, favorite endpoints,
+production authentication, production catalog data, natural-language quantity
 parsing, reference sourcing, and UI display remain deferred.
 
 The general intent router remains implementation-light until another supported
@@ -520,5 +590,5 @@ and local runner are now connected without adding post-cooking side effects.
 - No package-specific build script is currently defined. The agent package now
   has a Bun test script for its Active Cooking contract schemas.
 
-Do not begin API feature implementation until the Agent Foundation reaches a
-stable baseline.
+The implemented Agent cooking phases now provide the stable structured
+contracts used by the bounded API integration milestones.
