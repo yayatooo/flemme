@@ -82,6 +82,25 @@
         "drizzle-kit": "^0.31.10",
       },
     },
+    "packages/ingredients": {
+      "name": "@flemme/ingredients",
+      "dependencies": {
+        "zod": "^4.5.4",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.1",
+      },
+    },
+    "packages/nutrition": {
+      "name": "@flemme/nutrition",
+      "dependencies": {
+        "@flemme/ingredients": "workspace:*",
+        "zod": "^4.5.4",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.1",
+      },
+    },
   },
   "packages": {
     "@anvia/core": ["@anvia/core@1.1.2", "", { "dependencies": { "yaml": "^2.9.0" }, "peerDependencies": { "zod": "^4.4.0" } }, "sha512-qVHqCMBAlzvy8KITxYnaD0/MfKdl1bjvGBK/fP9n8tQV/lG3nRHoLvlHLXTSPpVA/csaAz/aWpciAgHxwaS4jg=="],
@@ -239,6 +258,10 @@
     "@flemme/contracts": ["@flemme/contracts@workspace:packages/contracts"],
 
     "@flemme/db": ["@flemme/db@workspace:packages/db"],
+
+    "@flemme/ingredients": ["@flemme/ingredients@workspace:packages/ingredients"],
+
+    "@flemme/nutrition": ["@flemme/nutrition@workspace:packages/nutrition"],
 
     "@flemme/web": ["@flemme/web@workspace:apps/web"],
 

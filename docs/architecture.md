@@ -31,6 +31,19 @@
   Owns AI instructions, model configuration, agent tools, structured AI
   behavior, and agent evaluation.
 
+- `packages/ingredients`
+  Owns language-independent canonical ingredient keys, bilingual display names,
+  aliases, deterministic exact-name resolution, and catalog validation. It does
+  not own nutrition arithmetic, fuzzy matching, persistence, or AI resolution.
+
+- `packages/nutrition`
+  Owns deterministic structured-unit normalization, estimated-nutrition
+  contracts, and calculation from normalized ingredient masses and explicit
+  reference values. It validates nutrition and conversion keys against
+  `packages/ingredients` through a one-way dependency. It does not own
+  natural-language ingredient parsing, reference sourcing, persistence, or AI
+  reasoning.
+
 - `packages/db`
   Owns database schemas, migrations, and database access.
 
@@ -42,7 +55,7 @@
 Web
 → API
 → application logic
-→ Agent and/or Database
+→ Agent, Nutrition, and/or Database
 
 The web application must not directly access the database or private AI
 provider credentials.
@@ -68,3 +81,5 @@ Agent code does not own:
 5. Shared cross-workspace contracts belong in `packages/contracts`.
 6. Do not add distributed infrastructure without a proven requirement.
 7. Core cooking flow must not depend on secondary modules such as budgeting.
+8. Ingredient identity, unit conversions, and nutrition references share the
+   same language-independent canonical ingredient key.

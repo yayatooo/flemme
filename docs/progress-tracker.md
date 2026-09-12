@@ -4,12 +4,13 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Agent Foundation — In Progress
+Ingredient Catalog + Nutrition Reference v0.1 — Complete
 
 ## Current Goal
 
-Build and validate `packages/agent` as a reusable Flemme AI capability before
-implementing the API application layer.
+Establish bilingual canonical ingredient identity and connect its stable key to
+unit-conversion and nutrition references without AI, persistence, or network
+access.
 
 ## Completed
 
@@ -181,6 +182,61 @@ implementing the API application layer.
   `packages/agent/runners/`; package scripts preserve the existing runner command
   names while targeting the organized source files.
 
+### Nutrition Foundation
+
+- `packages/nutrition` owns deterministic nutrition contracts and calculation,
+  independently from `packages/agent` and without model or database access.
+- Nutrition inputs require positive normalized gram amounts, positive integer
+  servings, stable ingredient keys, and finite non-negative reference values on
+  a fixed 100-gram basis.
+- `calculateRecipeNutrition` scales and sums all known ingredient occurrences,
+  calculates totals before per-serving division, and performs no presentation
+  rounding.
+- Complete results expose `total` and `perServing`; partial results expose only
+  `knownNutrition` plus unique missing ingredient keys so incomplete estimates
+  cannot be mistaken for full-recipe values.
+- Synthetic offline fixtures cover scaling, totals, serving division,
+  fractional amounts, duplicate ingredients, missing references, validation,
+  and decimal precision.
+
+### Ingredient + Unit Normalization
+
+- Structured ingredient identity remains caller-supplied as stable
+  `ingredientKey` and display `name`; no fuzzy or natural-language identity
+  resolution is performed.
+- `g` and `kg` normalize directly, while `ml`, `l`, `tsp`, `tbsp`, `clove`, and
+  `piece` require an explicit ingredient-and-unit-specific `gramsPerUnit`
+  reference.
+- Supported units without a matching conversion remain unresolved with a
+  `missing-conversion` reason. Units outside the v0.1 enum are rejected rather
+  than represented as guessed quantities.
+- Batch normalization returns separate `normalized` and `unresolved` arrays,
+  preserves repeated ingredient rows, rejects ambiguous duplicate conversion
+  pairs, and performs no rounding.
+- Normalized results reuse `NutritionIngredientAmountSchema` and feed directly
+  into `calculateRecipeNutrition` when callers have accounted for every
+  unresolved original ingredient.
+
+### Ingredient Catalog + Nutrition Reference
+
+- `packages/ingredients` owns language-independent kebab-case keys, required
+  Indonesian and English primary names, bilingual aliases, deterministic
+  resolution, and catalog validation.
+- Resolution trims surrounding whitespace, collapses repeated whitespace, and
+  lowercases before exact matching. Unknown names remain unresolved; no fuzzy,
+  typo, embedding, or AI matching is performed.
+- Catalog creation rejects duplicate canonical keys and normalized name or alias
+  collisions across every primary-name and alias language group.
+- `packages/nutrition` depends one-way on `packages/ingredients` and reports
+  unknown nutrition-reference and unit-conversion keys through a deterministic
+  integrity result.
+- A six-ingredient bilingual identity fixture supports catalog tests without
+  claiming to be a production dataset. All integration nutrition and conversion
+  values remain explicitly synthetic.
+- The offline integration path resolves “Kecap manis” to `sweet-soy-sauce`,
+  converts two synthetic tablespoons to grams, and calculates estimated
+  nutrition through the existing calculator using the same key.
+
 ## In Progress
 
 ### Agent Foundation
@@ -233,8 +289,9 @@ Remaining sequence:
 
 ## Next Up
 
-Formalize lifecycle evaluation cases and determine which concrete agent tools,
-if any, are required before application integration.
+Select the next bounded milestone before implementing production catalog data,
+natural-language quantity parsing, reference sourcing, persistence, API
+orchestration, or UI display.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.
@@ -242,7 +299,8 @@ intent or a concrete routing requirement is defined.
 ## Open Questions
 
 - Which agent tools are actually required for MVP recommendation.
-- Nutrition estimation implementation boundary.
+- Which verified nutrition-reference source should eventually supply the
+  deterministic package.
 
 ## Architecture Decisions
 
@@ -257,6 +315,24 @@ It does not own an independent deployment lifecycle or HTTP boundary.
 
 The API will own application orchestration, persistence coordination,
 authentication, authorization, and invocation of AI capabilities.
+
+### Nutrition arithmetic lives outside the agent
+
+Reason:
+
+Nutrition totals are deterministic domain data derived from normalized masses
+and explicit references. Keeping calculation in `packages/nutrition` prevents
+the model from owning arithmetic and keeps future API, history, and agent usage
+dependent on the same validated result.
+
+### Canonical ingredient identity is independent from nutrition
+
+Reason:
+
+Recommendations, recipes, inventory, nutrition, and history will share the same
+ingredient identity. `packages/ingredients` therefore owns keys and bilingual
+resolution, while `packages/nutrition` owns arithmetic and depends on the
+catalog in one direction only. This avoids an ingredients ↔ nutrition cycle.
 
 ### Documentation is the project source of truth
 
@@ -301,6 +377,25 @@ session and a minimal closing result. Its prompt, structured model execution,
 and local runner are now connected without adding post-cooking side effects.
 
 ## Validation
+
+- Nutrition package tests pass completely offline without model credentials or
+  database access.
+- Nutrition calculator checks cover single and multiple ingredients,
+  per-serving division, fractional and duplicate amounts, partial coverage,
+  unique missing keys, invalid servings and weights, invalid reference values,
+  empty recipes, duplicate references, and unrounded decimal arithmetic.
+- Ingredient normalization checks cover direct grams and kilograms, every
+  reference-backed v0.1 unit, missing and mismatched conversions, unsupported
+  units, invalid quantities and factors, decimal precision, duplicate rows and
+  conversion pairs, batch partitioning, and calculator integration.
+- Ingredient catalog checks cover bilingual primary names, aliases,
+  case-insensitive and collapsed-whitespace matching, unknown queries, key
+  lookup, duplicate keys, same-language and cross-language collisions, and
+  kebab-case key validation.
+- Reference-integrity checks accept known canonical keys and report unknown
+  nutrition and unit-conversion keys separately. The offline pipeline test
+  resolves a bilingual name, normalizes its unit, and calculates nutrition with
+  the same canonical key.
 
 - `bun run typecheck` passes for `@flemme/agent` after structured output wiring.
 - Runtime schema checks confirm a valid recommendation input is accepted and

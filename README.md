@@ -542,6 +542,8 @@ flemme/
 │
 ├── packages/
 │   ├── agent/
+│   ├── ingredients/
+│   ├── nutrition/
 │   ├── db/
 │   └── contracts/
 │
@@ -877,6 +879,36 @@ bun run --filter @flemme/agent probe:structured-output
 
 More package-level detail is available in
 [`packages/agent/README.md`](packages/agent/README.md).
+
+## Nutrition Calculation
+
+Deterministic nutrition calculation lives in `packages/nutrition`, independently
+from the cooking agent. It accepts normalized ingredient masses in grams and
+explicit nutrition references per 100 grams, then returns estimated recipe
+totals and per-serving values.
+
+It does not parse natural-language quantities, source reference data, call an AI
+model, or persist results. Partial calculations expose missing ingredient keys
+and keep known-only totals visibly separate from complete totals.
+
+The package also normalizes supported structured units. Grams and kilograms are
+direct conversions; volume and count units require explicit ingredient-specific
+conversion references. Ambiguous or unsupported natural-language quantities are
+never guessed.
+
+See [`packages/nutrition/README.md`](packages/nutrition/README.md) for contracts,
+usage, and estimation limitations.
+
+## Ingredient Catalog
+
+Canonical ingredient identity lives in `packages/ingredients`. Each ingredient
+has one language-independent key with Indonesian and English display names plus
+small deterministic alias lists. Resolution uses exact normalized matching—no
+fuzzy guessing, embeddings, or AI calls.
+
+Nutrition and unit-conversion records use the same canonical key. See
+[`packages/ingredients/README.md`](packages/ingredients/README.md) for catalog
+rules and resolution usage.
 
 ---
 
