@@ -127,6 +127,33 @@ implementing the API application layer.
 - The pre-cooking prompt prioritizes observable cooking state over elapsed time,
   avoids strict timing ranges, and omits timing from steps where it does not help
   execution.
+- The Active Cooking Input Contract v0.1 composes the immutable
+  `PreCookingOutput` with mutable session progress and the latest user message.
+  Session progress records status, semantic current-stage and current-step IDs,
+  completed step IDs, a minimal pause reason, and relevant in-session changes.
+- Active Cooking input validation requires progress references to resolve to the
+  supplied cooking plan and rejects duplicate plan IDs, duplicate completion
+  references, and invalid change-to-step references. The contract adds no
+  persistence, navigation, prompt, runtime, or mutation behavior.
+- The Active Cooking Output Contract v0.1 returns a non-empty user-facing reply
+  and zero or more proposed actions without returning or mutating a session.
+  Its discriminated action union supports advance, previous-step, pause, resume,
+  record-change, complete-cooking, abandon-cooking, and clarify.
+- Active Cooking output validation keeps clarification exclusive, rejects
+  conflicting lifecycle or navigation actions, and rejects duplicate actions
+  except for multiple independent record-change actions.
+- Active Cooking guidance outputs may contain an empty action list when the user
+  needs only the current instruction and no session change is justified.
+- The Active Cooking task prompt preserves the immutable plan, resolves guidance
+  from the recorded current stage and step, distinguishes all supported proposed
+  actions, and treats ambiguous progress conservatively.
+- `runActiveCooking` validates the complete input, composes shared and
+  Active-Cooking-specific instructions, invokes Anvia with
+  `ActiveCookingOutputSchema`, and returns only validated proposed output.
+- A reusable Ayam Kecap plan and development-only Active Cooking runner cover
+  guidance, advance, manual pause, missing ingredients, resume, equipment
+  interruption, previous step, clarification, completion, and abandonment. The
+  runner prints proposals without resolving navigation or mutating the session.
 
 ## In Progress
 
@@ -141,10 +168,10 @@ Completed sequence:
 5. Local development runner
 6. Input contracts
 7. Recommendation output contracts
+8. Cooking-session contracts
 
 Remaining sequence:
 
-8. Cooking-session contracts
 9. Tools
 10. Evaluation scenarios
 11. Observability
@@ -161,10 +188,19 @@ Remaining sequence:
 - The Pre-Cooking v0.1 runner output is stable enough to proceed to Active
   Cooking contract design.
 
+### Active Cooking Foundation
+
+- The v0.1 input and session contracts are defined and exported.
+- The v0.1 proposed-action output contract is defined, exported, and tested.
+- The task-specific prompt, structured execution function, reusable cooking-plan
+  fixture, and ten-scenario local runner are implemented.
+- Progress mutation, persistence, and application integration remain
+  intentionally deferred.
+
 ## Next Up
 
-Lock the current Pre-Cooking v0.1 boundary and define the first Active Cooking
-input and output contracts without adding runtime progress behavior yet.
+Formalize Active Cooking evaluation cases and determine whether any real agent
+tools are required before application integration.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.
@@ -219,7 +255,13 @@ pre-cooking intent now establishes the post-selection boundary while reusing
 the validated recommendation and cooking-context structures. Its v0.1 input and
 output contracts, complete-plan prompt, and native structured generation are now
 connected. An isolated Ayam Kecap runner confirms the flow with a real plan.
-Runtime routing and Active Cooking remain intentionally deferred.
+The Active Cooking v0.1 input boundary now accepts that immutable plan alongside
+validated mutable progress and the latest message. Application routing and
+progress mutation remain intentionally deferred. The output boundary now
+separates the conversational reply from constrained proposed actions and never
+returns a replacement session. The Active Cooking execution path and local
+runner now exercise those boundaries through native structured generation while
+leaving every proposed action unapplied.
 
 ## Validation
 
@@ -270,11 +312,26 @@ Runtime routing and Active Cooking remain intentionally deferred.
 - One live Pre-Cooking run with `gpt-5.6-luna` returned a schema-valid Ayam Kecap
   plan with preserved ingredient quantities, supplied equipment, four ordered
   preparation steps, and three meaningful cooking stages.
+- Active Cooking input schema checks cover newly started, in-progress, paused,
+  resumed, and interrupted states while preserving the same cooking plan and
+  semantic progress references. Invalid current-stage, current-step, completed-
+  step, related-step, and duplicate plan references are rejected.
+- Active Cooking output schema checks cover all eight proposed actions,
+  multi-change outputs, lifecycle and navigation conflicts, clarification
+  exclusivity, duplicate actions, empty replies, and empty action lists.
+- Active Cooking prompt checks confirm the validated current stage, current
+  step, and latest message are included without mutating input state.
+- Live `gpt-5.6-luna` runs returned schema-valid output for all ten runner
+  scenarios. Guidance proposed no state change; advance, pause, missing-item,
+  resume, equipment, previous-step, clarification, completion, and abandonment
+  scenarios produced their intended actions after prompt distinctions were
+  tightened for terse completion, manual pause, and standalone negation.
 - The live quality review found three prompt-level issues: unsafe raw-chicken
   washing guidance, summary times that do not match summed step estimates, and
   a conditional wok cover not present in the supplied equipment context. No
   schema or prompt change was made automatically from these observations.
-- No package-specific build or automated test script is currently defined.
+- No package-specific build script is currently defined. The agent package now
+  has a Bun test script for its Active Cooking contract schemas.
 
 Do not begin API feature implementation until the Agent Foundation reaches a
 stable baseline.

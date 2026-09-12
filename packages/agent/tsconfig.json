@@ -4,6 +4,7 @@
 		"types": ["bun"]
 	},
 	"include": [
+		"active-cooking-runner.ts",
 		"index.ts",
 		"pre-cooking-runner.ts",
 		"runner.ts",

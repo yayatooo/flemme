@@ -56,3 +56,21 @@ bun run --filter @flemme/agent runner:pre-cooking
 
 The runner validates the fixture with `PreCookingInputSchema`, invokes
 `runPreCooking` with `gpt-5.6-luna`, and prints the complete structured plan.
+
+List the available Active Cooking development scenarios:
+
+```bash
+bun run --filter @flemme/agent runner:active-cooking -- --list
+```
+
+Run the default current-step guidance scenario or choose a named scenario:
+
+```bash
+bun run --filter @flemme/agent runner:active-cooking
+bun run --filter @flemme/agent runner:active-cooking -- missing-ingredient
+```
+
+Use `all` to invoke all ten scenarios sequentially. Each scenario validates its
+input, calls `runActiveCooking` with `gpt-5.6-luna`, and prints the validated
+reply and proposed actions. The runner never applies those actions or mutates
+the supplied session.
