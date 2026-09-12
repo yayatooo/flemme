@@ -4,13 +4,13 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Ingredient Catalog + Nutrition Reference v0.1 — Complete
+Local PostgreSQL Infrastructure v0.1 — Complete
 
 ## Current Goal
 
-Establish bilingual canonical ingredient identity and connect its stable key to
-unit-conversion and nutrition references without AI, persistence, or network
-access.
+Provide a reproducible, localhost-only PostgreSQL 16 development service that
+uses the existing Drizzle schema, migration, and named data volume without
+committing credentials.
 
 ## Completed
 
@@ -237,6 +237,31 @@ access.
   converts two synthetic tablespoons to grams, and calculates estimated
   nutrition through the existing calculator using the same key.
 
+### PostgreSQL + Drizzle Schema Foundation
+
+- `packages/db` owns the modular PostgreSQL schema, Drizzle relations,
+  migration, development seed, and lifecycle validation tooling.
+- Relational columns preserve ownership, lifecycle status, resume position,
+  timestamps, and queryable constraints; generated cooking plans and results
+  remain JSONB snapshots.
+- Inventory records use canonical ingredient keys rather than introducing a
+  second database-owned ingredient identity.
+- Completed cooking sessions are the history source, while favorites reference
+  preserved recipe snapshots without requiring a global recipe catalog.
+
+### Local PostgreSQL Infrastructure
+
+- The root `docker-compose.yml` runs only `postgres:16-alpine`, binds it to
+  localhost, checks readiness, and persists data in the named
+  `flemme-postgres-data` volume.
+- PostgreSQL credentials and connection configuration come from the ignored
+  root `.env`; `.env.example` contains variable names and empty placeholders
+  only.
+- The manually created development container was replaced by a Compose-managed
+  container while its existing named volume was preserved.
+- The Compose configuration is valid, PostgreSQL reports healthy, and the
+  existing Drizzle migration applies successfully through the Compose service.
+
 ## In Progress
 
 ### Agent Foundation
@@ -289,9 +314,9 @@ Remaining sequence:
 
 ## Next Up
 
-Select the next bounded milestone before implementing production catalog data,
-natural-language quantity parsing, reference sourcing, persistence, API
-orchestration, or UI display.
+Select the next bounded application/API persistence milestone before
+implementing production catalog data, natural-language quantity parsing,
+reference sourcing, or UI display.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.

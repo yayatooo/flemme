@@ -728,11 +728,61 @@ MUX_API_KEY=
 BASE_URL=
 ```
 
+Local PostgreSQL uses these additional variables:
+
+```env
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+POSTGRES_PORT=
+DATABASE_URL=
+```
+
+Copy `.env.example` to `.env`, then supply your own local values. Keep
+`DATABASE_URL` consistent with the PostgreSQL user, password, database, and
+port. URL-encode reserved characters in the password portion of the URL.
+
 The development runners currently select `gpt-5.6-luna`, which has been verified
 against the configured OpenAI-compatible gateway. Importing `@flemme/agent`
 does not read `.env`; application code must pass provider credentials explicitly.
 
 Keep local secrets out of Git.
+
+## Local Database
+
+The root `docker-compose.yml` manages PostgreSQL 16 for local development. It
+binds PostgreSQL to localhost only and keeps database files in the named
+`flemme-postgres-data` volume.
+
+Start PostgreSQL and inspect its health:
+
+```bash
+docker-compose up -d
+docker-compose ps
+```
+
+Apply the existing Drizzle migration:
+
+```bash
+bun run --filter @flemme/db db:migrate
+```
+
+Stop local infrastructure without deleting database data:
+
+```bash
+docker-compose down
+```
+
+To intentionally delete the local database volume and start from an empty
+database, run the following destructive reset:
+
+```bash
+docker-compose down -v
+docker-compose up -d
+bun run --filter @flemme/db db:migrate
+```
+
+Do not use `down -v` during normal development.
 
 ---
 

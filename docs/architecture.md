@@ -47,6 +47,10 @@
 - `packages/db`
   Owns database schemas, migrations, and database access.
 
+Local PostgreSQL infrastructure is defined in the root `docker-compose.yml`.
+It is a development concern only; application containers and production
+deployment infrastructure remain outside the current architecture.
+
 - `packages/contracts`
   Owns shared Zod contracts used across workspace boundaries.
 

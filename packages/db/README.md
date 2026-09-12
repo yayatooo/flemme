@@ -17,6 +17,18 @@ bun run --filter @flemme/db db:seed
 bun run --filter @flemme/db db:validate-lifecycle
 ```
 
+For local development, PostgreSQL is managed from the repository root:
+
+```bash
+docker-compose up -d
+docker-compose ps
+bun run --filter @flemme/db db:migrate
+```
+
+Use `docker-compose down` to stop PostgreSQL while retaining the named data
+volume. See the root README for environment setup and the intentionally
+destructive reset command.
+
 Cooking plans, recommendations, completion output, and nutrition results are
 stored as JSONB snapshots. Ownership, lifecycle state, resume pointers, and
 timestamps are relational columns.
