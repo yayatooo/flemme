@@ -154,6 +154,10 @@ export const ActiveCookingPlanSessionSchema = z
 		}
 	});
 
+export type ActiveCookingPlanSession = z.infer<
+	typeof ActiveCookingPlanSessionSchema
+>;
+
 export const ActiveCookingInputSchema =
 	ActiveCookingPlanSessionSchema.safeExtend({
 		message: z.string().trim().min(1),

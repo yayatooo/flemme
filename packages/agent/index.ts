@@ -13,6 +13,8 @@ export {
 	ActiveCookingInputSchema,
 	type ActiveCookingPauseReason,
 	ActiveCookingPauseReasonSchema,
+	type ActiveCookingPlanSession,
+	ActiveCookingPlanSessionSchema,
 	type ActiveCookingSession,
 	ActiveCookingSessionSchema,
 	type CompletedActiveCookingSession,

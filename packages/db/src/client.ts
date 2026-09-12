@@ -9,3 +9,5 @@ export function createDatabase(databaseUrl: string) {
 
 	return { client, db };
 }
+
+export type FlemmeDatabase = ReturnType<typeof createDatabase>["db"];

@@ -7,6 +7,7 @@
 		"db:generate": "drizzle-kit generate --config=drizzle.config.ts",
 		"db:migrate": "bun --env-file=../../.env run src/migrate.ts",
 		"db:seed": "bun --env-file=../../.env run src/seed.ts",
+		"db:studio": "bun --env-file=../../.env run drizzle-kit studio --config=drizzle.config.ts",
 		"db:validate-lifecycle": "bun --env-file=../../.env run src/testing/validate-cooking-lifecycle.ts",
 		"typecheck": "tsc --noEmit"
 	},

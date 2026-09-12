@@ -3,6 +3,7 @@ export {
 	CanonicalIngredientSchema,
 	type IngredientCatalogInput,
 	IngredientCatalogInputSchema,
+	IngredientKeySchema,
 	type IngredientResolutionResult,
 	IngredientResolutionResultSchema,
 	type ResolveIngredientInput,

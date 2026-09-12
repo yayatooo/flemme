@@ -14,8 +14,12 @@ bun run --filter @flemme/db db:check
 bun run --filter @flemme/db db:generate
 bun run --filter @flemme/db db:migrate
 bun run --filter @flemme/db db:seed
+bun run --filter @flemme/db db:studio
 bun run --filter @flemme/db db:validate-lifecycle
 ```
+
+`db:studio` loads `DATABASE_URL` from the root `.env` and starts Drizzle Studio
+for the local database.
 
 For local development, PostgreSQL is managed from the repository root:
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { normalizeIngredientName } from "./normalize-ingredient-name";
 
 const NonEmptyStringSchema = z.string().trim().min(1);
-const IngredientKeySchema = z
+export const IngredientKeySchema = z
 	.string()
 	.trim()
 	.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected a kebab-case ingredient key");
