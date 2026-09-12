@@ -3,7 +3,7 @@ import {
 	CookingRecommendationInputSchema,
 	createOpenAIModel,
 	runCookingAgent,
-} from "./index";
+} from "../index";
 
 const BASE_CONTEXT: CookingRecommendationInput = {
 	inventory: [
@@ -22,12 +22,7 @@ const BASE_CONTEXT: CookingRecommendationInput = {
 	],
 
 	kitchen: {
-		equipment: [
-			"frying pan",
-			"gas stove",
-			"fish grill",
-			"charcoal",
-		],
+		equipment: ["frying pan", "gas stove", "fish grill", "charcoal"],
 	},
 
 	household: {
@@ -43,9 +38,7 @@ const BASE_CONTEXT: CookingRecommendationInput = {
 		"likes Thai cuisine",
 	],
 
-	cookingPreferences: [
-		"usually prefers meals under 60 minutes",
-	],
+	cookingPreferences: ["usually prefers meals under 60 minutes"],
 
 	session: {
 		request: "I want a savory dinner using the fish I already have.",

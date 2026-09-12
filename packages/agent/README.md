@@ -78,3 +78,19 @@ Use `all` to invoke all ten scenarios sequentially. Each scenario validates its
 input, calls `runActiveCooking` with `gpt-5.6-luna`, and prints the validated
 reply and proposed actions. The runner never applies those actions or mutates
 the supplied session.
+
+List or run Completion scenarios with the same development model:
+
+```bash
+bun run --filter @flemme/agent runner:completion -- --list
+bun run --filter @flemme/agent runner:completion -- normal
+bun run --filter @flemme/agent runner:completion -- all
+```
+
+The Completion runner reuses the Ayam Kecap plan, validates a completed session,
+and prints only the structured closing reply, summary, and notes. It performs no
+application mutations.
+
+The source files for all four phase runners are grouped under `runners/`. The
+package scripts above are the supported entry points, so their CLI commands stay
+stable if runner internals move again.

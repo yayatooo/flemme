@@ -1,4 +1,5 @@
 export { runActiveCooking } from "./src/intents/active-cooking";
+export { runCompletion } from "./src/intents/completion";
 export {
 	createOpenAIModel,
 	type OpenAIModelConfig,
@@ -14,6 +15,8 @@ export {
 	ActiveCookingPauseReasonSchema,
 	type ActiveCookingSession,
 	ActiveCookingSessionSchema,
+	type CompletedActiveCookingSession,
+	CompletedActiveCookingSessionSchema,
 } from "./src/schemas/active-cooking-input";
 export {
 	type AbandonCookingAction,
@@ -37,6 +40,15 @@ export {
 	type ResumeAction,
 	ResumeActionSchema,
 } from "./src/schemas/active-cooking-output";
+export {
+	type CompletionInput,
+	CompletionInputSchema,
+} from "./src/schemas/completion-input";
+
+export {
+	type CompletionOutput,
+	CompletionOutputSchema,
+} from "./src/schemas/completion-output";
 export {
 	type CookingRecommendationInput,
 	CookingRecommendationInputSchema,

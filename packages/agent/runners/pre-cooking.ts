@@ -2,8 +2,8 @@ import {
 	createOpenAIModel,
 	type PreCookingInput,
 	PreCookingInputSchema,
-} from "./index";
-import { runPreCooking } from "./src/intents/pre-cooking";
+} from "../index";
+import { runPreCooking } from "../src/intents/pre-cooking";
 
 const BASE_PRE_COOKING_INPUT: PreCookingInput = {
 	selectedRecipe: {

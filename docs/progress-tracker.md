@@ -157,6 +157,29 @@ implementing the API application layer.
 - The repository README is the primary entry point for agent setup and usage. It
   documents the actual provider environment variables, all phase runners,
   Active Cooking scenarios, programmatic invocation, and validation commands.
+- The Completion Input Contract v0.1 reuses the immutable pre-cooking plan and
+  Active Cooking's refined plan/session composite while narrowing the session to
+  the exported completed variant. Its optional final message remains contextual
+  input rather than application state.
+- Completed sessions retain `currentStageId` and `currentStepId` as the final
+  recorded cooking position for compatibility with Active Cooking v0.1.
+- The Completion Output Contract v0.1 contains only a non-empty conversational
+  reply, a concise title and description, and zero or more non-empty final
+  notes. It contains no persistence, rating, favorite, history, inventory,
+  nutrition-calculation, or application-action fields.
+- The Completion task prompt treats completed status as authoritative, closes
+  the cooking experience without returning to navigation, grounds feedback in
+  recorded evidence, uses session changes selectively, and permits an empty
+  notes list when no useful final guidance exists.
+- `runCompletion` validates the completed input, composes shared and
+  Completion-specific instructions, invokes Anvia with
+  `CompletionOutputSchema`, and returns only the validated closing result.
+- The Completion runner reuses the Ayam Kecap plan and completed-session fixture
+  across eight development scenarios without mutating or persisting session
+  state.
+- All four cooking-phase development runners live under
+  `packages/agent/runners/`; package scripts preserve the existing runner command
+  names while targeting the organized source files.
 
 ## In Progress
 
@@ -200,10 +223,18 @@ Remaining sequence:
 - Progress mutation, persistence, and application integration remain
   intentionally deferred.
 
+### Completion Foundation
+
+- The v0.1 input and output contracts are defined, exported, and tested.
+- The task-specific prompt, structured execution function, reusable completed
+  session fixture, and eight-scenario local runner are implemented.
+- Persistence, history, favorites, ratings, inventory reconciliation, and
+  application integration remain intentionally deferred.
+
 ## Next Up
 
-Formalize Active Cooking evaluation cases and determine whether any real agent
-tools are required before application integration.
+Formalize lifecycle evaluation cases and determine which concrete agent tools,
+if any, are required before application integration.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.
@@ -265,6 +296,9 @@ separates the conversational reply from constrained proposed actions and never
 returns a replacement session. The Active Cooking execution path and local
 runner now exercise those boundaries through native structured generation while
 leaving every proposed action unapplied.
+Completion now has a contract-only boundary for a previously validated completed
+session and a minimal closing result. Its prompt, structured model execution,
+and local runner are now connected without adding post-cooking side effects.
 
 ## Validation
 
@@ -329,6 +363,21 @@ leaving every proposed action unapplied.
   resume, equipment, previous-step, clarification, completion, and abandonment
   scenarios produced their intended actions after prompt distinctions were
   tightened for terse completion, manual pause, and standalone negation.
+- Completion input checks accept completed sessions with or without a final
+  message, reject active, paused, and abandoned sessions, reject blank messages,
+  and preserve Active Cooking plan-position validation.
+- Completion output checks accept an empty notes list and useful notes while
+  rejecting blank replies, summary titles, summary descriptions, and note
+  entries.
+- Completion prompt checks cover the completed-session assumption, prohibition
+  of cooking navigation and plan regeneration, application-owned persistence
+  boundaries, grounded user feedback, selective changes, and optional notes.
+- Live `gpt-5.6-luna` runs returned schema-valid Completion output for normal
+  completion, no final message, positive feedback, salty-result feedback,
+  ingredient adjustment, serving adjustment, a recovered equipment
+  interruption, and a final chili modification. Prompt tuning converted the
+  extra-salt case into a practical taste check and made serving changes factual
+  rather than an internal-history narration.
 - The live quality review found three prompt-level issues: unsafe raw-chicken
   washing guidance, summary times that do not match summed step estimates, and
   a conditional wok cover not present in the supplied equipment context. No

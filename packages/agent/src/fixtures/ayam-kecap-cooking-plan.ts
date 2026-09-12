@@ -1,3 +1,4 @@
+import type { CompletedActiveCookingSession } from "../schemas/active-cooking-input";
 import type { PreCookingOutput } from "../schemas/pre-cooking-output";
 
 export const AYAM_KECAP_COOKING_PLAN: PreCookingOutput = {
@@ -103,4 +104,23 @@ export const AYAM_KECAP_COOKING_PLAN: PreCookingOutput = {
 			],
 		},
 	],
+};
+
+export const AYAM_KECAP_COMPLETED_SESSION: CompletedActiveCookingSession = {
+	status: "completed",
+	currentStageId: "stage-finish-sauce",
+	currentStepId: "finish-and-taste",
+	completedStepIds: [
+		"prep-cut-chicken",
+		"prep-slice-aromatics",
+		"prep-measure-sauce",
+		"heat-oil",
+		"saute-aromatics",
+		"add-chicken",
+		"brown-chicken",
+		"add-sauce",
+		"simmer-chicken",
+		"finish-and-taste",
+	],
+	changes: [],
 };

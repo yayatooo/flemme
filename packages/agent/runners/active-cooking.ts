@@ -4,8 +4,8 @@ import {
 	ActiveCookingInputSchema,
 	createOpenAIModel,
 	runActiveCooking,
-} from "./index";
-import { AYAM_KECAP_COOKING_PLAN } from "./src/fixtures/ayam-kecap-cooking-plan";
+} from "../index";
+import { AYAM_KECAP_COOKING_PLAN } from "../src/fixtures/ayam-kecap-cooking-plan";
 
 const PREPARATION_STEP_IDS = [
 	"prep-cut-chicken",

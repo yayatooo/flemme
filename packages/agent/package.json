@@ -5,9 +5,10 @@
 	"private": true,
 	"scripts": {
 		"probe:structured-output": "bun --env-file=../../.env run structured-output-probe.ts",
-		"runner": "bun --env-file=../../.env run runner.ts",
-		"runner:active-cooking": "bun --env-file=../../.env run active-cooking-runner.ts",
-		"runner:pre-cooking": "bun --env-file=../../.env run pre-cooking-runner.ts",
+		"runner": "bun --env-file=../../.env run runners/recommendation.ts",
+		"runner:active-cooking": "bun --env-file=../../.env run runners/active-cooking.ts",
+		"runner:completion": "bun --env-file=../../.env run runners/completion.ts",
+		"runner:pre-cooking": "bun --env-file=../../.env run runners/pre-cooking.ts",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit"
 	},

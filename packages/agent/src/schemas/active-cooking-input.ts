@@ -31,6 +31,15 @@ const ActiveCookingProgressSchema = z.object({
 	changes: z.array(ActiveCookingChangeSchema),
 });
 
+export const CompletedActiveCookingSessionSchema =
+	ActiveCookingProgressSchema.extend({
+		status: z.literal("completed"),
+	});
+
+export type CompletedActiveCookingSession = z.infer<
+	typeof CompletedActiveCookingSessionSchema
+>;
+
 export const ActiveCookingSessionSchema = z.discriminatedUnion("status", [
 	ActiveCookingProgressSchema.extend({
 		status: z.literal("active"),
@@ -39,9 +48,7 @@ export const ActiveCookingSessionSchema = z.discriminatedUnion("status", [
 		status: z.literal("paused"),
 		pauseReason: ActiveCookingPauseReasonSchema,
 	}),
-	ActiveCookingProgressSchema.extend({
-		status: z.literal("completed"),
-	}),
+	CompletedActiveCookingSessionSchema,
 	ActiveCookingProgressSchema.extend({
 		status: z.literal("abandoned"),
 	}),
@@ -49,11 +56,10 @@ export const ActiveCookingSessionSchema = z.discriminatedUnion("status", [
 
 export type ActiveCookingSession = z.infer<typeof ActiveCookingSessionSchema>;
 
-export const ActiveCookingInputSchema = z
+export const ActiveCookingPlanSessionSchema = z
 	.object({
 		cookingPlan: PreCookingOutputSchema,
 		session: ActiveCookingSessionSchema,
-		message: z.string().trim().min(1),
 	})
 	.superRefine(({ cookingPlan, session }, context) => {
 		const stageIds = new Set<string>();
@@ -146,6 +152,11 @@ export const ActiveCookingInputSchema = z
 				});
 			}
 		}
+	});
+
+export const ActiveCookingInputSchema =
+	ActiveCookingPlanSessionSchema.safeExtend({
+		message: z.string().trim().min(1),
 	});
 
 export type ActiveCookingInput = z.infer<typeof ActiveCookingInputSchema>;

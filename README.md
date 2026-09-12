@@ -738,13 +738,14 @@ Keep local secrets out of Git.
 
 Run all commands in this section from the repository root.
 
-The agent package currently exposes three runnable cooking phases:
+The agent package currently exposes four runnable cooking phases:
 
 | Phase | Purpose | Command |
 | --- | --- | --- |
 | Recommendation | Generate structured recipe recommendations from cooking context | `bun run --filter @flemme/agent runner` |
 | Pre-Cooking | Convert a selected recipe into an immutable cooking plan | `bun run --filter @flemme/agent runner:pre-cooking` |
 | Active Cooking | Reason from a cooking plan and session, then propose actions | `bun run --filter @flemme/agent runner:active-cooking` |
+| Completion | Close a completed session with a grounded summary and useful notes | `bun run --filter @flemme/agent runner:completion` |
 
 These runners are development tools with built-in fixtures. They invoke the AI
 model and print schema-validated output; they do not start an API server or own
@@ -789,6 +790,39 @@ abandon
 
 The Active Cooking runner prints the input position, reply, and proposed
 actions. It never applies actions, advances a step, or mutates the session.
+
+## Completion Scenarios
+
+List the available Completion scenarios without invoking the model:
+
+```bash
+bun run --filter @flemme/agent runner:completion -- --list
+```
+
+Run one scenario or all eight sequentially:
+
+```bash
+bun run --filter @flemme/agent runner:completion -- normal
+bun run --filter @flemme/agent runner:completion -- salty
+bun run --filter @flemme/agent runner:completion -- all
+```
+
+Available names are:
+
+```text
+normal
+no-message
+positive
+salty
+ingredient-adjustment
+serving-adjustment
+equipment-recovered
+final-modification
+```
+
+The Completion runner prints the completed-session context, conversational
+reply, structured summary, and notes. It does not persist history, save a
+favorite or rating, mutate inventory, or continue cooking navigation.
 
 ## Programmatic Active Cooking Usage
 
