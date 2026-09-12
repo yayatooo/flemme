@@ -5,6 +5,7 @@ import {
 	authCredentials,
 	households,
 	inventories,
+	inventoryItems,
 	kitchenEquipment,
 	kitchens,
 	userProfiles,
@@ -87,12 +88,30 @@ try {
 			])
 			.onConflictDoNothing();
 
-		await transaction
+		const [inventory] = await transaction
 			.insert(inventories)
 			.values({ userId: user.id })
 			.onConflictDoUpdate({
 				target: inventories.userId,
 				set: { updatedAt: new Date() },
+			})
+			.returning({ id: inventories.id });
+
+		if (!inventory) {
+			throw new Error("Development inventory could not be created");
+		}
+
+		await transaction
+			.insert(inventoryItems)
+			.values({
+				inventoryId: inventory.id,
+				ingredientKey: "salt",
+				quantity: 250,
+				unit: "g",
+			})
+			.onConflictDoUpdate({
+				target: [inventoryItems.inventoryId, inventoryItems.ingredientKey],
+				set: { quantity: 250, unit: "g", updatedAt: new Date() },
 			});
 
 		const [seededUser] = await transaction

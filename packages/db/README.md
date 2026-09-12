@@ -38,4 +38,11 @@ table exists. Inventory stores canonical `ingredient_key` values owned by
 `@flemme/ingredients`; PostgreSQL does not create another ingredient catalog.
 
 The development seed creates only a local user, password credential, profile,
-aggregate household, kitchen, and inventory. It is not production auth setup.
+aggregate household, kitchen with basic equipment, inventory, and one `salt`
+inventory item. It is idempotent and is not production auth setup.
+
+`db:validate-lifecycle` uses a temporary user and real PostgreSQL rows to verify
+profile and household context, kitchen equipment, a canonical ingredient-key
+inventory item, cooking snapshots, mutable progress, completion/history lookup,
+and favorites. Restored JSONB snapshots are parsed through their owning agent
+and nutrition schemas before the temporary user is deleted.

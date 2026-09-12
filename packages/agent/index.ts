@@ -58,6 +58,7 @@ export {
 	type CookingRecommendation,
 	type CookingRecommendationOutput,
 	CookingRecommendationOutputSchema,
+	CookingRecommendationSchema,
 } from "./src/schemas/cooking-recommendation-output";
 
 export {

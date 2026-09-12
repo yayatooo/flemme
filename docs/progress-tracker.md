@@ -4,13 +4,13 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Local PostgreSQL Infrastructure v0.1 — Complete
+PostgreSQL + Drizzle Schema v0.1 — Stable
 
 ## Current Goal
 
-Provide a reproducible, localhost-only PostgreSQL 16 development service that
-uses the existing Drizzle schema, migration, and named data volume without
-committing credentials.
+Provide a validated persistence foundation for the main cooking lifecycle and
+make it ready for later API integration without moving application behavior
+into the database package.
 
 ## Completed
 
@@ -248,6 +248,21 @@ committing credentials.
   second database-owned ingredient identity.
 - Completed cooking sessions are the history source, while favorites reference
   preserved recipe snapshots without requiring a global recipe catalog.
+- The idempotent development seed creates one user, credential, profile,
+  household, kitchen with basic equipment, inventory, and one canonical-key
+  inventory item without introducing a large fixture dataset.
+- The real PostgreSQL lifecycle validation creates temporary user context,
+  inventory, a cooking session, immutable plan snapshots, mutable progress,
+  completion state, a history lookup, and a favorite before cleaning up its
+  temporary user.
+- Lifecycle inventory keys are resolved through a small
+  `@flemme/ingredients` validation catalog. PostgreSQL stores the canonical key
+  and does not own an ingredient catalog.
+- Restored recommendation, selected-recipe, pre-cooking, completion, nutrition,
+  and completed-session data are parsed through their owning runtime schemas.
+  This verifies that persisted snapshots can resume without AI regeneration.
+- The initial migration, Drizzle schema check, seed, lifecycle validation,
+  package-local Biome check, workspace tests, typecheck, and build all pass.
 
 ### Local PostgreSQL Infrastructure
 
@@ -314,9 +329,9 @@ Remaining sequence:
 
 ## Next Up
 
-Select the next bounded application/API persistence milestone before
-implementing production catalog data, natural-language quantity parsing,
-reference sourcing, or UI display.
+The validated Schema v0.1 may now be used as input for a separately bounded API
+integration milestone. Production catalog data, natural-language quantity
+parsing, reference sourcing, and UI display remain deferred.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.

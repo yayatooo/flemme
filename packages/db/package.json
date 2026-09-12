@@ -11,6 +11,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
+		"@flemme/ingredients": "workspace:*",
 		"@types/bun": "latest",
 		"drizzle-kit": "^0.31.10"
 	},

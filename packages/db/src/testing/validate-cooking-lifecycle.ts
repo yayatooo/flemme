@@ -1,10 +1,20 @@
-import type {
-	CompletionOutput,
-	CookingRecommendation,
-	CookingRecommendationOutput,
-	PreCookingOutput,
+import {
+	CompletedActiveCookingSessionSchema,
+	CompletionInputSchema,
+	type CompletionOutput,
+	CompletionOutputSchema,
+	type CookingRecommendation,
+	type CookingRecommendationOutput,
+	CookingRecommendationOutputSchema,
+	CookingRecommendationSchema,
+	type PreCookingOutput,
+	PreCookingOutputSchema,
 } from "@flemme/agent";
-import type { RecipeNutritionResult } from "@flemme/nutrition";
+import { createIngredientCatalog } from "@flemme/ingredients";
+import {
+	type RecipeNutritionResult,
+	RecipeNutritionResultSchema,
+} from "@flemme/nutrition";
 import { and, eq } from "drizzle-orm";
 
 import { createDatabase } from "../client";
@@ -14,6 +24,7 @@ import {
 	households,
 	inventories,
 	inventoryItems,
+	kitchenEquipment,
 	kitchens,
 	userProfiles,
 	users,
@@ -24,6 +35,18 @@ const databaseUrl = Bun.env.DATABASE_URL;
 if (!databaseUrl) {
 	throw new Error("DATABASE_URL is missing");
 }
+
+const validationIngredientCatalog = createIngredientCatalog({
+	ingredients: [
+		{
+			key: "salt",
+			names: { id: "Garam", en: "Salt" },
+			aliases: { id: [], en: [] },
+		},
+	],
+});
+
+const canonicalSalt = validationIngredientCatalog.getByKey("salt");
 
 const selectedRecipe: CookingRecommendation = {
 	name: "Lifecycle Test Dish",
@@ -91,6 +114,8 @@ function assert(condition: unknown, message: string): asserts condition {
 	}
 }
 
+assert(canonicalSalt, "Canonical salt fixture could not be resolved");
+
 const { client, db } = createDatabase(databaseUrl);
 let testUserId: string | undefined;
 
@@ -109,7 +134,15 @@ try {
 	await db
 		.insert(households)
 		.values({ userId: user.id, adults: 2, children: 0, toddlers: 0 });
-	await db.insert(kitchens).values({ userId: user.id });
+	const [kitchen] = await db
+		.insert(kitchens)
+		.values({ userId: user.id })
+		.returning();
+	assert(kitchen, "Kitchen creation failed");
+	await db.insert(kitchenEquipment).values({
+		kitchenId: kitchen.id,
+		name: "stove",
+	});
 	const [inventory] = await db
 		.insert(inventories)
 		.values({ userId: user.id })
@@ -117,11 +150,19 @@ try {
 	assert(inventory, "Inventory creation failed");
 	await db.insert(inventoryItems).values({
 		inventoryId: inventory.id,
-		ingredientKey: "salt",
+		ingredientKey: canonicalSalt.key,
 		quantity: 100,
 		unit: "g",
 		condition: "fresh",
 	});
+	const [storedInventoryItem] = await db
+		.select({ ingredientKey: inventoryItems.ingredientKey })
+		.from(inventoryItems)
+		.where(eq(inventoryItems.inventoryId, inventory.id));
+	assert(
+		storedInventoryItem?.ingredientKey === canonicalSalt.key,
+		"Inventory item did not preserve its canonical ingredient key",
+	);
 
 	const [session] = await db
 		.insert(cookingSessions)
@@ -198,6 +239,51 @@ try {
 		completedHistory[0]?.preCookingPlanSnapshot?.cookingStages[0]?.id ===
 			"cook-dish",
 		"Cooking plan snapshot was not preserved",
+	);
+
+	const restoredSession = completedHistory[0];
+	assert(restoredSession, "Completed cooking session could not be restored");
+	const restoredRecommendation = CookingRecommendationOutputSchema.parse(
+		restoredSession.recommendationSnapshot,
+	);
+	const restoredSelectedRecipe = CookingRecommendationSchema.parse(
+		restoredSession.selectedRecipeSnapshot,
+	);
+	const restoredPlan = PreCookingOutputSchema.parse(
+		restoredSession.preCookingPlanSnapshot,
+	);
+	const restoredProgress = CompletedActiveCookingSessionSchema.parse({
+		status: restoredSession.status,
+		currentStageId: restoredSession.currentStageId,
+		currentStepId: restoredSession.currentStepId,
+		completedStepIds: restoredSession.completedStepIds,
+		changes: restoredSession.changes,
+	});
+	const restoredCompletion = CompletionOutputSchema.parse(
+		restoredSession.completionSnapshot,
+	);
+	const restoredNutrition = RecipeNutritionResultSchema.parse(
+		restoredSession.nutritionSnapshot,
+	);
+
+	CompletionInputSchema.parse({
+		cookingPlan: restoredPlan,
+		session: restoredProgress,
+	});
+	assert(
+		restoredRecommendation.type === "recommendations" &&
+			restoredRecommendation.recommendations[0]?.name ===
+				restoredSelectedRecipe.name,
+		"Recommendation and selected recipe snapshots do not agree",
+	);
+	assert(
+		restoredCompletion.summary.title === restoredSelectedRecipe.name,
+		"Completion snapshot does not describe the selected recipe",
+	);
+	assert(
+		restoredNutrition.status === "complete" &&
+			restoredNutrition.servings === restoredSelectedRecipe.servings,
+		"Nutrition snapshot does not preserve the selected serving count",
 	);
 
 	await db.insert(favorites).values({
