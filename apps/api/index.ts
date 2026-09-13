@@ -1,5 +1,7 @@
 import {
 	createOpenAIModel,
+	runActiveCooking,
+	runCompletion,
 	runCookingAgent,
 	runPreCooking,
 } from "@flemme/agent";
@@ -40,11 +42,25 @@ const recommendationRunner = model
 	? (context: Parameters<typeof runCookingAgent>[0]["context"]) =>
 			runCookingAgent({ model, context })
 	: undefined;
+const activeCookingRunner = model
+	? (input: Parameters<typeof runActiveCooking>[0]["input"]) =>
+			runActiveCooking({ model, input })
+	: undefined;
+const completionRunner = model
+	? (input: Parameters<typeof runCompletion>[0]["input"]) =>
+			runCompletion({ model, input })
+	: undefined;
 const preCookingRunner = model
 	? (input: Parameters<typeof runPreCooking>[0]["input"]) =>
 			runPreCooking({ model, input })
 	: undefined;
-const app = createApp({ db, recommendationRunner, preCookingRunner });
+const app = createApp({
+	db,
+	activeCookingRunner,
+	completionRunner,
+	recommendationRunner,
+	preCookingRunner,
+});
 const server = Bun.serve({
 	hostname: "127.0.0.1",
 	port,

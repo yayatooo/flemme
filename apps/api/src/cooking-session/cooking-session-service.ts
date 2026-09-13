@@ -11,6 +11,7 @@ import { RecipeNutritionResultSchema } from "@flemme/nutrition";
 import { and, eq } from "drizzle-orm";
 
 import { ApiError } from "../api-error";
+import { calculateCookingSessionNutrition } from "../nutrition/cooking-session-nutrition-service";
 import {
 	type CompleteCookingSessionRequest,
 	type CookingSessionResponse,
@@ -107,6 +108,38 @@ function restoreCookingSession(row: CookingSessionRow): CookingSessionResponse {
 	}
 }
 
+export function assertCookingSessionCompletionReady(
+	session: CookingSessionResponse,
+) {
+	if (
+		session.phase !== "active_cooking" ||
+		session.session.status !== "active"
+	) {
+		throw new ApiError(
+			409,
+			"INVALID_SESSION_STATE",
+			"Only an active cooking session can be completed",
+		);
+	}
+
+	const finalStage = session.cookingPlan.cookingStages.at(-1);
+	const finalStep = finalStage?.steps.at(-1);
+
+	if (
+		!finalStage ||
+		!finalStep ||
+		session.session.currentStageId !== finalStage.id ||
+		session.session.currentStepId !== finalStep.id ||
+		!session.session.completedStepIds.includes(finalStep.id)
+	) {
+		throw new ApiError(
+			409,
+			"SESSION_NOT_READY_FOR_COMPLETION",
+			"The final cooking step must be completed first",
+		);
+	}
+}
+
 export function createCookingSessionService(db: FlemmeDatabase) {
 	return {
 		async create(
@@ -126,7 +159,6 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 					currentStepId: input.session.currentStepId,
 					completedStepIds: input.session.completedStepIds,
 					changes: input.session.changes,
-					nutritionSnapshot: input.nutritionSnapshot,
 				})
 				.returning();
 
@@ -236,31 +268,7 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 		): Promise<CookingSessionResponse> {
 			const row = await findOwnedCookingSession(db, userId, sessionId);
 			const restored = restoreCookingSession(row);
-
-			if (row.phase !== "active_cooking" || row.status !== "active") {
-				throw new ApiError(
-					409,
-					"INVALID_SESSION_STATE",
-					"Only an active cooking session can be completed",
-				);
-			}
-
-			const finalStage = restored.cookingPlan.cookingStages.at(-1);
-			const finalStep = finalStage?.steps.at(-1);
-
-			if (
-				!finalStage ||
-				!finalStep ||
-				restored.session.currentStageId !== finalStage.id ||
-				restored.session.currentStepId !== finalStep.id ||
-				!restored.session.completedStepIds.includes(finalStep.id)
-			) {
-				throw new ApiError(
-					409,
-					"SESSION_NOT_READY_FOR_COMPLETION",
-					"The final cooking step must be completed first",
-				);
-			}
+			assertCookingSessionCompletionReady(restored);
 
 			const completedSession = {
 				status: "completed" as const,
@@ -274,6 +282,10 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 				cookingPlan: restored.cookingPlan,
 				session: completedSession,
 			});
+			const nutritionSnapshot = calculateCookingSessionNutrition({
+				cookingPlan: restored.cookingPlan,
+				servings: restored.selectedRecipeSnapshot.servings,
+			});
 
 			const completedAt = new Date();
 			const [completed] = await db
@@ -283,8 +295,7 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 					status: "completed",
 					pauseReason: null,
 					completionSnapshot: input.completionSnapshot,
-					nutritionSnapshot:
-						input.nutritionSnapshot ?? restored.nutritionSnapshot,
+					nutritionSnapshot,
 					completedAt,
 					updatedAt: completedAt,
 				})

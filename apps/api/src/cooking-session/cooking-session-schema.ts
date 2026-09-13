@@ -24,16 +24,17 @@ export const CreateCookingSessionRequestSchema =
 	ActiveCookingPlanSessionSchema.safeExtend({
 		recommendationSnapshot: CookingRecommendationOutputSchema,
 		selectedRecipeSnapshot: CookingRecommendationSchema,
-		nutritionSnapshot: RecipeNutritionResultSchema.optional(),
-	}).superRefine(({ session }, context) => {
-		if (session.status !== "active") {
-			context.addIssue({
-				code: "custom",
-				message: "A new cooking session must start active",
-				path: ["session", "status"],
-			});
-		}
-	});
+	})
+		.strict()
+		.superRefine(({ session }, context) => {
+			if (session.status !== "active") {
+				context.addIssue({
+					code: "custom",
+					message: "A new cooking session must start active",
+					path: ["session", "status"],
+				});
+			}
+		});
 
 export type CreateCookingSessionRequest = z.infer<
 	typeof CreateCookingSessionRequestSchema
@@ -47,10 +48,11 @@ export type UpdateCookingProgressRequest = z.infer<
 	typeof UpdateCookingProgressRequestSchema
 >;
 
-export const CompleteCookingSessionRequestSchema = z.object({
-	completionSnapshot: CompletionOutputSchema,
-	nutritionSnapshot: RecipeNutritionResultSchema.optional(),
-});
+export const CompleteCookingSessionRequestSchema = z
+	.object({
+		completionSnapshot: CompletionOutputSchema,
+	})
+	.strict();
 
 export type CompleteCookingSessionRequest = z.infer<
 	typeof CompleteCookingSessionRequestSchema

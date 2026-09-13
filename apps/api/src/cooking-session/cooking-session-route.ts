@@ -41,6 +41,9 @@ const createCookingSessionRouteDefinition = createRoute({
 	method: "post",
 	path: "/",
 	tags: ["Cooking Sessions"],
+	summary: "Create an active cooking session",
+	description:
+		"Persists existing Recommendation and Pre-Cooking snapshots with initial active progress. Does not invoke AI.",
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		body: jsonBody(CreateCookingSessionRequestSchema),
@@ -57,6 +60,9 @@ const getCookingSessionRouteDefinition = createRoute({
 	method: "get",
 	path: "/{id}",
 	tags: ["Cooking Sessions"],
+	summary: "Restore a cooking session",
+	description:
+		"Restores owned snapshots and relational progress from PostgreSQL without invoking AI.",
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
@@ -75,6 +81,9 @@ const updateCookingProgressRouteDefinition = createRoute({
 	method: "patch",
 	path: "/{id}/progress",
 	tags: ["Cooking Sessions"],
+	summary: "Persist active cooking progress",
+	description:
+		"Updates only mutable session progress after validating it against the immutable cooking plan. Does not invoke Active Cooking AI.",
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
@@ -96,6 +105,9 @@ const completeCookingSessionRouteDefinition = createRoute({
 	method: "post",
 	path: "/{id}/complete",
 	tags: ["Cooking Sessions"],
+	summary: "Complete a cooking session",
+	description:
+		"Persists an already-valid Completion snapshot only after the recorded final step is completed, and atomically stores server-calculated nutrition from the persisted plan. Does not invoke AI or make a runtime USDA request.",
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,

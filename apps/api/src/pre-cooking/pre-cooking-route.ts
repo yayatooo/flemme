@@ -24,6 +24,9 @@ const preCookingRouteDefinition = createRoute({
 	method: "post",
 	path: "/",
 	tags: ["Pre-Cooking"],
+	summary: "Generate a plan for the selected recipe",
+	description:
+		"Invokes the Pre-Cooking Agent with one selected recommendation and current cooking context. Returns a validated plan without persisting it or creating a cooking session.",
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		body: {

@@ -156,15 +156,19 @@ describe("cooking-session API integration", () => {
 			.parse(await specificationResponse.json());
 
 		expect(specificationResponse.status).toBe(200);
-		expect(Object.keys(specification.paths)).toContain("/health");
-		expect(Object.keys(specification.paths)).toContain(
-			"/cooking-sessions/{id}",
-		);
-		expect(Object.keys(specification.paths)).toContain(
-			"/cooking-sessions/{id}/progress",
-		);
-		expect(Object.keys(specification.paths)).toContain(
-			"/cooking-sessions/{id}/complete",
+		expect(Object.keys(specification.paths)).toEqual(
+			expect.arrayContaining([
+				"/health",
+				"/cooking/recommendations",
+				"/cooking/pre-cooking",
+				"/cooking-sessions",
+				"/cooking-sessions/{id}",
+				"/cooking-sessions/{id}/progress",
+				"/cooking-sessions/{id}/nutrition",
+				"/cooking-sessions/{id}/complete",
+				"/cooking-sessions/{id}/active-cooking",
+				"/cooking-sessions/{id}/completion",
+			]),
 		);
 
 		const swaggerResponse = await app.request("/docs");
@@ -203,7 +207,56 @@ describe("cooking-session API integration", () => {
 		expect(restored.recommendationSnapshot).toEqual(recommendationSnapshot);
 		expect(restored.cookingPlan).toEqual(cookingPlan);
 
-		const progressResponse = await app.request(
+		const progressToFinalResponse = await app.request(
+			`/cooking-sessions/${created.id}/progress`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({
+					session: {
+						status: "active",
+						currentStageId: "cook-dish",
+						currentStepId: "finish-cooking",
+						completedStepIds: ["prepare-salt", "start-cooking"],
+						changes: [],
+					},
+				}),
+			},
+		);
+		const progressedToFinal = CookingSessionResponseSchema.parse(
+			await progressToFinalResponse.json(),
+		);
+
+		expect(progressToFinalResponse.status).toBe(200);
+		expect(progressedToFinal.session.currentStepId).toBe("finish-cooking");
+		expect(progressedToFinal.cookingPlan).toEqual(cookingPlan);
+
+		const completionSnapshot = {
+			reply: "The API test dish is complete.",
+			summary: {
+				title: "API Test Dish",
+				description: "The persisted API test dish was completed.",
+			},
+			notes: [],
+		};
+		const prematureCompletionResponse = await app.request(
+			`/cooking-sessions/${created.id}/complete`,
+			{
+				method: "POST",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ completionSnapshot }),
+			},
+		);
+		const prematureCompletionError = ErrorResponseSchema.parse(
+			await prematureCompletionResponse.json(),
+		);
+
+		expect(prematureCompletionResponse.status).toBe(409);
+		expect(prematureCompletionError.error.code).toBe(
+			"SESSION_NOT_READY_FOR_COMPLETION",
+		);
+
+		const finalProgressResponse = await app.request(
 			`/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
@@ -223,29 +276,15 @@ describe("cooking-session API integration", () => {
 				}),
 			},
 		);
-		const progressed = CookingSessionResponseSchema.parse(
-			await progressResponse.json(),
-		);
 
-		expect(progressResponse.status).toBe(200);
-		expect(progressed.session.currentStepId).toBe("finish-cooking");
-		expect(progressed.cookingPlan).toEqual(cookingPlan);
+		expect(finalProgressResponse.status).toBe(200);
 
 		const completionResponse = await app.request(
 			`/cooking-sessions/${created.id}/complete`,
 			{
 				method: "POST",
 				headers: authenticatedHeaders(ownerUserId),
-				body: JSON.stringify({
-					completionSnapshot: {
-						reply: "The API test dish is complete.",
-						summary: {
-							title: "API Test Dish",
-							description: "The persisted API test dish was completed.",
-						},
-						notes: [],
-					},
-				}),
+				body: JSON.stringify({ completionSnapshot }),
 			},
 		);
 		const completed = CookingSessionResponseSchema.parse(
@@ -256,6 +295,7 @@ describe("cooking-session API integration", () => {
 		expect(completed.phase).toBe("completion");
 		expect(completed.session.status).toBe("completed");
 		expect(completed.completedAt).not.toBeNull();
+		expect(completed.nutritionSnapshot?.status).toBe("complete");
 
 		const completedRestoreResponse = await app.request(
 			`/cooking-sessions/${created.id}`,
@@ -268,6 +308,9 @@ describe("cooking-session API integration", () => {
 		expect(completedRestoreResponse.status).toBe(200);
 		expect(completedRestore.session.status).toBe("completed");
 		expect(completedRestore.cookingPlan).toEqual(cookingPlan);
+		expect(completedRestore.nutritionSnapshot).toEqual(
+			completed.nutritionSnapshot,
+		);
 	});
 
 	test("returns not found for a missing session", async () => {

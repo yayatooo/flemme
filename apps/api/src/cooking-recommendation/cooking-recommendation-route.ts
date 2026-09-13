@@ -24,6 +24,9 @@ const recommendationRouteDefinition = createRoute({
 	method: "post",
 	path: "/",
 	tags: ["Cooking Recommendations"],
+	summary: "Generate cooking recommendations",
+	description:
+		"Builds authenticated cooking context and invokes the Recommendation Agent. Does not select a recipe, persist a session, or mutate inventory.",
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		body: {
