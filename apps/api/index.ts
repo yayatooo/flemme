@@ -1,4 +1,8 @@
-import { createOpenAIModel, runCookingAgent } from "@flemme/agent";
+import {
+	createOpenAIModel,
+	runCookingAgent,
+	runPreCooking,
+} from "@flemme/agent";
 import { createDatabase } from "@flemme/db";
 
 import { createApp } from "./src/app";
@@ -24,20 +28,23 @@ if (!Number.isInteger(port) || port <= 0) {
 const { db } = createDatabase(databaseUrl);
 const apiKey = Bun.env.MUX_API_KEY;
 const baseUrl = Bun.env.BASE_URL;
-const recommendationRunner =
+const model =
 	apiKey && baseUrl
-		? (() => {
-				const model = createOpenAIModel({
-					apiKey,
-					baseUrl,
-					modelId: "gpt-5.6-luna",
-				});
-
-				return (context: Parameters<typeof runCookingAgent>[0]["context"]) =>
-					runCookingAgent({ model, context });
-			})()
+		? createOpenAIModel({
+				apiKey,
+				baseUrl,
+				modelId: "gpt-5.6-luna",
+			})
 		: undefined;
-const app = createApp({ db, recommendationRunner });
+const recommendationRunner = model
+	? (context: Parameters<typeof runCookingAgent>[0]["context"]) =>
+			runCookingAgent({ model, context })
+	: undefined;
+const preCookingRunner = model
+	? (input: Parameters<typeof runPreCooking>[0]["input"]) =>
+			runPreCooking({ model, input })
+	: undefined;
+const app = createApp({ db, recommendationRunner, preCookingRunner });
 const server = Bun.serve({
 	hostname: "127.0.0.1",
 	port,

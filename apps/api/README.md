@@ -17,11 +17,14 @@ bun run --filter @flemme/api dev
 use the development-only `x-flemme-user-id` header. Its value must be the UUID
 of a real database user. The API refuses to start this adapter when
 `NODE_ENV=production` and binds to localhost while the adapter is active.
+Swagger exposes this header through its `DevelopmentUser` **Authorize** control.
+Run the development seed, copy the UUID printed in its output, and authorize
+once before testing protected cooking routes.
 
-Real Recommendation requests also require the existing Agent provider
-variables `MUX_API_KEY` and `BASE_URL`. If they are absent, the API remains
-available for health, documentation, and persistence work, while Recommendation
-returns the controlled `AGENT_NOT_CONFIGURED` response.
+Real Recommendation and Pre-Cooking requests also require the existing Agent
+provider variables `MUX_API_KEY` and `BASE_URL`. If they are absent, the API
+remains available for health, documentation, and persistence work, while those
+Agent-backed routes return the controlled `AGENT_NOT_CONFIGURED` response.
 
 ## Routes
 
@@ -30,6 +33,7 @@ GET   /health
 GET   /openapi.json
 GET   /docs
 POST  /cooking/recommendations
+POST  /cooking/pre-cooking
 POST  /cooking-sessions
 GET   /cooking-sessions/:id
 PATCH /cooking-sessions/:id/progress
@@ -56,6 +60,13 @@ Current-attempt inventory overrides remain raw,
 explicit names because the repository intentionally does not yet ship a
 production ingredient catalog; the API does not borrow the test fixture or
 invent aliases.
+
+`POST /cooking/pre-cooking` accepts one recipe selected from a successful
+Recommendation result plus the required session context and optional
+current-attempt context overrides. It loads omitted context through the same
+persistent cooking-context service, invokes the existing Pre-Cooking Agent,
+and validates the generated plan through `PreCookingOutputSchema`. It does not
+persist the plan, mutate inventory, or create a cooking session.
 
 Favorites are intentionally not exposed yet. Under the current session-backed
 favorite model, future API logic should only favorite an owned, completed

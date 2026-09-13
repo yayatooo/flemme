@@ -1,5 +1,6 @@
 export { runActiveCooking } from "./src/intents/active-cooking";
 export { runCompletion } from "./src/intents/completion";
+export { runPreCooking } from "./src/intents/pre-cooking";
 export {
 	createOpenAIModel,
 	type OpenAIModelConfig,

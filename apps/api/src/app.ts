@@ -6,14 +6,28 @@ import { ApiError, createApiErrorPayload } from "./api-error";
 import { createCookingRecommendationRoute } from "./cooking-recommendation/cooking-recommendation-route";
 import type { CookingRecommendationRunner } from "./cooking-recommendation/cooking-recommendation-service";
 import { createCookingSessionRoute } from "./cooking-session/cooking-session-route";
+import { createPreCookingRoute } from "./pre-cooking/pre-cooking-route";
+import type { PreCookingRunner } from "./pre-cooking/pre-cooking-service";
 
 interface CreateAppInput {
 	db: FlemmeDatabase;
 	recommendationRunner?: CookingRecommendationRunner;
+	preCookingRunner?: PreCookingRunner;
 }
 
-export function createApp({ db, recommendationRunner }: CreateAppInput) {
+export function createApp({
+	db,
+	recommendationRunner,
+	preCookingRunner,
+}: CreateAppInput) {
 	const app = new OpenAPIHono<ApiEnvironment>();
+	app.openAPIRegistry.registerComponent("securitySchemes", "DevelopmentUser", {
+		type: "apiKey",
+		in: "header",
+		name: "x-flemme-user-id",
+		description:
+			"Development-only UUID printed by `bun run --filter @flemme/db db:seed`",
+	});
 
 	app.openapi(
 		createRoute({
@@ -37,6 +51,10 @@ export function createApp({ db, recommendationRunner }: CreateAppInput) {
 		"/cooking/recommendations",
 		createCookingRecommendationRoute({ db, recommendationRunner }),
 	);
+	app.route(
+		"/cooking/pre-cooking",
+		createPreCookingRoute({ db, preCookingRunner }),
+	);
 	app.route("/cooking-sessions", createCookingSessionRoute(db));
 	app.doc("/openapi.json", {
 		openapi: "3.1.0",
@@ -46,7 +64,10 @@ export function createApp({ db, recommendationRunner }: CreateAppInput) {
 			description: "Flemme cooking application API",
 		},
 	});
-	app.get("/docs", swaggerUI({ url: "/openapi.json" }));
+	app.get(
+		"/docs",
+		swaggerUI({ url: "/openapi.json", persistAuthorization: true }),
+	);
 
 	app.onError((error, context) => {
 		if (error instanceof ApiError) {

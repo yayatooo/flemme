@@ -5,13 +5,13 @@ import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
 import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
 import {
-	CookingRecommendationRequestSchema,
-	CookingRecommendationResponseSchema,
-} from "./cooking-recommendation-schema";
+	PreCookingRequestSchema,
+	PreCookingResponseSchema,
+} from "./pre-cooking-schema";
 import {
-	type CookingRecommendationRunner,
-	createCookingRecommendationService,
-} from "./cooking-recommendation-service";
+	createPreCookingService,
+	type PreCookingRunner,
+} from "./pre-cooking-service";
 
 function errorResponse(description: string) {
 	return {
@@ -20,40 +20,40 @@ function errorResponse(description: string) {
 	} as const;
 }
 
-const recommendationRouteDefinition = createRoute({
+const preCookingRouteDefinition = createRoute({
 	method: "post",
 	path: "/",
-	tags: ["Cooking Recommendations"],
+	tags: ["Pre-Cooking"],
 	security: [{ DevelopmentUser: [] }],
 	request: {
 		body: {
 			required: true,
 			content: {
-				"application/json": { schema: CookingRecommendationRequestSchema },
+				"application/json": { schema: PreCookingRequestSchema },
 			},
 		},
 	},
 	responses: {
 		200: {
-			description: "Validated cooking recommendation result",
+			description: "Validated pre-cooking plan",
 			content: {
-				"application/json": { schema: CookingRecommendationResponseSchema },
+				"application/json": { schema: PreCookingResponseSchema },
 			},
 		},
-		400: errorResponse("Invalid request"),
+		400: errorResponse("Invalid request or selected recipe"),
 		401: errorResponse("Development user is not authenticated"),
 		422: errorResponse("Required persistent cooking context is unavailable"),
-		502: errorResponse("Recommendation generation or output validation failed"),
-		503: errorResponse("Recommendation agent is not configured"),
+		502: errorResponse("Pre-cooking generation or output validation failed"),
+		503: errorResponse("Pre-cooking agent is not configured"),
 	},
 });
 
-export function createCookingRecommendationRoute({
+export function createPreCookingRoute({
 	db,
-	recommendationRunner,
+	preCookingRunner,
 }: {
 	db: FlemmeDatabase;
-	recommendationRunner?: CookingRecommendationRunner;
+	preCookingRunner?: PreCookingRunner;
 }) {
 	const route = new OpenAPIHono<ApiEnvironment>({
 		defaultHook: (result, context) => {
@@ -70,19 +70,16 @@ export function createCookingRecommendationRoute({
 			}
 		},
 	});
-	const service = createCookingRecommendationService({
-		db,
-		recommendationRunner,
-	});
+	const service = createPreCookingService({ db, preCookingRunner });
 
 	route.use("*", createDevelopmentAuthMiddleware(db));
-	route.openapi(recommendationRouteDefinition, async (context) => {
-		const recommendation = await service.recommend(
+	route.openapi(preCookingRouteDefinition, async (context) => {
+		const plan = await service.generate(
 			context.get("currentUserId"),
 			context.req.valid("json"),
 		);
 
-		return context.json(recommendation, 200);
+		return context.json(plan, 200);
 	});
 
 	return route;

@@ -1,5 +1,5 @@
 import type { FlemmeDatabase } from "@flemme/db";
-import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
 import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
@@ -11,20 +11,6 @@ import {
 	UpdateCookingProgressRequestSchema,
 } from "./cooking-session-schema";
 import { createCookingSessionService } from "./cooking-session-service";
-
-const DevelopmentAuthHeadersSchema = z.object({
-	"x-flemme-user-id": z
-		.string()
-		.uuid()
-		.openapi({
-			param: {
-				name: "x-flemme-user-id",
-				in: "header",
-			},
-			description: "Development-only UUID of an existing Flemme user",
-			example: "00000000-0000-4000-8000-000000000000",
-		}),
-});
 
 function jsonBody<TSchema extends z.ZodType>(schema: TSchema) {
 	return {
@@ -55,8 +41,8 @@ const createCookingSessionRouteDefinition = createRoute({
 	method: "post",
 	path: "/",
 	tags: ["Cooking Sessions"],
+	security: [{ DevelopmentUser: [] }],
 	request: {
-		headers: DevelopmentAuthHeadersSchema,
 		body: jsonBody(CreateCookingSessionRequestSchema),
 	},
 	responses: {
@@ -71,8 +57,8 @@ const getCookingSessionRouteDefinition = createRoute({
 	method: "get",
 	path: "/{id}",
 	tags: ["Cooking Sessions"],
+	security: [{ DevelopmentUser: [] }],
 	request: {
-		headers: DevelopmentAuthHeadersSchema,
 		params: CookingSessionParamsSchema,
 	},
 	responses: {
@@ -89,8 +75,8 @@ const updateCookingProgressRouteDefinition = createRoute({
 	method: "patch",
 	path: "/{id}/progress",
 	tags: ["Cooking Sessions"],
+	security: [{ DevelopmentUser: [] }],
 	request: {
-		headers: DevelopmentAuthHeadersSchema,
 		params: CookingSessionParamsSchema,
 		body: jsonBody(UpdateCookingProgressRequestSchema),
 	},
@@ -110,8 +96,8 @@ const completeCookingSessionRouteDefinition = createRoute({
 	method: "post",
 	path: "/{id}/complete",
 	tags: ["Cooking Sessions"],
+	security: [{ DevelopmentUser: [] }],
 	request: {
-		headers: DevelopmentAuthHeadersSchema,
 		params: CookingSessionParamsSchema,
 		body: jsonBody(CompleteCookingSessionRequestSchema),
 	},

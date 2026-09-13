@@ -4,13 +4,14 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Cooking Context + Recommendation API v0.1 — Complete
+Pre-Cooking API v0.1 — Complete
 
 ## Current Goal
 
-Aggregate authenticated persistent cooking context with current-request
-overrides, invoke the existing Recommendation Agent, and return only
-schema-validated output without mutating inventory or cooking-session state.
+Accept an authenticated selected Recommendation recipe and current-session
+context, reuse persistent cooking context, invoke the existing Pre-Cooking
+Agent, and return only schema-validated output without persistence or other
+business side effects.
 
 ## Completed
 
@@ -349,6 +350,30 @@ schema-validated output without mutating inventory or cooking-session state.
   provider failure mapping, invalid Agent output, missing configuration, and
   OpenAPI registration.
 
+### Pre-Cooking API v0.1
+
+- `POST /cooking/pre-cooking` authenticates through the existing development
+  user adapter, validates the selected recipe with the Agent-owned
+  `CookingRecommendationSchema`, and requires only current-attempt session
+  context plus optional context overrides.
+- Omitted profile preferences, household counts, kitchen equipment, and
+  inventory are loaded through the existing cooking-context service. Supplied
+  fields deterministically replace their persistent counterparts for this
+  request.
+- The API builds the existing `PreCookingInputSchema`, invokes the exported
+  `runPreCooking` capability with the application-configured model, and parses
+  the result through `PreCookingOutputSchema` before returning it.
+- Provider configuration, generation failures, and invalid structured output
+  map to controlled API errors without exposing provider or database details.
+- The endpoint is registered in OpenAPI and documented in the incremental
+  Swagger cooking-flow guide. It does not create a cooking session, persist a
+  plan, mutate inventory, or invoke Active Cooking or Completion.
+- Ten real-PostgreSQL integration tests cover persistent context loading,
+  deterministic overrides, request and selected-recipe validation,
+  authentication, missing context, Agent failure mapping, invalid Agent output,
+  missing configuration, absence of session persistence, and OpenAPI
+  registration.
+
 ## In Progress
 
 ### Agent Foundation
@@ -377,8 +402,9 @@ Remaining sequence:
 - The dedicated v0.1 output contract is defined and exported.
 - Complete-plan prompt semantics and structured model generation are
   implemented.
-- The intent has an isolated development runner but is not yet routed through
-  `runCookingAgent`.
+- The intent has an isolated development runner and is exported for direct
+  application orchestration. The general Recommendation runtime remains
+  intentionally separate.
 - The Pre-Cooking v0.1 runner output is stable enough to proceed to Active
   Cooking contract design.
 
@@ -401,10 +427,12 @@ Remaining sequence:
 
 ## Next Up
 
-Review and lock Recommendation API v0.1 before selecting the next bounded API
-domain. Pre-Cooking HTTP orchestration, full context APIs, favorite endpoints,
-production authentication, production catalog data, natural-language quantity
-parsing, reference sourcing, and UI display remain deferred.
+Validate the full Swagger cooking flow from Recommendation through explicit
+recipe selection and Pre-Cooking into Cooking Session persistence before
+selecting the next bounded API domain. Active Cooking AI orchestration, full
+context APIs, favorite endpoints, production authentication, production
+catalog data, natural-language quantity parsing, reference sourcing, and UI
+display remain deferred.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.
@@ -490,6 +518,21 @@ session and a minimal closing result. Its prompt, structured model execution,
 and local runner are now connected without adding post-cooking side effects.
 
 ## Validation
+
+- Ten Pre-Cooking API integration tests pass against real PostgreSQL with the
+  external Agent boundary replaced by deterministic behavior. They cover
+  persistent context, overrides, request and selected-recipe validation,
+  development auth, missing context, controlled Agent failures, invalid Agent
+  output, missing provider configuration, no cooking-session persistence, and
+  OpenAPI registration.
+- The complete API suite passes with 27 tests, and the full workspace suite
+  passes with 116 tests.
+- One real provider-backed `POST /cooking/pre-cooking` HTTP smoke request
+  returned status 200 and a schema-valid Telur Kecap plan with qualitative
+  timing guidance. It was run independently rather than as a full chained
+  Swagger flow, which remains the next milestone.
+- Workspace typecheck and build, scoped Biome, database cooking-lifecycle
+  validation, and `git diff --check` pass after the Pre-Cooking API changes.
 
 - Nutrition package tests pass completely offline without model credentials or
   database access.
