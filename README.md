@@ -806,6 +806,9 @@ The Recommendation route is `POST /cooking/recommendations`; it requires the
 seeded user's UUID in `x-flemme-user-id` and uses `MUX_API_KEY` plus `BASE_URL`
 for real Agent calls. The complete incremental walkthrough is in
 [`docs/testing/swagger-cooking-flow.md`](docs/testing/swagger-cooking-flow.md).
+For a code-oriented explanation of how the API layers and cooking flows fit
+together, read
+[`docs/api-flow-learning-guide.md`](docs/api-flow-learning-guide.md).
 
 ---
 

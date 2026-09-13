@@ -340,6 +340,9 @@ schema-validated output without mutating inventory or cooking-session state.
 - The Swagger cooking-flow guide documents real provider prerequisites and the
   currently implemented Recommendation and persistence endpoints without
   presenting future Pre-Cooking endpoints as available.
+- The API flow learning guide traces startup, authentication, context
+  aggregation, Recommendation invocation, session persistence, JSONB
+  restoration, Swagger generation, and tests from the current source files.
 - Nine real-PostgreSQL Recommendation API integration tests cover persistent
   aggregation, deterministic overrides, canonical-key inventory handoff,
   response validation, invalid requests, authentication, missing context,
