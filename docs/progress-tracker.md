@@ -4,11 +4,11 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Profile API v0.1 — Complete
+Household API v0.1 — Complete
 
 ## Current Goal
 
-Expose the existing cooking-context profile preferences as authenticated,
+Expose the existing aggregate household cooking context as authenticated,
 user-manageable persistent data without changing Cooking Engine behavior.
 
 ## Completed
@@ -518,8 +518,6 @@ user-manageable persistent data without changing Cooking Engine behavior.
   the Swagger end-to-end cooking flow now constitute Flemme Cooking Engine v0.1
   complete.
 
-## In Progress
-
 ### Profile API v0.1 — Accepted
 
 - `GET /profile` reads the authenticated user's optional one-to-one profile and
@@ -544,6 +542,33 @@ user-manageable persistent data without changing Cooking Engine behavior.
   missing-profile 404 behavior, PUT creation, persisted GET restoration,
   whole-array replacement, and empty-array persistence. The isolated temporary
   acceptance user was removed afterward.
+
+### Household API v0.1
+
+- `GET /household` reads the authenticated user's optional one-to-one household
+  and returns `HOUSEHOLD_NOT_FOUND` without creating defaults when no row exists.
+- `PUT /household` idempotently creates or updates the row and replaces the
+  complete adults, children, and toddlers aggregate counts. The existing
+  household ID is preserved on update and the unique user constraint prevents
+  duplicates.
+- Counts must be non-negative integers within PostgreSQL `integer` range. Zero
+  is valid for every field, including an all-zero household; no arbitrary
+  product maximum was introduced.
+- Request and response contracts expose only aggregate counts. They reject
+  missing and unknown fields, including any client-supplied user ID.
+- All service queries derive ownership from authenticated `currentUserId` and
+  write the same `households` row already read by cooking-context orchestration.
+  Request-level household input remains a whole-object override for one cooking
+  request.
+- GET and PUT are registered in OpenAPI and documented in a dedicated Swagger
+  flow. No schema migration, household-member model, dependency, or Cooking
+  Engine change was introduced.
+- Three contract tests and eight real-PostgreSQL integration tests cover schema
+  boundaries, missing/create/read/update behavior, duplicate prevention, each
+  count, all-zero values, ownership, auth, request validation, cooking-context
+  visibility and override compatibility, and OpenAPI.
+
+## In Progress
 
 ### Agent Foundation
 
@@ -599,8 +624,8 @@ Remaining sequence:
 
 ## Next Up
 
-Household API v0.1 is the next bounded Product Domain API task. Do not begin it
-until selected explicitly.
+Kitchen / Equipment API v0.1 is the next bounded Product Domain API task. Do not
+begin it until selected explicitly.
 
 Full context APIs, favorite endpoints, production authentication,
 natural-language quantity parsing, TKPI evaluation, and nutrition UI display
@@ -748,6 +773,13 @@ and local runner are now connected without adding post-cooking side effects.
   running local API rather than through UI clicks.
 - Workspace typecheck, API/web builds, Drizzle schema check, scoped Biome, and
   `git diff --check` all pass after final Profile acceptance.
+- Household focused coverage passes with 11 tests and 40 expectations against
+  real PostgreSQL. The complete API suite passes with 86 tests and 319
+  expectations.
+- Household validation confirms 404 missing behavior, idempotent create/update,
+  no duplicate row, adults/children/toddlers persistence, all-zero counts,
+  ownership isolation, invalid identity and payload rejection, direct cooking
+  context visibility, request override replacement, and OpenAPI registration.
 
 - Twelve focused Completion AI API integration tests pass against real
   PostgreSQL with only the external Agent invocation replaced by deterministic

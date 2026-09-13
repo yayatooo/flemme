@@ -35,6 +35,8 @@ GET   /openapi.json
 GET   /docs
 GET   /profile
 PUT   /profile
+GET   /household
+PUT   /household
 POST  /cooking/recommendations
 POST  /cooking/pre-cooking
 POST  /cooking-sessions
@@ -57,6 +59,14 @@ replace rather than merge. The request never accepts a user ID. Profile v0.1
 does not expose the schema's optional display name or persistence timestamps.
 The same stored arrays are consumed directly by Recommendation and Pre-Cooking
 context orchestration.
+
+`GET /household` returns the authenticated user's aggregate adults, children,
+and toddlers cooking context or `HOUSEHOLD_NOT_FOUND` when the optional
+one-to-one household has not been created. `PUT /household` idempotently creates
+or replaces all three counts. Counts must be non-negative PostgreSQL-range
+integers, and zero is valid for every field. The request never accepts a user
+ID. Recommendation and Pre-Cooking consume these same persisted values unless a
+request-level household override replaces them for one request.
 
 The cooking-session endpoints persist existing generated snapshots; they do
 not invoke the cooking agent. Restored JSONB is validated through the schemas

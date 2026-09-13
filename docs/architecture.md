@@ -117,6 +117,13 @@ Recommendation and Pre-Cooking continue reading those columns through the
 existing cooking-context service, with request-level arrays replacing
 persistent arrays for one request.
 
+Household v0.1 follows the same current-user resource boundary over the
+existing optional one-to-one `households` row. Its API replaces the complete
+aggregate adults, children, and toddlers counts without introducing household
+members or a second representation. The existing cooking-context service reads
+the saved row directly, while a request-level household remains a whole-object
+override for one cooking request.
+
 Until production authentication is implemented as a separate milestone,
 cooking routes use an isolated development middleware that accepts a real user
 UUID and verifies it against PostgreSQL. The API refuses to start that adapter

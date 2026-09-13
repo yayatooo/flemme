@@ -160,6 +160,7 @@ describe("cooking-session API integration", () => {
 			expect.arrayContaining([
 				"/health",
 				"/profile",
+				"/household",
 				"/cooking/recommendations",
 				"/cooking/pre-cooking",
 				"/cooking-sessions",
