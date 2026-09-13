@@ -48,10 +48,17 @@ const result = calculateRecipeNutrition({
 });
 ```
 
-When every ingredient has a reference, the result has `status: "complete"` and
-exposes `total` and `perServing`. When references are missing, it has
-`status: "partial"`; `knownNutrition` represents only referenced ingredients,
-and `missingIngredientKeys` identifies incomplete coverage.
+When every ingredient has a reference and there are no coverage issues, the
+result has `status: "complete"` and exposes `total` and `perServing`. When at
+least one trusted ingredient contributes and another input is unresolved, it
+has `status: "partial"`; `knownNutrition` represents only the trusted subset.
+When no ingredient can contribute trusted nutrition, it has
+`status: "unavailable"` and deliberately omits totals rather than returning
+fake zeros. Stable issue reasons distinguish unresolved identity, missing
+references or quantities, unsupported units, and unavailable portions.
+
+`estimated: true` means food-composition and portion reference values estimate
+real-world nutrition. It never permits guessed ingredient identity or mass.
 
 The calculator does not round. Presentation code may later format values for
 display.
@@ -123,3 +130,12 @@ ingredients disappear.
 Reference values represent current inputs for new calculations. Future cooking
 history must persist the resulting recipe nutrition as a snapshot so later
 reference changes cannot rewrite previously completed sessions.
+
+## Production USDA data
+
+`PRODUCTION_NUTRITION_DATA` contains ten curated USDA FoodData Central mappings
+with FDC provenance. `PRODUCTION_NUTRITION_REFERENCES` exposes their existing
+100 g calculator shape, while `PRODUCTION_INGREDIENT_UNIT_CONVERSIONS` derives
+only five conversions from committed USDA portion records. Runtime calculation
+remains offline. See [`docs/data/nutrition-sources.md`](../../docs/data/nutrition-sources.md)
+for the record-by-record review.

@@ -32,22 +32,42 @@ function divideNutrition(
 export function calculateRecipeNutrition(
 	input: CalculateRecipeNutritionInput,
 ): RecipeNutritionResult {
-	const { recipe, references } =
-		CalculateRecipeNutritionInputSchema.parse(input);
+	const {
+		recipe,
+		references,
+		issues: inputIssues,
+	} = CalculateRecipeNutritionInputSchema.parse(input);
 	const referenceByIngredientKey = new Map(
 		references.map((reference) => [reference.ingredientKey, reference]),
 	);
 	const missingIngredientKeys = new Set<string>();
+	const missingReferenceIssues = new Map<
+		string,
+		{
+			reason: "reference-missing";
+			ingredientName: string;
+			ingredientKey: string;
+		}
+	>();
 	const total = { ...EMPTY_NUTRITION };
+	let contributingIngredientCount = 0;
 
 	for (const ingredient of recipe.ingredients) {
 		const reference = referenceByIngredientKey.get(ingredient.ingredientKey);
 
 		if (!reference) {
 			missingIngredientKeys.add(ingredient.ingredientKey);
+			if (!missingReferenceIssues.has(ingredient.ingredientKey)) {
+				missingReferenceIssues.set(ingredient.ingredientKey, {
+					reason: "reference-missing",
+					ingredientName: ingredient.name,
+					ingredientKey: ingredient.ingredientKey,
+				});
+			}
 			continue;
 		}
 
+		contributingIngredientCount += 1;
 		const scale = ingredient.grams / reference.basisGrams;
 		total.caloriesKcal += reference.nutrition.caloriesKcal * scale;
 		total.proteinG += reference.nutrition.proteinG * scale;
@@ -57,14 +77,25 @@ export function calculateRecipeNutrition(
 
 	const perServing = divideNutrition(total, recipe.servings);
 	const missingKeys = [...missingIngredientKeys];
+	const issues = [...inputIssues, ...missingReferenceIssues.values()];
 
-	if (missingKeys.length > 0) {
+	if (contributingIngredientCount === 0) {
+		return RecipeNutritionResultSchema.parse({
+			status: "unavailable",
+			estimated: true,
+			servings: recipe.servings,
+			issues,
+		});
+	}
+
+	if (issues.length > 0) {
 		return RecipeNutritionResultSchema.parse({
 			status: "partial",
 			estimated: true,
 			servings: recipe.servings,
 			knownNutrition: { total, perServing },
 			missingIngredientKeys: missingKeys,
+			issues,
 		});
 	}
 

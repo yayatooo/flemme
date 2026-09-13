@@ -56,6 +56,25 @@ describe("normalizeIngredient", () => {
 		}
 	});
 
+	test.each([
+		[250, "g", 250],
+		[1, "kg", 1_000],
+		[0.5, "kg", 500],
+	] as const)(
+		"normalizes %s %s through exact metric mass conversion",
+		(quantity, unit, expectedGrams) => {
+			const result = normalizeIngredient({
+				ingredient: ingredient({ quantity, unit }),
+				conversions: [],
+			});
+
+			expect(result.status).toBe("normalized");
+			if (result.status === "normalized") {
+				expect(result.ingredient.grams).toBe(expectedGrams);
+			}
+		},
+	);
+
 	test("uses an ingredient-specific tablespoon conversion", () => {
 		const result = normalizeIngredient({
 			ingredient: ingredient({

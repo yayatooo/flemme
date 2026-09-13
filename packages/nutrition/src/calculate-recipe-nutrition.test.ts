@@ -210,10 +210,17 @@ describe("calculateRecipeNutrition", () => {
 				},
 			},
 			missingIngredientKeys: ["unknown-sauce"],
+			issues: [
+				{
+					reason: "reference-missing",
+					ingredientName: "Unknown sauce",
+					ingredientKey: "unknown-sauce",
+				},
+			],
 		});
 	});
 
-	test("returns multiple missing keys once in first-seen order", () => {
+	test("returns unavailable when no ingredient has a trusted reference", () => {
 		const result = calculateRecipeNutrition({
 			recipe: {
 				servings: 1,
@@ -226,15 +233,88 @@ describe("calculateRecipeNutrition", () => {
 			references: [],
 		});
 
+		expect(result.status).toBe("unavailable");
+		if (result.status === "unavailable") {
+			expect(result.issues).toEqual([
+				{
+					reason: "reference-missing",
+					ingredientName: "Missing A",
+					ingredientKey: "missing-a",
+				},
+				{
+					reason: "reference-missing",
+					ingredientName: "Missing B",
+					ingredientKey: "missing-b",
+				},
+			]);
+			expect("total" in result).toBeFalse();
+			expect("perServing" in result).toBeFalse();
+		}
+	});
+
+	test("returns unavailable for fully unresolved recipe inputs", () => {
+		const result = calculateRecipeNutrition({
+			recipe: { servings: 2, ingredients: [] },
+			references: [],
+			issues: [
+				{
+					reason: "ingredient-unresolved",
+					ingredientName: "Kecap manis",
+				},
+				{
+					reason: "quantity-missing",
+					ingredientName: "Garam",
+					ingredientKey: "table-salt",
+				},
+			],
+		});
+
+		expect(result).toEqual({
+			status: "unavailable",
+			estimated: true,
+			servings: 2,
+			issues: [
+				{
+					reason: "ingredient-unresolved",
+					ingredientName: "Kecap manis",
+				},
+				{
+					reason: "quantity-missing",
+					ingredientName: "Garam",
+					ingredientKey: "table-salt",
+				},
+			],
+		});
+	});
+
+	test("returns partial when trusted nutrition and coverage issues coexist", () => {
+		const result = calculateRecipeNutrition({
+			recipe: {
+				servings: 1,
+				ingredients: [
+					{
+						ingredientKey: "synthetic-primary",
+						name: "Primary",
+						grams: 100,
+					},
+				],
+			},
+			references: [PRIMARY_REFERENCE],
+			issues: [
+				{
+					reason: "portion-unavailable",
+					ingredientName: "Egg",
+					ingredientKey: "egg",
+					unit: "piece",
+				},
+			],
+		});
+
 		expect(result.status).toBe("partial");
 		if (result.status === "partial") {
-			expect(result.missingIngredientKeys).toEqual(["missing-a", "missing-b"]);
-			expect(result.knownNutrition.total).toEqual({
-				caloriesKcal: 0,
-				proteinG: 0,
-				carbsG: 0,
-				fatG: 0,
-			});
+			expect(result.missingIngredientKeys).toEqual([]);
+			expect(result.knownNutrition.total).toEqual(PRIMARY_REFERENCE.nutrition);
+			expect(result.issues?.[0]?.reason).toBe("portion-unavailable");
 		}
 	});
 

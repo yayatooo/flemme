@@ -41,3 +41,10 @@ remain estimates rather than laboratory measurements.
 Current references are for new calculations. Future cooking history must store
 the calculated nutrition result as a frozen snapshot; changes to current
 references must not rewrite old cooking-session nutrition.
+
+## Production catalog
+
+`productionIngredientCatalog` is the curated runtime catalog. Its v0.1 set has
+ten reviewed identities and is separate from `TEST_INGREDIENT_CATALOG`.
+Nutrition provenance and USDA mappings remain in `@flemme/nutrition`; FDC IDs
+do not replace Flemme's canonical keys.

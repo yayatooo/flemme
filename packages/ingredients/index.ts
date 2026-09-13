@@ -15,3 +15,7 @@ export {
 	type IngredientCatalog,
 	resolveIngredient,
 } from "./src/ingredient-catalog";
+export {
+	PRODUCTION_CANONICAL_INGREDIENTS,
+	productionIngredientCatalog,
+} from "./src/production/production-ingredient-catalog";
