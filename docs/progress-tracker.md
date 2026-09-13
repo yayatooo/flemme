@@ -4,13 +4,12 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Nutrition Integration v0.1 — Final PostgreSQL acceptance pending
+Profile API v0.1 — Complete
 
 ## Current Goal
 
-Validate the implemented production-backed Cooking Session nutrition preview
-and trusted completion persistence against the real local PostgreSQL lifecycle,
-then close the Flemme Cooking Engine v0.1 checkpoint.
+Expose the existing cooking-context profile preferences as authenticated,
+user-manageable persistent data without changing Cooking Engine behavior.
 
 ## Completed
 
@@ -482,7 +481,7 @@ then close the Flemme Cooking Engine v0.1 checkpoint.
   changes, request validation, authentication, ownership, missing sessions,
   failure mapping, missing configuration, and OpenAPI registration.
 
-### Nutrition Integration v0.1 — Implementation
+### Nutrition Integration v0.1
 
 - `GET /cooking-sessions/:id/nutrition` restores an owned Cooking Session and
   calculates from its persisted Pre-Cooking plan plus persisted selected-recipe
@@ -513,8 +512,38 @@ then close the Flemme Cooking Engine v0.1 checkpoint.
   implemented for preview determinism/immutability, lifecycle access,
   ownership, every persisted result variant, completed restoration, and forged
   nutrition rejection.
+- User-confirmed final manual results closed the Cooking Engine acceptance gate.
+  Recommendation, Pre-Cooking, Cooking Session lifecycle, Active Cooking,
+  Completion, production ingredient/nutrition data, Nutrition Integration, and
+  the Swagger end-to-end cooking flow now constitute Flemme Cooking Engine v0.1
+  complete.
 
 ## In Progress
+
+### Profile API v0.1 — Accepted
+
+- `GET /profile` reads the authenticated user's optional one-to-one profile and
+  returns `PROFILE_NOT_FOUND` when no row exists.
+- `PUT /profile` idempotently creates or updates the row and replaces both
+  `foodPreferences` and `cookingPreferences` arrays. Empty arrays are valid;
+  submitted values are trimmed and blank entries are rejected.
+- Request and response contracts expose only the cooking-context preference
+  arrays. They do not expose `userId`, the schema's optional `displayName`, or
+  persistence timestamps. Existing display names remain untouched on update.
+- All service queries use authenticated `currentUserId`; the HTTP development
+  header does not enter the domain service.
+- Writes target the existing `user_profiles` columns already consumed by the
+  cooking-context service, preserving whole-array request override semantics.
+- GET and PUT are registered in OpenAPI, and a Swagger manual profile flow is
+  documented. No database migration or dependency was introduced.
+- Seven real-PostgreSQL integration tests cover missing/create/read/update,
+  empty arrays, non-API field preservation, ownership isolation, validation,
+  authentication, cooking-context visibility/override behavior, and OpenAPI.
+  All pass against the local PostgreSQL database.
+- Live local HTTP acceptance confirmed Swagger availability, development auth,
+  missing-profile 404 behavior, PUT creation, persisted GET restoration,
+  whole-array replacement, and empty-array persistence. The isolated temporary
+  acceptance user was removed afterward.
 
 ### Agent Foundation
 
@@ -570,10 +599,8 @@ Remaining sequence:
 
 ## Next Up
 
-Run the Nutrition API and completion integration suites plus database lifecycle
-validation when local PostgreSQL is available. Perform the documented Swagger
-acceptance, then mark Nutrition Integration and the Flemme Cooking Engine v0.1
-checkpoint complete.
+Household API v0.1 is the next bounded Product Domain API task. Do not begin it
+until selected explicitly.
 
 Full context APIs, favorite endpoints, production authentication,
 natural-language quantity parsing, TKPI evaluation, and nutrition UI display
@@ -707,12 +734,20 @@ and local runner are now connected without adding post-cooking side effects.
 - All 19 ingredient tests and all 60 nutrition tests pass offline. Workspace
   typecheck, API and web/workspace builds, scoped Biome, and `git diff --check`
   pass after Nutrition Integration implementation.
-- The new ten-test real-PostgreSQL Nutrition integration suite and existing
-  Cooking Session suite are currently unexecuted successfully because local
-  PostgreSQL is stopped; the attempted run failed at setup with `ECONNREFUSED`.
-  No API or database server was started, respecting manual-run ownership.
-- Flemme Cooking Engine v0.1 is not yet marked complete until that database and
-  manual Swagger acceptance succeeds.
+- The user subsequently confirmed the overall manual result was good. Flemme
+  Cooking Engine v0.1 is therefore accepted as complete before the Product
+  Domain API phase begins.
+- Profile contract and PostgreSQL integration coverage passes as part of the
+  complete API suite: 75 tests and 279 expectations, with zero failures.
+- Local PostgreSQL is healthy, existing migrations apply successfully, and the
+  database lifecycle validator passes.
+- Live Profile HTTP acceptance passes for `/docs`, authenticated GET, missing
+  profile, PUT creation, persisted read, second-PUT replacement, empty arrays,
+  and missing-auth rejection. The in-app browser-control surface was unavailable,
+  so the same Swagger-documented operations were exercised directly against the
+  running local API rather than through UI clicks.
+- Workspace typecheck, API/web builds, Drizzle schema check, scoped Biome, and
+  `git diff --check` all pass after final Profile acceptance.
 
 - Twelve focused Completion AI API integration tests pass against real
   PostgreSQL with only the external Agent invocation replaced by deterministic

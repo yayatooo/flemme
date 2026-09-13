@@ -109,6 +109,14 @@ completion calculates before one update persists lifecycle state, Completion
 output, and the server-owned nutrition snapshot together. Neither path invokes
 an Agent or accesses USDA over the network.
 
+Product-domain APIs use the same authenticated `currentUserId` boundary as the
+Cooking Engine. Profile v0.1 exposes the existing optional one-to-one
+`user_profiles` row through a read plus idempotent full replacement of its two
+cooking-preference arrays. It does not introduce another preference model;
+Recommendation and Pre-Cooking continue reading those columns through the
+existing cooking-context service, with request-level arrays replacing
+persistent arrays for one request.
+
 Until production authentication is implemented as a separate milestone,
 cooking routes use an isolated development middleware that accepts a real user
 UUID and verifies it against PostgreSQL. The API refuses to start that adapter

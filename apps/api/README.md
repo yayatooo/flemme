@@ -33,6 +33,8 @@ persistence work, while those Agent-backed routes return the controlled
 GET   /health
 GET   /openapi.json
 GET   /docs
+GET   /profile
+PUT   /profile
 POST  /cooking/recommendations
 POST  /cooking/pre-cooking
 POST  /cooking-sessions
@@ -46,6 +48,15 @@ POST  /cooking-sessions/:id/complete
 
 `/openapi.json` is generated from the Hono route schemas. `/docs` serves the
 interactive Swagger UI for that specification.
+
+`GET /profile` returns the authenticated user's persistent cooking preferences
+or `PROFILE_NOT_FOUND` when the optional one-to-one profile has not been
+created. `PUT /profile` idempotently creates or replaces both
+`foodPreferences` and `cookingPreferences`; empty arrays are valid and arrays
+replace rather than merge. The request never accepts a user ID. Profile v0.1
+does not expose the schema's optional display name or persistence timestamps.
+The same stored arrays are consumed directly by Recommendation and Pre-Cooking
+context orchestration.
 
 The cooking-session endpoints persist existing generated snapshots; they do
 not invoke the cooking agent. Restored JSONB is validated through the schemas

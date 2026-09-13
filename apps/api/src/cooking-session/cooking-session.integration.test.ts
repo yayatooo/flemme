@@ -159,6 +159,7 @@ describe("cooking-session API integration", () => {
 		expect(Object.keys(specification.paths)).toEqual(
 			expect.arrayContaining([
 				"/health",
+				"/profile",
 				"/cooking/recommendations",
 				"/cooking/pre-cooking",
 				"/cooking-sessions",

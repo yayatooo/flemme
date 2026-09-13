@@ -13,6 +13,7 @@ import { createCookingSessionRoute } from "./cooking-session/cooking-session-rou
 import { createNutritionRoute } from "./nutrition/nutrition-route";
 import { createPreCookingRoute } from "./pre-cooking/pre-cooking-route";
 import type { PreCookingRunner } from "./pre-cooking/pre-cooking-service";
+import { createProfileRoute } from "./profile/profile-route";
 
 interface CreateAppInput {
 	db: FlemmeDatabase;
@@ -64,6 +65,7 @@ export function createApp({
 		"/cooking/pre-cooking",
 		createPreCookingRoute({ db, preCookingRunner }),
 	);
+	app.route("/profile", createProfileRoute(db));
 	app.route("/cooking-sessions", createCookingSessionRoute(db));
 	app.route("/cooking-sessions", createNutritionRoute(db));
 	app.route(
