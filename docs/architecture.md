@@ -41,8 +41,32 @@
   contracts, and calculation from normalized ingredient masses and explicit
   reference values. It validates nutrition and conversion keys against
   `packages/ingredients` through a one-way dependency. It does not own
-  natural-language ingredient parsing, reference sourcing, persistence, or AI
-  reasoning.
+  natural-language ingredient parsing, runtime external reference fetching,
+  persistence, or AI reasoning.
+
+Production ingredient and nutrition reference data is established through a
+separate, curated Ingredient + Nutrition Data Foundation. USDA FoodData Central
+is the primary v0.1 source. Stored references preserve provenance and FoodData
+Central IDs; Flemme does not bulk-import the complete dataset. Unit-to-gram
+conversions are supported only when backed by verified source portion data.
+TKPI remains a possible Indonesia-specific source after a separate provenance
+and licensing review.
+
+The production data flow is:
+
+```text
+@flemme/ingredients production catalog
+        ↓ canonical ingredient key
+@flemme/nutrition curated USDA FDC mapping
+        ↓ 100 g reference + verified source-specific portions
+deterministic normalization and calculation
+        ↓
+complete | partial | unavailable
+```
+
+FDC IDs are provenance identifiers, not Flemme ingredient identities. The
+curated mappings are committed package data, so normal runtime has no USDA
+network dependency.
 
 - `packages/db`
   Owns database schemas, migrations, and database access.
@@ -76,6 +100,15 @@ Persisted agent and nutrition JSONB snapshots are untrusted when restored. The
 API parses them through the runtime schema exported by the package that owns
 the snapshot before returning or using them.
 
+Cooking Session nutrition is orchestrated in `apps/api` from the persisted
+Pre-Cooking plan and selected recipe serving count. The read-only preview and
+completion persistence paths share one deterministic mapper that resolves only
+the production ingredient catalog, exact supported unit aliases, verified
+portion conversions, and committed USDA references. Preview performs no write;
+completion calculates before one update persists lifecycle state, Completion
+output, and the server-owned nutrition snapshot together. Neither path invokes
+an Agent or accesses USDA over the network.
+
 Until production authentication is implemented as a separate milestone,
 cooking routes use an isolated development middleware that accepts a real user
 UUID and verifies it against PostgreSQL. The API refuses to start that adapter
@@ -104,3 +137,7 @@ Agent code does not own:
 7. Core cooking flow must not depend on secondary modules such as budgeting.
 8. Ingredient identity, unit conversions, and nutrition references share the
    same language-independent canonical ingredient key.
+9. Unknown or fully unresolved nutrition is represented explicitly as
+   unavailable and must never be replaced with zero-valued nutrition.
+10. Nutrition snapshots are server-calculated historical metadata; clients may
+    not supply them when creating or completing a Cooking Session.

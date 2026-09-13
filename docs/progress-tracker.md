@@ -4,14 +4,13 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Pre-Cooking API v0.1 — Complete
+Nutrition Integration v0.1 — Final PostgreSQL acceptance pending
 
 ## Current Goal
 
-Accept an authenticated selected Recommendation recipe and current-session
-context, reuse persistent cooking context, invoke the existing Pre-Cooking
-Agent, and return only schema-validated output without persistence or other
-business side effects.
+Validate the implemented production-backed Cooking Session nutrition preview
+and trusted completion persistence against the real local PostgreSQL lifecycle,
+then close the Flemme Cooking Engine v0.1 checkpoint.
 
 ## Completed
 
@@ -238,6 +237,40 @@ business side effects.
   converts two synthetic tablespoons to grams, and calculates estimated
   nutrition through the existing calculator using the same key.
 
+### Ingredient + Nutrition Production Data Foundation v0.1
+
+- `@flemme/ingredients` exports a production catalog with ten reviewed
+  bilingual canonical identities, separately from the six-ingredient test
+  fixture. Exact resolution remains deterministic and does not approximate
+  sweet soy sauce, generic cooking oil, or cooked rice.
+- `@flemme/nutrition` owns ten curated USDA FoodData Central mappings: three
+  Foundation records and seven SR Legacy records. Every mapping preserves its
+  FDC ID, exact USDA description, data type, publication date, dataset release,
+  verification date, source URL, and selected nutrient IDs.
+- The committed references contain only the existing v0.1 energy, protein,
+  carbohydrate, and fat values on a 100 g basis. Normal runtime remains fully
+  offline and no bulk USDA dataset is committed.
+- Five unit conversions are derived from exact USDA portion records: chopped
+  shallot tablespoon, canola-oil teaspoon and tablespoon, and table-salt
+  teaspoon and tablespoon. FDC portion IDs and descriptions remain attached to
+  the source mapping.
+- Indonesian and English unit aliases are normalized independently from mass
+  conversion. Recognizing `sdm`, `sdt`, `siung`, or `butir` does not guarantee
+  that an ingredient has a verified portion conversion.
+- `RecipeNutritionResultSchema` now distinguishes `complete`, `partial`, and
+  `unavailable`. Partial results require at least one trusted contribution;
+  unavailable results omit totals and per-serving values instead of emitting
+  fake zeros.
+- Stable coverage reasons represent unresolved identity, missing references,
+  missing quantities, unsupported units, and unavailable portions.
+- The documented Telur Kecap Bawang audit is honestly `unavailable`: its
+  historical free-form units, ambiguous egg size, unspecified cooking oil,
+  unsupported sweet soy sauce, and missing salt quantity leave no trusted
+  normalized mass.
+- The source review and record-by-record limitations are documented in
+  `docs/data/nutrition-sources.md`. TKPI remains deferred pending provenance and
+  licensing review.
+
 ### PostgreSQL + Drizzle Schema Foundation
 
 - `packages/db` owns the modular PostgreSQL schema, Drizzle relations,
@@ -374,6 +407,113 @@ business side effects.
   missing configuration, absence of session persistence, and OpenAPI
   registration.
 
+### Swagger Full Cooking Flow v0.1
+
+- The Swagger cooking-flow guide now provides one stable Telur Kecap Bawang
+  scenario from development authorization and Recommendation through explicit
+  recipe selection, Pre-Cooking, Cooking Session creation, restore, progress,
+  final-step guard validation, completion persistence, and completed restore.
+- The guide maps the complete Recommendation response, exact selected recipe,
+  Pre-Cooking plan, and initial active progress into the existing Cooking
+  Session request without inventing nutrition data.
+- AI generation and persistence responsibilities are identified at every step.
+  Active Cooking and Completion AI are separate read-only orchestration calls;
+  Nutrition integration remains explicitly deferred.
+- Swagger operation summaries and concise descriptions now state each cooking
+  endpoint's phase, responsibility, and relevant no-AI or no-persistence
+  boundary.
+- The existing cooking-session integration flow now asserts that completion at
+  the final position fails with `SESSION_NOT_READY_FOR_COMPLETION` until the
+  final step ID is recorded complete, then verifies successful completion and
+  restoration.
+- The OpenAPI integration check covers every route required by the documented
+  cooking flow.
+
+### Active Cooking AI API v0.1
+
+- `POST /cooking-sessions/:id/active-cooking` accepts only one trimmed,
+  non-empty user message up to 2,000 characters. Client-supplied plan or session
+  state fields are rejected.
+- The service reuses Cooking Session restoration for authorization, ownership,
+  validated snapshots, and persisted progress, then constructs the existing
+  `ActiveCookingInputSchema` entirely server-side.
+- Active and paused sessions may invoke the existing `runActiveCooking`
+  capability. Completed and abandoned sessions return a controlled lifecycle
+  conflict without invoking the Agent.
+- The Agent-owned `ActiveCookingOutputSchema` is returned unchanged after an
+  additional API-boundary parse. Provider failures, invalid Agent output, and
+  missing configuration map to controlled errors.
+- Active Cooking interaction performs no database writes. Guidance and actions
+  remain proposals until a caller explicitly uses the existing progress or
+  completion persistence endpoints.
+- Swagger documents the message-only request and no-silent-persistence
+  boundary. The manual cooking guide includes an optional interaction followed
+  by a restore comparison and explicit action-application step.
+- Twelve real-PostgreSQL integration tests cover guidance, advance, pause,
+  paused resume, completed and abandoned guards, clarification, strict request
+  validation, authentication, ownership, missing sessions, failure mapping,
+  missing configuration, OpenAPI registration, and unchanged session data.
+
+### Completion AI API v0.1
+
+- `POST /cooking-sessions/:id/completion` accepts a strict object containing
+  only an optional trimmed final message of up to 2,000 characters.
+- The endpoint restores the owned historical plan and final session progress
+  from PostgreSQL, applies the same shared completion-readiness guard as the
+  existing persistence endpoint, and never reloads or regenerates prior cooking
+  context.
+- Completion readiness requires an active Active-Cooking-phase session at the
+  final stage and final step with that step recorded complete. Paused,
+  completed, abandoned, earlier-position, and incomplete-final-step sessions
+  fail before Agent invocation.
+- The service projects `status: "completed"` only in the in-memory
+  `CompletionInputSchema`, preserving current position, completed step IDs, and
+  recorded Active Cooking changes. Persisted state remains active.
+- The existing `runCompletion` capability is invoked through the shared
+  application-configured model. Output is parsed again through
+  `CompletionOutputSchema` at the API boundary.
+- Completion AI performs no database writes. Its `{ reply, summary, notes }`
+  output may be accepted explicitly as `completionSnapshot` by the separate
+  `/complete` persistence endpoint.
+- Swagger and the manual cooking guide distinguish `/completion` generation
+  from `/complete` persistence.
+- Twelve real-PostgreSQL integration tests cover completion-ready projection,
+  optional messages, zero persistence mutation, lifecycle guards, historical
+  changes, request validation, authentication, ownership, missing sessions,
+  failure mapping, missing configuration, and OpenAPI registration.
+
+### Nutrition Integration v0.1 — Implementation
+
+- `GET /cooking-sessions/:id/nutrition` restores an owned Cooking Session and
+  calculates from its persisted Pre-Cooking plan plus persisted selected-recipe
+  serving count. The client supplies no ingredient data.
+- Preview is available for active, paused, completed, and abandoned sessions.
+  It performs no database mutation, inventory access, Agent invocation, or USDA
+  runtime request.
+- One shared API orchestration function resolves exact names through the
+  production ingredient catalog, normalizes only package-supported unit aliases
+  and verified portions, and delegates arithmetic/result semantics to
+  `@flemme/nutrition` using committed production references.
+- Coverage gaps remain domain results: trusted full coverage is `complete`, a
+  trusted subset plus issues is `partial`, and no trusted contribution is
+  `unavailable` without total or per-serving values.
+- `POST /cooking-sessions/:id/complete` calculates nutrition before its existing
+  single-row persistence mutation. Completion lifecycle fields,
+  `completionSnapshot`, and the server-generated `nutritionSnapshot` are stored
+  together; partial or unavailable coverage does not block completion.
+- Create and completion request objects are strict and reject client-provided
+  `nutritionSnapshot`. Historical nullable snapshots and all three current
+  nutrition variants remain valid on restoration through the owning schema.
+- OpenAPI documents the nutrition preview and trusted completion behavior. The
+  Swagger flow now includes optional preview, server-side completion
+  recalculation, truthful Telur Kecap unavailability, and completed restoration.
+- Offline API tests cover production-backed complete, partial, and unavailable
+  mapping, the Telur Kecap acceptance shape, no fake totals, strict request
+  ownership, and OpenAPI registration. Real-PostgreSQL integration coverage is
+  implemented for preview determinism/immutability, lifecycle access,
+  ownership, every persisted result variant, completed restoration, and forged
+  nutrition rejection.
+
 ## In Progress
 
 ### Agent Foundation
@@ -414,7 +554,8 @@ Remaining sequence:
 - The v0.1 proposed-action output contract is defined, exported, and tested.
 - The task-specific prompt, structured execution function, reusable cooking-plan
   fixture, and ten-scenario local runner are implemented.
-- Progress mutation, persistence, and application integration remain
+- HTTP orchestration is implemented against restored Cooking Session state.
+  Automatic action application and message-history persistence remain
   intentionally deferred.
 
 ### Completion Foundation
@@ -422,17 +563,21 @@ Remaining sequence:
 - The v0.1 input and output contracts are defined, exported, and tested.
 - The task-specific prompt, structured execution function, reusable completed
   session fixture, and eight-scenario local runner are implemented.
-- Persistence, history, favorites, ratings, inventory reconciliation, and
-  application integration remain intentionally deferred.
+- HTTP orchestration is implemented against a completion-ready restored Cooking
+  Session using an in-memory completed-status projection. Automatic persistence,
+  history listing, favorites, ratings, and inventory reconciliation remain
+  intentionally deferred.
 
 ## Next Up
 
-Validate the full Swagger cooking flow from Recommendation through explicit
-recipe selection and Pre-Cooking into Cooking Session persistence before
-selecting the next bounded API domain. Active Cooking AI orchestration, full
-context APIs, favorite endpoints, production authentication, production
-catalog data, natural-language quantity parsing, reference sourcing, and UI
-display remain deferred.
+Run the Nutrition API and completion integration suites plus database lifecycle
+validation when local PostgreSQL is available. Perform the documented Swagger
+acceptance, then mark Nutrition Integration and the Flemme Cooking Engine v0.1
+checkpoint complete.
+
+Full context APIs, favorite endpoints, production authentication,
+natural-language quantity parsing, TKPI evaluation, and nutrition UI display
+remain deferred.
 
 The general intent router remains implementation-light until another supported
 intent or a concrete routing requirement is defined.
@@ -440,8 +585,8 @@ intent or a concrete routing requirement is defined.
 ## Open Questions
 
 - Which agent tools are actually required for MVP recommendation.
-- Which verified nutrition-reference source should eventually supply the
-  deterministic package.
+- What provenance and licensing requirements must be satisfied before TKPI can
+  be evaluated as a later Indonesia-specific source?
 
 ## Architecture Decisions
 
@@ -465,6 +610,26 @@ Nutrition totals are deterministic domain data derived from normalized masses
 and explicit references. Keeping calculation in `packages/nutrition` prevents
 the model from owning arithmetic and keeps future API, history, and agent usage
 dependent on the same validated result.
+
+### Production nutrition data is curated from USDA FoodData Central
+
+Reason:
+
+Nutrition Integration requires traceable production references rather than
+test fixtures or arbitrary values. USDA FoodData Central is the primary v0.1
+source. The curated dataset will preserve source metadata and FDC IDs instead
+of importing the entire upstream catalog. Unit-to-gram conversions will be
+included only when verified portion data supports them. TKPI may be evaluated
+later after provenance and licensing review.
+
+### Fully unresolved nutrition is unavailable, not zero
+
+Reason:
+
+The current partial result assumes at least one normalized ingredient can enter
+calculation. The data-foundation unit will extend the nutrition result contract
+with an explicit unavailable variant so unresolved names, missing quantities,
+and unsupported units cannot be misrepresented as zero nutrition.
 
 ### Canonical ingredient identity is independent from nutrition
 
@@ -518,6 +683,86 @@ session and a minimal closing result. Its prompt, structured model execution,
 and local runner are now connected without adding post-cooking side effects.
 
 ## Validation
+
+- The production ingredient catalog passes 19 `@flemme/ingredients` tests,
+  including deterministic bilingual resolution and explicit non-approximation.
+- Production nutrition references, USDA provenance, portion integrity, unit
+  aliases, complete/partial/unavailable semantics, direct calculation, and
+  unsupported egg-piece behavior pass all 60 `@flemme/nutrition` tests.
+- The full workspace suite passes with 171 tests and 391 expectations after the
+  production data foundation changes.
+- Workspace typecheck and builds, scoped Biome, and `git diff --check` pass.
+- Official FDC search verified the selected candidate identities. After the
+  documented `DEMO_KEY` rate limit was reached, exact nutrients and portions
+  were verified offline from USDA's official April 2026 Foundation Foods and
+  April 2018 SR Legacy JSON archives. No downloaded archive or API response was
+  committed.
+- The production-data-foundation unit intentionally added no Cooking Session
+  nutrition route or completion behavior. That integration pause has now been
+  lifted by the implementation above.
+- Four offline API nutrition orchestration/OpenAPI tests pass with 15
+  expectations. They verify production-backed complete, partial, and
+  unavailable behavior, including the truthful Telur Kecap result and absence
+  of fake unavailable totals.
+- All 19 ingredient tests and all 60 nutrition tests pass offline. Workspace
+  typecheck, API and web/workspace builds, scoped Biome, and `git diff --check`
+  pass after Nutrition Integration implementation.
+- The new ten-test real-PostgreSQL Nutrition integration suite and existing
+  Cooking Session suite are currently unexecuted successfully because local
+  PostgreSQL is stopped; the attempted run failed at setup with `ECONNREFUSED`.
+  No API or database server was started, respecting manual-run ownership.
+- Flemme Cooking Engine v0.1 is not yet marked complete until that database and
+  manual Swagger acceptance succeeds.
+
+- Twelve focused Completion AI API integration tests pass against real
+  PostgreSQL with only the external Agent invocation replaced by deterministic
+  output.
+- Completion-ready input preserves the stored plan, final progress, and changes
+  while projecting completed status only in memory. A successful generation
+  leaves the complete restored Cooking Session unchanged.
+- Final-step-incomplete and earlier-position sessions return
+  `SESSION_NOT_READY_FOR_COMPLETION`; paused, completed, and abandoned sessions
+  return `INVALID_SESSION_STATE`. Failed lifecycle guards do not invoke the
+  Agent.
+- The complete API suite passes with 51 tests and the full workspace suite
+  passes with 140 tests after Completion AI integration.
+- One real provider-backed Completion HTTP request returned status 200 with a
+  validated Telur Kecap Bawang closing summary. The isolated session remained
+  in Active Cooking with active status, no completion snapshot, no completion
+  timestamp, and an otherwise byte-equivalent restored database row; the
+  temporary fixture was removed afterward.
+- Workspace typecheck and builds, scoped Biome, database cooking-lifecycle
+  validation, and `git diff --check` pass after the Completion AI changes.
+
+- Twelve focused Active Cooking API integration tests pass against real
+  PostgreSQL with only the external Agent invocation replaced by deterministic
+  outputs.
+- Guidance-only, advance, and pause responses leave the restored Cooking
+  Session unchanged. A paused resume proposal leaves persisted status paused
+  until an explicit progress PATCH.
+- Completed and abandoned sessions return `ACTIVE_COOKING_NOT_ALLOWED` without
+  invoking the Agent, while ownership and missing-session behavior continue to
+  use the established Cooking Session errors.
+- The complete API suite passes with 39 tests and the full workspace suite
+  passes with 128 tests after Active Cooking integration.
+- One real provider-backed Active Cooking HTTP request restored an existing
+  active session at its persisted oil-heating step and returned status 200 with
+  context-aware smoking-oil safety guidance and no proposed mutation. The
+  persisted phase, status, position, completed steps, and completion state
+  remained unchanged.
+- Workspace typecheck and builds, scoped Biome, database cooking-lifecycle
+  validation, and `git diff --check` pass after the Active Cooking changes.
+
+- The Swagger full-flow milestone reuses the previously confirmed manual
+  Recommendation → Pre-Cooking → Cooking Session → progress → guarded
+  completion → restore flow. The guide now records that flow as a repeatable
+  acceptance procedure without committing a real development UUID.
+- The API integration lifecycle explicitly verifies HTTP 409 with
+  `SESSION_NOT_READY_FOR_COMPLETION` at the incomplete final step, then records
+  the final step, persists completion, and restores the completed session.
+- OpenAPI validation confirms health plus all six protected cooking operation
+  paths remain registered, and Swagger continues to expose persistent
+  `DevelopmentUser` authorization.
 
 - Ten Pre-Cooking API integration tests pass against real PostgreSQL with the
   external Agent boundary replaced by deterministic behavior. They cover
