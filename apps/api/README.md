@@ -33,10 +33,19 @@ persistence work, while those Agent-backed routes return the controlled
 GET   /health
 GET   /openapi.json
 GET   /docs
+GET   /favorites
+POST  /favorites
+DELETE /favorites/:id
 GET   /profile
 PUT   /profile
 GET   /household
 PUT   /household
+GET   /kitchen
+PUT   /kitchen
+GET   /inventory
+POST  /inventory/items
+PUT   /inventory/items/:id
+DELETE /inventory/items/:id
 POST  /cooking/recommendations
 POST  /cooking/pre-cooking
 POST  /cooking-sessions
@@ -67,6 +76,17 @@ or replaces all three counts. Counts must be non-negative PostgreSQL-range
 integers, and zero is valid for every field. The request never accepts a user
 ID. Recommendation and Pre-Cooking consume these same persisted values unless a
 request-level household override replaces them for one request.
+
+`GET /kitchen` returns `{ equipment: string[] }` or `KITCHEN_NOT_FOUND`.
+`PUT /kitchen` atomically creates the kitchen and replaces its child equipment
+rows. Names are trimmed, case is preserved, and duplicates ignoring case are
+rejected. Empty equipment is valid. Responses sort names case-insensitively;
+input order is not stored. See `docs/testing/swagger-kitchen-flow.md`.
+
+Inventory supports canonical-key item creation, mutable-value replacement, and
+deletion. Missing inventory returns `INVENTORY_NOT_FOUND`; an existing empty
+inventory returns `{ items: [] }`. POST initializes the parent atomically.
+See `docs/testing/swagger-inventory-flow.md` for contracts and examples.
 
 The cooking-session endpoints persist existing generated snapshots; they do
 not invoke the cooking agent. Restored JSONB is validated through the schemas

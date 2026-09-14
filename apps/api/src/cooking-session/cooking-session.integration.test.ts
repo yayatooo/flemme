@@ -161,6 +161,7 @@ describe("cooking-session API integration", () => {
 				"/health",
 				"/profile",
 				"/household",
+				"/kitchen",
 				"/cooking/recommendations",
 				"/cooking/pre-cooking",
 				"/cooking-sessions",

@@ -10,7 +10,10 @@ import type { CompletionRunner } from "./completion/completion-service";
 import { createCookingRecommendationRoute } from "./cooking-recommendation/cooking-recommendation-route";
 import type { CookingRecommendationRunner } from "./cooking-recommendation/cooking-recommendation-service";
 import { createCookingSessionRoute } from "./cooking-session/cooking-session-route";
+import { createFavoritesRoute } from "./favorites/favorites-route";
 import { createHouseholdRoute } from "./household/household-route";
+import { createInventoryRoute } from "./inventory/inventory-route";
+import { createKitchenRoute } from "./kitchen/kitchen-route";
 import { createNutritionRoute } from "./nutrition/nutrition-route";
 import { createPreCookingRoute } from "./pre-cooking/pre-cooking-route";
 import type { PreCookingRunner } from "./pre-cooking/pre-cooking-service";
@@ -67,7 +70,10 @@ export function createApp({
 		createPreCookingRoute({ db, preCookingRunner }),
 	);
 	app.route("/profile", createProfileRoute(db));
+	app.route("/favorites", createFavoritesRoute(db));
 	app.route("/household", createHouseholdRoute(db));
+	app.route("/inventory", createInventoryRoute(db));
+	app.route("/kitchen", createKitchenRoute(db));
 	app.route("/cooking-sessions", createCookingSessionRoute(db));
 	app.route("/cooking-sessions", createNutritionRoute(db));
 	app.route(

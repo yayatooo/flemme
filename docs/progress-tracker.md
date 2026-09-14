@@ -4,14 +4,94 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Household API v0.1 — Complete
+Favorites API v0.1 — Complete
 
 ## Current Goal
 
-Expose the existing aggregate household cooking context as authenticated,
-user-manageable persistent data without changing Cooking Engine behavior.
+Expose favorites over owned completed Cooking Sessions without duplicating
+recipe/history persistence or changing Cooking Engine behavior.
 
 ## Completed
+
+### Favorites API v0.1
+
+- Final acceptance passed through live localhost HTTP using isolated real
+  development users and create/progress/complete session endpoints. Verified
+  historical projection, duplicate/ineligible/ownership guards, corrupt and
+  missing sessions, favorite deletion with identical preserved history,
+  newest-first/tie ordering, and session FK cascade through isolated database
+  deletion. `/docs` and live OpenAPI passed. Temporary data was cleaned up.
+  Six focused tests and all 112 API tests passed again, alongside all quality
+  gates. No API fixes required; only temporary command quoting was corrected.
+  Auth v1 Architecture & Existing Schema Audit is next, not started.
+
+- Validation: six focused tests (44 expectations) and full API suite of 112
+  tests (462 expectations) pass against real PostgreSQL. Workspace typecheck,
+  API/web builds, Drizzle check, scoped Biome, diff whitespace and database
+  lifecycle validation pass. OpenAPI security/operations are tested. Manual
+  browser/runtime acceptance is not claimed. The only test correction was a
+  nonempty ingredient list required by existing completion nutrition validation.
+
+- GET/POST `/favorites` and DELETE `/favorites/{id}` reference owned completed
+  Cooking Sessions using the existing composite ownership FK and uniqueness.
+- Session restoration is exported for reuse without behavior changes. Recipes
+  are validated historical projections; no AI or current cooking context used.
+- Duplicate creation returns 409; incomplete valid sessions 409; corrupt
+  persisted snapshots 500; cross-user access 403; missing resources 404.
+- Deleting a favorite preserves session/completion/nutrition history. Listing
+  sorts createdAt descending then UUID descending, without pagination.
+- No migration, new recipe table, or Auth v1 work. Swagger flow documented in
+  `docs/testing/swagger-favorites-flow.md`.
+
+### Inventory API v0.1
+
+- Final acceptance: live localhost HTTP flow passed against healthy PostgreSQL
+  with existing migrations applied. Two temporary development users verified
+  missing/create/read/update/delete/empty states, canonical key and alias
+  rejection, duplicate prevention, quantity/unit pairing, immutable identity,
+  cross-user 403 and missing-item 404 behavior. Cooking-context visibility and
+  whole-list request replacement passed after live mutations. `/docs` served
+  successfully and live OpenAPI exposed all four operations. Browser control
+  was unavailable; direct HTTP verification was used as permitted. Temporary
+  users were cleaned up. All 106 API tests and quality gates passed again;
+  no implementation fixes were required. Favorites remains unstarted.
+
+- GET `/inventory`, POST `/inventory/items`, PUT and DELETE
+  `/inventory/items/{id}` manage existing parent/item persistence. No migration.
+- Canonical production keys only on create; unknown keys return 422. Existing
+  legacy keys remain readable without automatic remapping. Duplicate keys
+  return 409 through the existing database uniqueness constraint.
+- PUT replaces quantity, unit, approximation and condition, not identity.
+  Quantity/unit must both be null or both present; positive numeric(14,3)
+  quantities and the existing condition enum are retained. Zero is rejected.
+- Missing parent returns 404; existing empty inventory returns an empty list.
+  Create uses a transaction; rollback and ownership predicates are tested.
+- Seven focused tests pass, including six real PostgreSQL integration tests.
+  Full API suite: 106 passing tests, 418 expectations. Workspace typecheck,
+  builds, Drizzle check, scoped Biome, lifecycle validation and diff checks pass.
+- OpenAPI registration is tested; manual Swagger flow is documented in
+  `docs/testing/swagger-inventory-flow.md`. No browser verification is claimed.
+
+### Kitchen / Equipment API v0.1
+
+- GET and PUT `/kitchen` expose only `{ equipment: string[] }` using the existing
+  kitchen parent and free-form equipment child rows. Missing kitchens return
+  `KITCHEN_NOT_FOUND`; GET performs no initialization. Empty equipment is valid.
+- PUT trims surrounding whitespace, preserves case, rejects blank names and
+  duplicates ignoring case, and replaces the complete list. No equipment master
+  model or migration was introduced. Responses sort names deterministically;
+  input order is not persisted.
+- Parent upsert, child deletion, and insertion use one PostgreSQL transaction.
+  A real unique-constraint failure test proves previous equipment survives a
+  failed insert. Ownership comes exclusively from authenticated currentUserId.
+- Cooking-context orchestration reads the same rows without behavior changes;
+  request-level Kitchen overrides continue to replace persistent equipment.
+- Four contract and nine PostgreSQL integration tests pass (13 focused tests,
+  45 expectations). Full API: 99 passing tests, 364 expectations. Workspace
+  typecheck, API/web builds, Drizzle schema check, scoped Biome, database
+  lifecycle validation, and diff whitespace checks pass.
+- Swagger operations and `docs/testing/swagger-kitchen-flow.md` document the
+  create/read/replace/empty sequence. No manual browser validation is claimed.
 
 ### Repository Foundation
 
@@ -624,7 +704,7 @@ Remaining sequence:
 
 ## Next Up
 
-Kitchen / Equipment API v0.1 is the next bounded Product Domain API task. Do not
+Auth v1 is the next bounded Product Domain API task. Do not
 begin it until selected explicitly.
 
 Full context APIs, favorite endpoints, production authentication,

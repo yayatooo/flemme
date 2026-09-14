@@ -131,6 +131,29 @@ when `NODE_ENV=production`.
 
 ## Agent Boundary
 
+Favorites are an overlay on completed Cooking Sessions, not recipe storage.
+The API reuses session restoration and projects historical recipe summaries.
+Creation uses an ownership/status-filtered insert and the existing composite
+session/user FK and unique constraint. Removing a favorite preserves history.
+No AI, current cooking context, copied snapshot or new history table is involved.
+
+Inventory API writes the existing inventory parent and item rows. Ingredient
+identity is validated by the production catalog in `@flemme/ingredients`, not
+by a new database master table. Creation atomically initializes the parent and
+inserts a unique canonical-key item. Updates preserve ingredient identity;
+updates and deletes include authenticated ownership in their SQL predicates.
+Legacy keys outside the production catalog remain readable with their key as
+the display fallback; they are never guessed or silently remapped. New unknown
+keys are rejected. Cooking-context loading and request overrides are unchanged.
+
+Kitchen API uses the existing user-owned kitchen parent and equipment child
+rows. Equipment identity remains free-form text. A full replacement upserts the
+parent, deletes previous child rows, and inserts the requested names in one
+PostgreSQL transaction. The parent upsert serializes concurrent replacements
+for the same user. Cooking-context orchestration reads these same child rows;
+its existing unspecified ordering and whole-request override behavior remain
+unchanged. The Kitchen response alone sorts names deterministically.
+
 The agent is a reusable capability, not an independent backend.
 
 Agent code does not own:

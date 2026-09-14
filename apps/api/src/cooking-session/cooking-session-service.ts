@@ -51,7 +51,9 @@ async function findOwnedCookingSession(
 	return session;
 }
 
-function restoreCookingSession(row: CookingSessionRow): CookingSessionResponse {
+export function restoreCookingSession(
+	row: CookingSessionRow,
+): CookingSessionResponse {
 	try {
 		const recommendationSnapshot = CookingRecommendationOutputSchema.parse(
 			row.recommendationSnapshot,
