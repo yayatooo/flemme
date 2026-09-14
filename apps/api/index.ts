@@ -8,8 +8,8 @@ import {
 import { createDatabase } from "@flemme/db";
 
 import { createApp } from "./src/app";
-import { readAuthEnvironment } from "./src/auth/auth-environment";
-import { createAuthServer } from "./src/auth/auth-server";
+import { readAuthEnvironment } from "./src/modules/auth/auth-environment";
+import { createAuthServer } from "./src/modules/auth/auth-server";
 
 const databaseUrl = Bun.env.DATABASE_URL;
 

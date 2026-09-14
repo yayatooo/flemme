@@ -1,6 +1,6 @@
 import type { FlemmeDatabase } from "@flemme/db";
 import { z } from "zod";
-import { createAuthServer } from "../auth/auth-server";
+import { createAuthServer } from "../modules/auth/auth-server";
 
 const SignupResponseSchema = z.object({
 	user: z.object({ id: z.uuid() }),

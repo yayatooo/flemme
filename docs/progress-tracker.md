@@ -14,6 +14,18 @@ server-backed onboarding state.
 
 ## Completed
 
+### API Module Structure Cleanup
+
+- Moved all API feature directories, including Auth and Cooking Engine features,
+  under `apps/api/src/modules` to match the documented colocated module shape.
+- Kept API-wide composition, environment/error helpers, and shared test utilities
+  directly under `apps/api/src`; no routes, contracts, services, or runtime
+  behavior changed.
+- Updated source imports and the API flow learning guide to the new canonical
+  paths.
+- API typecheck, production build, and the full 127-test API suite with 1,122
+  expectations pass.
+
 ### Auth v1 A8
 
 - Retired the temporary authentication selector and header adapter. The common

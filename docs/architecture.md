@@ -139,9 +139,11 @@ Protected OpenAPI operations use `CurrentUser` with the actual HttpOnly
 session cookie. Valid production Auth configuration is allowed; HTTPS API and
 web origins remain required in production for transport security.
 
-API features use colocated Hono route, transport schema, and service modules.
-Routes validate HTTP input with Zod, services coordinate domain rules and
-`@flemme/db`, and database schema definitions remain inside `packages/db`.
+API features live under `apps/api/src/modules` with colocated Hono route,
+transport schema, and service files. API-wide composition, environment, error,
+and test utilities remain directly under `apps/api/src`. Routes validate HTTP
+input with Zod, services coordinate domain rules and `@flemme/db`, and database
+schema definitions remain inside `packages/db`.
 Hono OpenAPI route definitions generate the specification served at
 `/openapi.json`; Swagger UI is available at `/docs`.
 

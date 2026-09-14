@@ -107,7 +107,7 @@ loading, and PostgreSQL behavior.
 All cooking endpoints require a Better Auth session.
 
 The middleware in
-[`current-user-middleware.ts`](../apps/api/src/auth/current-user-middleware.ts)
+[`current-user-middleware.ts`](../apps/api/src/modules/auth/current-user-middleware.ts)
 uses the official Better Auth server API:
 
 ```text
@@ -159,7 +159,7 @@ POST /cooking/recommendations
 ```
 
 Its files are grouped under
-[`apps/api/src/cooking-recommendation`](../apps/api/src/cooking-recommendation).
+[`apps/api/src/modules/cooking-recommendation`](../apps/api/src/modules/cooking-recommendation).
 
 ### 7.1 Minimal Request
 
@@ -181,7 +181,7 @@ kitchen, and inventory on every request.
 ### 7.2 Persistent Context Loading
 
 The internal
-[`cooking-context-service.ts`](../apps/api/src/cooking/cooking-context-service.ts)
+[`cooking-context-service.ts`](../apps/api/src/modules/cooking/cooking-context-service.ts)
 loads:
 
 ```text
@@ -298,7 +298,7 @@ The user must choose a recommendation before the cooking lifecycle continues.
 ## 8. Cooking Session Persistence Flow
 
 Cooking Session endpoints live under
-[`apps/api/src/cooking-session`](../apps/api/src/cooking-session).
+[`apps/api/src/modules/cooking-session`](../apps/api/src/modules/cooking-session).
 
 These endpoints do not call the AI model. They persist and restore structured
 results that have already been generated and accepted.
@@ -547,14 +547,14 @@ Read the implementation in this order:
 
 1. [`apps/api/index.ts`](../apps/api/index.ts) — process startup and dependency creation.
 2. [`apps/api/src/app.ts`](../apps/api/src/app.ts) — route registration and global errors.
-3. [`current-user-middleware.ts`](../apps/api/src/auth/current-user-middleware.ts) — session-backed current-user resolution.
-4. [`cooking-recommendation-schema.ts`](../apps/api/src/cooking-recommendation/cooking-recommendation-schema.ts) — transport contract.
-5. [`cooking-context-service.ts`](../apps/api/src/cooking/cooking-context-service.ts) — persistent context and overrides.
-6. [`cooking-recommendation-service.ts`](../apps/api/src/cooking-recommendation/cooking-recommendation-service.ts) — Agent orchestration.
-7. [`cooking-recommendation-route.ts`](../apps/api/src/cooking-recommendation/cooking-recommendation-route.ts) — HTTP and OpenAPI binding.
-8. [`cooking-session-schema.ts`](../apps/api/src/cooking-session/cooking-session-schema.ts) — persistence transport contracts.
-9. [`cooking-session-service.ts`](../apps/api/src/cooking-session/cooking-session-service.ts) — lifecycle and snapshot restoration.
-10. [`cooking-session-route.ts`](../apps/api/src/cooking-session/cooking-session-route.ts) — session HTTP endpoints.
+3. [`current-user-middleware.ts`](../apps/api/src/modules/auth/current-user-middleware.ts) — session-backed current-user resolution.
+4. [`cooking-recommendation-schema.ts`](../apps/api/src/modules/cooking-recommendation/cooking-recommendation-schema.ts) — transport contract.
+5. [`cooking-context-service.ts`](../apps/api/src/modules/cooking/cooking-context-service.ts) — persistent context and overrides.
+6. [`cooking-recommendation-service.ts`](../apps/api/src/modules/cooking-recommendation/cooking-recommendation-service.ts) — Agent orchestration.
+7. [`cooking-recommendation-route.ts`](../apps/api/src/modules/cooking-recommendation/cooking-recommendation-route.ts) — HTTP and OpenAPI binding.
+8. [`cooking-session-schema.ts`](../apps/api/src/modules/cooking-session/cooking-session-schema.ts) — persistence transport contracts.
+9. [`cooking-session-service.ts`](../apps/api/src/modules/cooking-session/cooking-session-service.ts) — lifecycle and snapshot restoration.
+10. [`cooking-session-route.ts`](../apps/api/src/modules/cooking-session/cooking-session-route.ts) — session HTTP endpoints.
 11. API integration tests — executable examples of the intended behavior.
 
 ## 15. Current Gap and Next Boundary
