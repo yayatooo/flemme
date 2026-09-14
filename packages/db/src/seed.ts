@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { createDatabase } from "./client";
 import {
-	authCredentials,
+	authAccounts,
 	households,
 	inventories,
 	inventoryItems,
@@ -39,11 +39,16 @@ try {
 		}
 
 		await transaction
-			.insert(authCredentials)
-			.values({ userId: user.id, passwordHash })
+			.insert(authAccounts)
+			.values({
+				userId: user.id,
+				accountId: user.id,
+				providerId: "credential",
+				password: passwordHash,
+			})
 			.onConflictDoUpdate({
-				target: authCredentials.userId,
-				set: { passwordHash, updatedAt: new Date() },
+				target: [authAccounts.providerId, authAccounts.accountId],
+				set: { password: passwordHash, updatedAt: new Date() },
 			});
 
 		await transaction

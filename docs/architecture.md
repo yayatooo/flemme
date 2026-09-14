@@ -90,6 +90,33 @@ provider credentials.
 
 ## API Foundation
 
+Auth A2 mounts Better Auth 1.7.4 at `/auth/*` with the existing Drizzle database
+instance and A1 table mappings. Centralized credentialed CORS allows only
+WEB_ORIGIN, before authentication middleware. Better Auth owns native framework
+responses. A3 enables password registration/login with Bun Argon2id, 8–128
+character passwords and automatic session establishment, without marking email
+verified. A scoped request plugin normalizes JSON emails before validation and
+omits session tokens from successful JSON responses. No Product Domain creation
+hooks exist. A4 enables Google authorization-code login/registration with
+openid/email/profile only, online access and no incremental authorization.
+Google subject maps to auth_accounts.accountId, with the same users.id UUID and
+database session model as passwords. Google profile fields stay Auth-owned;
+no Profile synchronization occurs. Implicit/explicit linking remains disabled:
+same-email password collisions fail with account_not_linked. Native provider
+token retrieval/refresh and linking routes are disabled. Redirect/state/PKCE
+remain framework-owned at /auth/callback/google; extra client scopes or
+authorization parameters are rejected. Built-in memory rate limiting is enabled;
+trusted client-IP deployment and distributed protection remain production gates.
+Database sessions have seven-day expiry, daily renewal and no cookie cache;
+cookies are HttpOnly, host-only, SameSite=Lax and Secure for HTTPS/production.
+The real entry point requires explicit secret/API URL/web origin and Google
+client ID/secret configuration, without fallback credentials. Google secrets
+are server-only; no Google domains are added to CORS. Controlled callback tests
+cover provisioning; real Google consent/callback acceptance is still pending.
+Product Domain routes continue using development currentUserId middleware, and
+the existing production startup prohibition remains until A8. Framework sessions
+and development headers are not fallback mechanisms for each other.
+
 API features use colocated Hono route, transport schema, and service modules.
 Routes validate HTTP input with Zod, services coordinate domain rules and
 `@flemme/db`, and database schema definitions remain inside `packages/db`.

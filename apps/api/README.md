@@ -5,6 +5,74 @@ application orchestration, user ownership, and persistence coordination.
 
 ## Local development
 
+A4 requires `BETTER_AUTH_SECRET` (your own random secret, at least 32 characters),
+`BETTER_AUTH_URL=http://localhost:3000`, and `WEB_ORIGIN=http://localhost:5173`
+and `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the root `.env`, in addition
+to DATABASE_URL. Missing/blank Google credentials fail startup validation.
+No fallback secret is supplied.
+For example, generate a secret locally with `openssl rand -hex 32` and save it
+privately. Do not commit it or use a VITE-prefixed variable. Origins must have
+no path/trailing slash. Use localhost consistently for browser-facing URLs;
+PostgreSQL may still use 127.0.0.1. Do not expose provider secrets through VITE_*.
+
+`/auth/*` delegates requests to Better Auth 1.7.4. A3 enables password signup
+and login, automatic sign-in, logout and session restoration. A4 enables Google
+login/registration through POST `/auth/sign-in/social` and GET
+`/auth/callback/google`. GET `/auth/get-session` returns 200/null without a valid cookie.
+No `/auth/me` or custom aliases are added. See
+`docs/plans/flemme-auth-v1-a3-email-password.md` for native contracts and cookie-jar
+testing. Required name is Auth-owned; no Profile row is initialized.
+See `docs/plans/flemme-auth-v1-a4-google.md` for Google setup and acceptance.
+
+In Google Cloud Console, create an OAuth **Web application** client. Configure
+the consent screen/audience and test users as required by Google. Its Authorized
+redirect URI must be exactly `http://localhost:3000/auth/callback/google` locally
+(`<BETTER_AUTH_URL>/auth/callback/google` elsewhere), not `/api/auth/...`.
+Do not mix localhost and 127.0.0.1. Google client secrets remain on the API.
+Initiate with `{"provider":"google","callbackURL":"http://localhost:5173/"}`
+from the trusted origin. No web login UI is implemented yet.
+
+Google requests only openid/email/profile, online access, no incremental scopes.
+Extra scopes/authorization parameters and direct ID-token sign-in are disabled.
+Same-email password collisions redirect with `account_not_linked`; no implicit
+link or second user is created. Google-only → password signup returns native
+422 `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`. Provider token retrieval/refresh
+and linking/unlinking endpoints are disabled; tokens remain sensitive DB data.
+Google name/image belong to Auth users, never Profile.
+
+Password policy is 8–128 characters, using Bun Argon2id. Emails are trimmed and
+lowercased before JSON request validation. Password users remain unverified.
+Response tokens are omitted from successful JSON; cookies remain the transport.
+No recovery-email or verification-email flow is configured.
+
+Built-in in-memory limiting allows 20 requests/minute per password/social sign-in endpoint
+bucket (general limit 100/minute). Without a trusted client IP, the current Bun
+entry point uses the framework's shared per-path fallback. This is intentionally
+conservative locally, not a distributed production solution. Trusted proxy/IP
+deployment and multi-instance enforcement must be reviewed before production.
+
+Sessions use PostgreSQL, seven-day expiry, daily renewal, no cookie cache,
+HttpOnly host-only SameSite=Lax cookies, and Secure cookies for HTTPS/production.
+Explicit WEB_ORIGIN is trusted and allowed credentialed CORS; no wildcard or
+dynamic origin reflection. Preflight runs before protected-route authentication.
+All linking is currently disabled; implicit linking remains disabled for later
+phases. No domain creation hooks exist.
+
+Existing protected routes and Swagger still use DevelopmentUser. An identity
+header never authenticates Better Auth, and Better Auth does not populate
+currentUserId yet. Production startup remains prohibited until development auth
+is retired in A8. The server configuration's production cookie policy does not
+make the whole application production-ready.
+
+Domain-only tests may construct createApp without authFoundation and need no
+auth secret. The real entry point always validates and injects the foundation;
+focused auth tests inject a fresh per-run test secret, fake Google configuration
+and real PostgreSQL. Google callback tests intercept the token exchange only;
+real Google credentials/consent acceptance remains a separate manual gate.
+Framework endpoints retain native response contracts, not manually duplicated
+Swagger schemas. Run `bun --env-file=../../.env test src/auth` from apps/api to
+test this boundary independently of future frontend flows.
+
 Start PostgreSQL and the API from the repository root:
 
 ```bash

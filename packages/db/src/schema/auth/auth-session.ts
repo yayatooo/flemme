@@ -9,9 +9,13 @@ export const authSessions = pgTable(
 		userId: uuid("user_id")
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
-		tokenHash: text("token_hash").notNull().unique(),
+		token: text("token").notNull().unique(),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-		revokedAt: timestamp("revoked_at", { withTimezone: true }),
+		ipAddress: text("ip_address"),
+		userAgent: text("user_agent"),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),

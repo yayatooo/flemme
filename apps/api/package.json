@@ -20,6 +20,7 @@
 		"@flemme/nutrition": "workspace:*",
 		"@hono/swagger-ui": "^0.6.1",
 		"@hono/zod-openapi": "^1.6.3",
+		"better-auth": "1.7.4",
 		"drizzle-orm": "^0.45.2",
 		"hono": "^4.13.7",
 		"zod": "^4.5.4"

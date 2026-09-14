@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 
-import { authCredentials } from "./auth/auth-credential";
+import { authAccounts } from "./auth/auth-account";
 import { authSessions } from "./auth/auth-session";
 import { users } from "./auth/user";
 import { cookingSessions } from "./cooking-session/cooking-session";
@@ -13,7 +13,7 @@ import { kitchenEquipment } from "./kitchen/kitchen-equipment";
 import { userProfiles } from "./user-profile/user-profile";
 
 export const usersRelations = relations(users, ({ many, one }) => ({
-	credential: one(authCredentials),
+	accounts: many(authAccounts),
 	authSessions: many(authSessions),
 	profile: one(userProfiles),
 	household: one(households),
@@ -22,15 +22,12 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 	cookingSessions: many(cookingSessions),
 }));
 
-export const authCredentialsRelations = relations(
-	authCredentials,
-	({ one }) => ({
-		user: one(users, {
-			fields: [authCredentials.userId],
-			references: [users.id],
-		}),
+export const authAccountsRelations = relations(authAccounts, ({ one }) => ({
+	user: one(users, {
+		fields: [authAccounts.userId],
+		references: [users.id],
 	}),
-);
+}));
 
 export const authSessionsRelations = relations(authSessions, ({ one }) => ({
 	user: one(users, {

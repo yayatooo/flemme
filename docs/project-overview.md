@@ -66,10 +66,10 @@ cooking flow.
 
 ### Account Credit
 
-- Every newly registered account starts with **5 credit points**.
-- Credit belongs to the account.
-- The initial 5 credits are granted automatically after successful account creation.
-- Credit usage rules will be defined separately before implementation.
+The previous five-credit registration grant is explicitly deferred for Auth v1.
+Registration must not provision credits, wallets, balances or billing records.
+Credit ownership, grants and usage require a separately approved future design;
+they are not an Auth implementation blocker.
 
 For the MVP, the system must not assume how many credits are consumed by a
 specific AI action until the credit consumption rules are explicitly defined.

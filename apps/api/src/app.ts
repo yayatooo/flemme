@@ -1,10 +1,12 @@
 import type { FlemmeDatabase } from "@flemme/db";
 import { swaggerUI } from "@hono/swagger-ui";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { cors } from "hono/cors";
 import { createActiveCookingRoute } from "./active-cooking/active-cooking-route";
 import type { ActiveCookingRunner } from "./active-cooking/active-cooking-service";
 import type { ApiEnvironment } from "./api-environment";
 import { ApiError, createApiErrorPayload } from "./api-error";
+import type { AuthServer } from "./auth/auth-server";
 import { createCompletionRoute } from "./completion/completion-route";
 import type { CompletionRunner } from "./completion/completion-service";
 import { createCookingRecommendationRoute } from "./cooking-recommendation/cooking-recommendation-route";
@@ -20,6 +22,7 @@ import type { PreCookingRunner } from "./pre-cooking/pre-cooking-service";
 import { createProfileRoute } from "./profile/profile-route";
 
 interface CreateAppInput {
+	authFoundation?: { auth: AuthServer; webOrigin: string };
 	db: FlemmeDatabase;
 	activeCookingRunner?: ActiveCookingRunner;
 	completionRunner?: CompletionRunner;
@@ -28,6 +31,7 @@ interface CreateAppInput {
 }
 
 export function createApp({
+	authFoundation,
 	db,
 	activeCookingRunner,
 	completionRunner,
@@ -35,6 +39,21 @@ export function createApp({
 	preCookingRunner,
 }: CreateAppInput) {
 	const app = new OpenAPIHono<ApiEnvironment>();
+	// Optional injection preserves isolated domain tests; the real entry point
+	// always validates configuration and supplies the foundation.
+	if (authFoundation) {
+		app.use(
+			"*",
+			cors({
+				origin: (origin) =>
+					origin === authFoundation.webOrigin ? origin : undefined,
+				credentials: true,
+				allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+				allowHeaders: ["Content-Type", "x-flemme-user-id"],
+			}),
+		);
+		app.all("/auth/*", (c) => authFoundation.auth.handler(c.req.raw));
+	}
 	app.openAPIRegistry.registerComponent("securitySchemes", "DevelopmentUser", {
 		type: "apiKey",
 		in: "header",

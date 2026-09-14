@@ -8,6 +8,8 @@ import {
 import { createDatabase } from "@flemme/db";
 
 import { createApp } from "./src/app";
+import { readAuthEnvironment } from "./src/auth/auth-environment";
+import { createAuthServer } from "./src/auth/auth-server";
 
 const databaseUrl = Bun.env.DATABASE_URL;
 
@@ -27,7 +29,10 @@ if (!Number.isInteger(port) || port <= 0) {
 	throw new Error("PORT must be a positive integer");
 }
 
+const authEnvironment = readAuthEnvironment(Bun.env);
 const { db } = createDatabase(databaseUrl);
+const auth = createAuthServer(db, authEnvironment);
+await auth.$context;
 const apiKey = Bun.env.MUX_API_KEY;
 const baseUrl = Bun.env.BASE_URL;
 const model =
@@ -55,6 +60,7 @@ const preCookingRunner = model
 			runPreCooking({ model, input })
 	: undefined;
 const app = createApp({
+	authFoundation: { auth, webOrigin: authEnvironment.WEB_ORIGIN },
 	db,
 	activeCookingRunner,
 	completionRunner,

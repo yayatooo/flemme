@@ -4,14 +4,96 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Favorites API v0.1 — Complete
+Auth v1 A4 — Google Implemented; Real Google Acceptance Pending
 
 ## Current Goal
 
-Expose favorites over owned completed Cooking Sessions without duplicating
-recipe/history persistence or changing Cooking Engine behavior.
+Enable Google alongside passwords without changing Product Domain authentication.
+Real Google login and logout succeeded; returning-login verification remains. A5 identity
+middleware and A7 frontend remain deferred; Auth v1 is not complete.
 
 ## Completed
+
+### Auth v1 A4
+
+- Google configured on pinned Better Auth 1.7.4, required server-only Google
+  client ID/secret; callback /auth/callback/google. Real .env not modified.
+- Identity-only scopes, online access, no incremental authorization, no
+  direct ID-token login, provider-token HTTP access or provider management.
+- Native state/PKCE/origin/callback guards retained. Small HTTP policy rejects
+  scope escalation/extra authorization parameters, not a custom OAuth protocol.
+- Real PostgreSQL controlled token-exchange tests cover new/returning Google
+  identity, UUID/account/session mapping, no Product Domain provisioning,
+  password collision rejection, reverse collision and session restoration.
+- No implicit/explicit linking; no Product Domain auth changes, frontend,
+  migration, /auth/me or Google API usage. A3 Argon2/password behavior retained.
+- Social initiation gets the same built-in 20/minute rule as password endpoints;
+  callback uses general 100/minute rule, no exception or Redis.
+- Validation: full API 128 passed, focused Auth 16 passed; workspace typecheck,
+  API/web build, Drizzle, Auth-file Biome, git diff check, real PostgreSQL
+  lifecycle and preservation-migration tests pass. No A5/frontend work started.
+- Real Google credentials are now present and configuration-valid. Real API
+  initiation passes with exact callback/scopes/PKCE. Browser-control tooling is
+  unavailable; user completed real login/callback/redirect and restore/logout.
+  DB verified one Google identity/session initially and zero sessions after
+  logout, with no Product Domain rows. Returning login and browser UUID/token
+  checks remain pending; old-cookie replay is covered only by automated tests.
+  Post-login regression and quality checks were rerun successfully; see
+  `docs/plans/flemme-auth-v1-a4-google.md`.
+
+### Auth v1 A3
+
+- Email/password active under Better Auth native routes; explicit registration,
+  auto-sign-in, no verification requirement, 8–128 character password policy.
+  Bun Argon2id hashes retained. No Google/linking/recovery/verification delivery.
+- JSON email input trimmed/lowercased before framework validation. Auth name
+  stays separate from Profile. Registration creates no Product Domain rows.
+  Success JSON omits raw session tokens while retaining HttpOnly cookie transport.
+- Real PostgreSQL and live API cookie-jar flows pass for signup, restoration,
+  sign-out/replay rejection and original migrated seed login. Hash unchanged.
+  Multiple sessions remain independent; no session→currentUserId bridge yet.
+- Built-in memory limiter: 20 password requests/60 seconds per bucket; no Redis.
+  Current runtime uses shared per-path fallback without trusted IP integration;
+  deployment IP trust and distributed limiting remain production requirements.
+- Full API, workspace typecheck/build, Drizzle, scoped Biome, diff and database
+  lifecycle checks pass. Live acceptance process stopped and test data cleaned.
+- See `docs/plans/flemme-auth-v1-a3-email-password.md`. Auth v1 remains incomplete.
+
+### Auth v1 A2
+
+- Better Auth instance uses the existing Drizzle connection and A1 tables,
+  UUID generation and Bun Argon2id hooks. Mounted raw at `/auth/*`; no migration.
+- Explicit secret/base URL/web origin validation; no fallback secrets. Seven-day
+  database sessions, daily renewal, no cookie cache; HttpOnly host-only Lax cookies,
+  Secure for HTTPS/production. Centralized exact-origin credentialed CORS handles
+  preflight before protected routes. Implicit and explicit linking disabled.
+- Email/password disabled and Google absent. Framework disabled errors and
+  unauthenticated null session are tested; no valid sessions fabricated.
+- Existing development-header routes/OpenAPI and production guard unchanged.
+  No frontend, Google secrets, domain hooks, /auth/me or auth aliases added.
+- Focused PostgreSQL tests exercise adapter reads for all four models, generated
+  UUIDs, resolved cookies/options, CORS, disabled flows and legacy seed hash.
+  Nine focused tests / 119 expectations and full API 121 tests / 581 expectations
+  pass. Explicit origin/CSRF checks remain enabled even under tests. Workspace
+  typecheck/build, Drizzle, scoped Biome, whitespace and lifecycle checks pass.
+
+### Auth v1 A1
+
+- Pinned Better Auth 1.7.4 in API. Inspected installed framework schema metadata
+  using a non-mounted configuration with UUID IDs, Bun Argon2id password hooks,
+  database sessions and disableImplicitLinking. No Google credentials or handlers.
+- Migration 0001 renames credentials/password columns in place, adds provider
+  account identity and OAuth fields, adapts sessions and adds verifications.
+  Users receive neutral auth name, false emailVerified and nullable image.
+  Profile displayName remains independent. Legacy sessions are invalidated.
+- Real database preservation: users 1→1, credentials 1→1; original UUID/email,
+  exact hash, timestamps and all Product Domain rows unchanged. Known seed
+  password verifies. No legacy sessions existed. No incompatible emails found.
+- Isolated PostgreSQL migration test passes; API 114 tests / 525 expectations
+  pass; typecheck/build/Drizzle/scoped Biome/lifecycle and whitespace checks pass.
+- Five-credit registration provisioning is explicitly deferred, not an Auth
+  blocker. No role/admin fields or Product Domain changes.
+- See `docs/plans/flemme-auth-v1-a1-schema-integration.md` for mapping and risks.
 
 ### Favorites API v0.1
 
@@ -704,8 +786,9 @@ Remaining sequence:
 
 ## Next Up
 
-Auth v1 is the next bounded Product Domain API task. Do not
-begin it until selected explicitly.
+Complete the dedicated A4 real Google runtime acceptance gate when credentials
+are configured. Next implementation: Auth v1 A5 — Better Auth Session →
+currentUserId Middleware. Do not begin it until selected explicitly.
 
 Full context APIs, favorite endpoints, production authentication,
 natural-language quantity parsing, TKPI evaluation, and nutrition UI display
