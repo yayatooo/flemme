@@ -1,5 +1,9 @@
 # API Foundation v0.1 + Cooking Session Vertical Slice
 
+> Archived implementation plan. Authentication instructions below describe the
+> pre-Auth-v1 checkpoint, not an available workflow. Use the current
+> [session authentication guide](../testing/swagger-cooking-flow.md#session-authentication).
+
 ## Repository findings
 
 - `apps/api` is currently a placeholder with Hono and Zod dependencies but no

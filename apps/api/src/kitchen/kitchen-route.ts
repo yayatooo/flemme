@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	KitchenResponseSchema,
 	PutKitchenRequestSchema,
@@ -38,10 +38,10 @@ const getKitchenRouteDefinition = createRoute({
 	summary: "Get the current user's kitchen",
 	description:
 		"Returns the current user's persisted cooking equipment in deterministic name order.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	responses: {
 		200: jsonResponse(KitchenResponseSchema, "Current user's kitchen"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		404: errorResponse("Kitchen has not been created"),
 		500: errorResponse("Persisted kitchen is invalid"),
 	},
@@ -54,14 +54,14 @@ const putKitchenRouteDefinition = createRoute({
 	summary: "Create or replace the current user's kitchen",
 	description:
 		"Atomically upserts the Kitchen and replaces its complete free-form equipment list. Empty equipment is valid.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		body: jsonBody(PutKitchenRequestSchema),
 	},
 	responses: {
 		200: jsonResponse(KitchenResponseSchema, "Saved kitchen"),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		500: errorResponse("Kitchen could not be saved"),
 	},
 });
@@ -83,8 +83,6 @@ export function createKitchenRoute(db: FlemmeDatabase) {
 		},
 	});
 	const service = createKitchenService(db);
-
-	route.use("*", createDevelopmentAuthMiddleware(db));
 
 	route.openapi(getKitchenRouteDefinition, async (context) => {
 		const kitchen = await service.get(context.get("currentUserId"));

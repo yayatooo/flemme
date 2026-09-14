@@ -247,11 +247,17 @@ test("Google callback provisions one UUID identity, restores sessions and preser
 	});
 	expect(JSON.stringify(restored)).not.toContain('"token"');
 	expect(JSON.stringify(restored)).not.toContain("test-only-access");
-	expect((await jar.request("/profile")).status).toBe(401);
+	expect((await jar.request("/profile")).status).toBe(404);
 	expect(
-		(await jar.request("/profile", undefined, { "x-flemme-user-id": user.id }))
-			.status,
-	).toBe(404);
+		(
+			await jar.request("/auth/me", undefined, {
+				"x-flemme-user-id": crypto.randomUUID(),
+			})
+		).status,
+	).toBe(200);
+	expect(await (await jar.request("/auth/me")).json()).toEqual({
+		user: { id: user.id, email: claims.email },
+	});
 	for (const path of [
 		"/get-access-token",
 		"/refresh-token",

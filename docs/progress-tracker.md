@@ -4,15 +4,157 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Auth v1 A4 — Google Implemented; Real Google Acceptance Pending
+Auth v1 — COMPLETE (A8 Accepted)
 
 ## Current Goal
 
-Enable Google alongside passwords without changing Product Domain authentication.
-Real Google login and logout succeeded; returning-login verification remains. A5 identity
-middleware and A7 frontend remain deferred; Auth v1 is not complete.
+Auth v1 is complete: Better Auth sessions are the sole application authentication
+path. Profile, Household, Kitchen / Equipment, Inventory, Favorites, and Auth v1
+are accepted. The next recommended phase is User Platform Product Integration /
+Onboarding; it has not started. Admin Platform work remains out of scope.
 
 ## Completed
+
+### Auth v1 A8
+
+- Retired the temporary authentication selector and header adapter. The common
+  middleware calls official `auth.api.getSession({ headers })`, validates the
+  canonical UUID, and sets `currentUserId: string`. No fallback or service
+  signature change remains.
+- All 23 protected operations use the same boundary, including `/auth/me`,
+  Profile, Household, Kitchen, Inventory, Favorites, Recommendation, Pre-Cooking,
+  Cooking Sessions, Active Cooking, Completion, and Nutrition. Health, OpenAPI,
+  Swagger, and framework-owned Auth endpoints retain their public boundaries.
+- Migrated 11 HTTP integration suites to shared real Better Auth session
+  fixtures. Setup uses the official server signup API to avoid cross-suite HTTP
+  limiter interference; all protected domain requests still send real cookies
+  through the actual middleware. Pure service/database boundaries are unchanged.
+- Security regressions reject missing, invalid, expired, logged-out, and
+  retired-header-only authentication across every protected operation. A valid
+  session remains authoritative over a conflicting legacy identity header.
+- Current OpenAPI, environment, README, architecture, and Swagger instructions
+  describe only session-cookie authentication. Remaining legacy source strings
+  are adversarial security tests; older plan/checkpoint references are explicitly
+  archival. No active runtime or frontend development-auth implementation remains.
+- Removed only the obsolete production mode restriction. Production HTTPS API
+  and web origins, HttpOnly host-only SameSite=Lax cookies, Secure cookies on
+  HTTPS/production, explicit credentialed CORS, and CSRF/origin checks remain.
+- Canonical runtime acceptance started normally without a mode variable.
+  Mobile browser registration/password login, `/auth/me` 200, Profile 404/200,
+  refresh restoration, guest/protected navigation, onboarding, logout 200,
+  stale-cookie/header-only 401, and two-user cache isolation passed.
+  Google initiation reached Google with the unchanged localhost callback.
+  Callback/session acceptance combines passing controlled Google regressions
+  with the accepted A7 user-reported manual browser flow; no account was
+  destructively re-provisioned.
+- Validation: focused Auth 14 tests / 648 expectations; Product Domain HTTP
+  96 tests / 408 expectations; full API 126 tests / 1,108 expectations; web
+  11 tests / 19 expectations; migration 1 test / 20 expectations. Database
+  lifecycle validation, Drizzle check, seven-package typecheck, API/web builds,
+  scoped Biome (31 source files), and whitespace checks pass. Web lint passes
+  with six existing Fast Refresh warnings.
+- No schema or migration changes. Temporary browser users and OAuth state were
+  removed and acceptance servers stopped. Deferred verification, recovery,
+  linking, distributed rate limiting, and Admin authorization were not added.
+
+### Historical checkpoints
+
+The completed milestones below are historical records, not current setup
+instructions. Earlier authentication adapters and mode-selection instructions
+are superseded by A8; consult `apps/api/README.md` for the current workflow.
+
+### Auth v1 A7
+
+- Added the official Better Auth React client at the centralized `/auth`
+  browser boundary. All API requests use `VITE_API_URL`, credentialed cookies,
+  and the shared Flemme error envelope; no browser auth secret or development
+  identity header exists.
+- Added password registration and login, official Google sign-in initiation,
+  canonical `/auth/me` session state, protected and guest route guards, refresh
+  restoration, server logout, user-scoped cache clearing, and safe error
+  messages.
+- Added mobile-first Flemme routes for landing, login, registration, the
+  authenticated platform entry, and onboarding status. Onboarding derives only
+  from existing Profile, Household, Kitchen, and Inventory APIs; it adds no
+  Product Domain behavior or form.
+- Real browser acceptance passed for password registration, automatic session
+  establishment, canonical identity, protected navigation, refresh restoration,
+  logout and stale-session rejection, existing-user login, generic invalid-
+  password handling, and two-user cache isolation.
+- Google browser acceptance was completed manually by the user in the canonical
+  localhost environment. The user confirmed all was working after changing
+  `.env` to `AUTH_MODE=better-auth`. This closes the remaining A7 blocker;
+  final manual browser evidence is user-reported, not agent-observed.
+- A7 validation: 11 web tests / 19 expectations, workspace typecheck, web and
+  API builds, full API 129 tests / 813 expectations, web lint, scoped Biome, and
+  git diff checks. A8, Admin/RBAC, backend development-auth removal, and Product
+  Domain redesign were not started.
+- The canonical acceptance attempt found `.env` selecting
+  `AUTH_MODE=development`. Vite `envDir` was configured to load the documented
+  root environment, and a normal web build passed without an inline environment
+  override. The user subsequently corrected Auth mode and confirmed successful
+  manual acceptance. No alternate OAuth origins, callback changes, or migrations
+  were introduced.
+
+### Auth v1 A6
+
+- Final architecture invariant accepted: password and Google identities resolve
+  through Better Auth database sessions to the canonical users.id UUID and the
+  common currentUserId HTTP boundary. Product Domain services remain auth-
+  transport and provider agnostic.
+- Password acceptance covers registration, migrated/new login, rejection paths,
+  restore, independent sessions, logout and stale-cookie rejection. Accepted A4
+  evidence plus controlled callback regression covers Google provisioning,
+  returning identity, no duplication, restoration, logout and collision policy.
+- Better Auth session coverage reaches `/auth/me`, Profile, Household, Kitchen,
+  Inventory, Favorites, Recommendation, Pre-Cooking, Cooking Sessions and
+  Nutrition. Two authenticated users preserve Inventory and Cooking Session
+  ownership; the full domain suite preserves Favorites ownership semantics.
+- Cookie/session, CORS/origin/CSRF, explicit mode isolation, production fail-
+  closed configuration, account isolation, linking, password policy, rate limits,
+  OpenAPI and database integrity gates pass without an A6 feature or migration.
+- Live isolated API acceptance in `AUTH_MODE=better-auth` passed: password signup,
+  logout, sign-in, `/auth/me` 200 with canonical UUID/email, Profile reached its
+  valid 404 domain state, sign-out 200 and stale-cookie Profile 401. No
+  development header was sent. The temporary user was deleted and server stopped.
+  Real Google runtime evidence was reused from accepted A4 as permitted.
+- Final validation: A3/A4 focused 13 passed / 234 expectations; A5 focused
+  2 passed / 54 expectations; full API 129 passed / 813 expectations; isolated
+  auth migration 1 passed / 20 expectations. Database lifecycle, workspace
+  typecheck, API/web builds, Drizzle, 35-file scoped Biome and git diff checks
+  pass. No apps/web, Admin, RBAC, recovery, verification, linking, credits,
+  billing or Redis work.
+
+### Auth v1 A5
+
+- Added an explicit `AUTH_MODE` with exactly `better-auth` and `development`;
+  missing/invalid modes fail configuration. Production rejects development mode
+  while permitting Better Auth only with the existing HTTPS origin guard.
+- Centralized Product Domain authentication at a generic current-user middleware
+  boundary. Better Auth mode uses the official server `getSession` API and maps
+  only the validated canonical `session.user.id` UUID to `currentUserId`.
+- Better Auth mode ignores `x-flemme-user-id`; development mode ignores session
+  cookies. Neither adapter falls back to the other. Development IDs retain their
+  existing PostgreSQL users.id existence check.
+- Missing, invalid, expired and logged-out sessions return the Flemme
+  `UNAUTHENTICATED` 401 payload without exposing Better Auth details. Auth,
+  health, OpenAPI and Swagger routes remain public.
+- Application-owned GET `/auth/me` uses the same boundary and returns only the
+  canonical users.id UUID and email. Password, controlled Google and
+  unauthenticated behavior are accepted.
+- Password-session acceptance covers Profile, Household, Kitchen, Inventory and
+  Favorites without a development header. Session-backed Recommendation proves
+  persistent context loading and complete request-level replacement semantics.
+  Owned Cooking Session access and cross-user Inventory 403 behavior pass.
+- Protected OpenAPI operations use CurrentUser. Better Auth mode documents the
+  session cookie; development mode documents the explicitly temporary header.
+- Product Domain route/service signatures and ownership-aware queries are
+  unchanged. No apps/web, Admin authorization, ownership redesign, migration or
+  development-auth removal.
+- Final validation: A3/A4 regressions 13 passed / 234 expectations; focused A5
+  2 passed / 51 expectations; full API 129 passed / 810 expectations. Real
+  PostgreSQL migration and lifecycle checks, workspace typecheck, API/web build,
+  Drizzle, scoped Biome and git diff checks pass.
 
 ### Auth v1 A4
 
@@ -29,17 +171,15 @@ middleware and A7 frontend remain deferred; Auth v1 is not complete.
   migration, /auth/me or Google API usage. A3 Argon2/password behavior retained.
 - Social initiation gets the same built-in 20/minute rule as password endpoints;
   callback uses general 100/minute rule, no exception or Redis.
-- Validation: full API 128 passed, focused Auth 16 passed; workspace typecheck,
-  API/web build, Drizzle, Auth-file Biome, git diff check, real PostgreSQL
-  lifecycle and preservation-migration tests pass. No A5/frontend work started.
-- Real Google credentials are now present and configuration-valid. Real API
-  initiation passes with exact callback/scopes/PKCE. Browser-control tooling is
-  unavailable; user completed real login/callback/redirect and restore/logout.
-  DB verified one Google identity/session initially and zero sessions after
-  logout, with no Product Domain rows. Returning login and browser UUID/token
-  checks remain pending; old-cookie replay is covered only by automated tests.
-  Post-login regression and quality checks were rerun successfully; see
-  `docs/plans/flemme-auth-v1-a4-google.md`.
+- A4 validation: full API 128 passed, focused Auth 16 passed; workspace
+  typecheck, API/web build, Drizzle, Auth-file Biome, real PostgreSQL lifecycle
+  and preservation-migration checks passed.
+- Real Google credentials and Cloud configuration are accepted. Real new and
+  returning Google login, callback, restoration and logout completed with the
+  same canonical UUID and no duplicate identity or Product Domain rows.
+  Browser session JSON omitted the raw token, and logged-out cookie replay was
+  rejected. Actual provider tokens remain private.
+  See `docs/plans/flemme-auth-v1-a4-google.md`.
 
 ### Auth v1 A3
 

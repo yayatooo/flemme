@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { createApp } from "../app";
+import { createSessionAuth } from "../test-utils/session-auth";
 import { ActiveCookingResponseSchema } from "./active-cooking-schema";
 
 const databaseUrl = Bun.env.DATABASE_URL;
@@ -87,21 +88,20 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
 let runner: (input: ActiveCookingInput) => Promise<unknown>;
 let capturedInput: ActiveCookingInput | undefined;
 const app = createApp({
+	authFoundation,
 	db,
 	activeCookingRunner: (input) => runner(input),
 });
 let ownerUserId = "";
 let otherUserId = "";
-
-function headers(userId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": userId,
-	};
-}
 
 async function createSession() {
 	const response = await app.request("/cooking-sessions", {
@@ -134,20 +134,8 @@ async function restore(sessionId: string) {
 }
 
 beforeAll(async () => {
-	const [owner, other] = await db
-		.insert(users)
-		.values([
-			{ email: `active-cooking-owner-${crypto.randomUUID()}@flemme.local` },
-			{ email: `active-cooking-other-${crypto.randomUUID()}@flemme.local` },
-		])
-		.returning({ id: users.id });
-
-	if (!owner || !other) {
-		throw new Error("Active Cooking API test users could not be created");
-	}
-
-	ownerUserId = owner.id;
-	otherUserId = other.id;
+	ownerUserId = await createAuthenticatedUser();
+	otherUserId = await createAuthenticatedUser();
 });
 
 afterAll(async () => {
@@ -425,7 +413,10 @@ describe("Active Cooking API integration", () => {
 
 	test("reports missing provider configuration after restoring the session", async () => {
 		const sessionId = await createSession();
-		const unconfiguredApp = createApp({ db });
+		const unconfiguredApp = createApp({
+			authFoundation,
+			db,
+		});
 		const response = await unconfiguredApp.request(
 			`/cooking-sessions/${sessionId}/active-cooking`,
 			{

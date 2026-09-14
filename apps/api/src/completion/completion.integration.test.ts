@@ -14,6 +14,7 @@ import {
 	CookingSessionResponseSchema,
 	type CreateCookingSessionRequest,
 } from "../cooking-session/cooking-session-schema";
+import { createSessionAuth } from "../test-utils/session-auth";
 import { CompletionResponseSchema } from "./completion-schema";
 
 const databaseUrl = Bun.env.DATABASE_URL;
@@ -91,21 +92,20 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
 let runner: (input: CompletionInput) => Promise<unknown>;
 let capturedInput: CompletionInput | undefined;
 const app = createApp({
+	authFoundation,
 	db,
 	completionRunner: (input) => runner(input),
 });
 let ownerUserId = "";
 let otherUserId = "";
-
-function headers(userId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": userId,
-	};
-}
 
 async function createSession(
 	session: CreateCookingSessionRequest["session"] = completionReadySession,
@@ -149,20 +149,8 @@ async function restore(sessionId: string) {
 }
 
 beforeAll(async () => {
-	const [owner, other] = await db
-		.insert(users)
-		.values([
-			{ email: `completion-owner-${crypto.randomUUID()}@flemme.local` },
-			{ email: `completion-other-${crypto.randomUUID()}@flemme.local` },
-		])
-		.returning({ id: users.id });
-
-	if (!owner || !other) {
-		throw new Error("Completion API test users could not be created");
-	}
-
-	ownerUserId = owner.id;
-	otherUserId = other.id;
+	ownerUserId = await createAuthenticatedUser();
+	otherUserId = await createAuthenticatedUser();
 });
 
 afterAll(async () => {
@@ -400,7 +388,10 @@ describe("Completion AI API integration", () => {
 
 	test("reports missing provider configuration", async () => {
 		const created = await createSession();
-		const unconfiguredApp = createApp({ db });
+		const unconfiguredApp = createApp({
+			authFoundation,
+			db,
+		});
 		const response = await unconfiguredApp.request(
 			`/cooking-sessions/${created.id}/completion`,
 			{

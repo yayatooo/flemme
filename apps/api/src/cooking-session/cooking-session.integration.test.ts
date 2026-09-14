@@ -9,6 +9,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { createApp } from "../app";
+import { createSessionAuth } from "../test-utils/session-auth";
 import {
 	type CookingSessionResponse,
 	CookingSessionResponseSchema,
@@ -85,16 +86,14 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
-const app = createApp({ db });
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers: authenticatedHeaders,
+} = createSessionAuth(db);
+const app = createApp({ authFoundation, db });
 let ownerUserId = "";
 let otherUserId = "";
-
-function authenticatedHeaders(userId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": userId,
-	};
-}
 
 async function createSession(userId: string): Promise<CookingSessionResponse> {
 	const response = await app.request("/cooking-sessions", {
@@ -108,22 +107,8 @@ async function createSession(userId: string): Promise<CookingSessionResponse> {
 }
 
 beforeAll(async () => {
-	const createdUsers = await db
-		.insert(users)
-		.values([
-			{ email: `api-owner-${crypto.randomUUID()}@flemme.local` },
-			{ email: `api-other-${crypto.randomUUID()}@flemme.local` },
-		])
-		.returning({ id: users.id });
-
-	const [owner, other] = createdUsers;
-
-	if (!owner || !other) {
-		throw new Error("API integration users could not be created");
-	}
-
-	ownerUserId = owner.id;
-	otherUserId = other.id;
+	ownerUserId = await createAuthenticatedUser();
+	otherUserId = await createAuthenticatedUser();
 });
 
 afterAll(async () => {
@@ -181,7 +166,7 @@ describe("cooking-session API integration", () => {
 		expect(await swaggerResponse.text()).toContain("SwaggerUIBundle");
 	});
 
-	test("requires a real development user for cooking routes", async () => {
+	test("requires a session for cooking routes", async () => {
 		const response = await app.request(
 			`/cooking-sessions/${crypto.randomUUID()}`,
 		);

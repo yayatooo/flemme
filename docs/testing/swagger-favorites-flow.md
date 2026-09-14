@@ -1,7 +1,9 @@
 # Swagger Favorites Flow
 
-Run `bun run --filter @flemme/api dev`, open `http://localhost:3000/docs`, and
-authorize DevelopmentUser with a real user's UUID. Favorites needs no AI.
+Run `bun run --filter @flemme/api dev`, sign in through apps/web, then open
+`http://localhost:3000/docs` in the same browser. Follow the
+[session authentication guide](swagger-cooking-flow.md#session-authentication).
+Favorites needs no AI.
 Use an owned session completed via `POST /cooking-sessions/{id}/complete`;
 Completion AI alone does not persist completion.
 
@@ -22,7 +24,7 @@ Completion AI alone does not persist completion.
 
 Cross-user deletion returns 403 `FAVORITE_FORBIDDEN`; missing favorite returns
 404 `FAVORITE_NOT_FOUND`. Unknown request fields and malformed UUIDs return
-400; invalid development identity returns 401. Client recipe data is rejected.
+400; missing or invalid sessions return 401. Client recipe data is rejected.
 
 Listing sorts createdAt descending, then UUID descending. No pagination.
 Recipe summaries are projections, never copied, regenerated, or derived from

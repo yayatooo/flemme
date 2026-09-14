@@ -2,7 +2,7 @@ import type { FlemmeDatabase } from "@flemme/db";
 import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	CreateInventoryItemSchema,
 	InventoryItemParamsSchema,
@@ -27,7 +27,7 @@ const errors = {
 		"Invalid persisted state or internal error",
 	),
 };
-const common = { tags: ["Inventory"], security: [{ DevelopmentUser: [] }] };
+const common = { tags: ["Inventory"], security: [{ CurrentUser: [] }] };
 export function createInventoryRoute(db: FlemmeDatabase) {
 	const route = new OpenAPIHono<ApiEnvironment>({
 		defaultHook: (result, c) => {
@@ -44,7 +44,6 @@ export function createInventoryRoute(db: FlemmeDatabase) {
 		},
 	});
 	const service = createInventoryService(db);
-	route.use("*", createDevelopmentAuthMiddleware(db));
 	route.openapi(
 		createRoute({
 			...common,

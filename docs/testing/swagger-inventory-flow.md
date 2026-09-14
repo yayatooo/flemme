@@ -1,9 +1,10 @@
 # Swagger Inventory Flow
 
 Start the API with `bun run --filter @flemme/api dev` and open
-`http://localhost:3000/docs`. Authorize DevelopmentUser with an existing user
-UUID. No AI provider is required. Use a disposable development user: these
-operations persist real changes.
+`http://localhost:3000/docs` after signing in through apps/web in the same
+browser. Follow the [session authentication guide](swagger-cooking-flow.md#session-authentication).
+No AI provider is required. Use a disposable test account: these operations
+persist real changes.
 
 1. GET `/inventory`. A user without a parent gets 404 `INVENTORY_NOT_FOUND`;
    GET does not initialize persistence. An existing empty parent returns
@@ -55,7 +56,7 @@ Legacy persisted keys such as `salt` remain readable using the key as the name
 fallback; new writes require a production key such as `table-salt`. No legacy
 key is automatically mapped to another ingredient.
 
-Missing/invalid development identities return 401. Another user's item returns
+Missing or invalid sessions return 401. Another user's item returns
 403, matching existing cooking-session ownership semantics; absent items return
 404. All mutations use authenticated ownership, and unknown fields are rejected.
 Creating the parent and item is atomic. Deletion never changes cooking history

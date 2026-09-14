@@ -7,6 +7,7 @@ import {
 	CompleteCookingSessionRequestSchema,
 	CreateCookingSessionRequestSchema,
 } from "../cooking-session/cooking-session-schema";
+import { createSessionAuth } from "../test-utils/session-auth";
 import { calculateCookingSessionNutrition } from "./cooking-session-nutrition-service";
 
 function planWithIngredients(
@@ -106,7 +107,10 @@ describe("calculateCookingSessionNutrition", () => {
 	});
 
 	test("publishes nutrition preview and rejects client nutrition contracts", async () => {
-		const app = createApp({ db: {} as never });
+		const app = createApp({
+			authFoundation: createSessionAuth({} as never).authFoundation,
+			db: {} as never,
+		});
 		const response = await app.request("/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<

@@ -11,18 +11,18 @@ commands:
 ```bash
 docker-compose up -d
 bun run --filter @flemme/db db:migrate
-bun run --filter @flemme/db db:seed
 bun run --filter @flemme/api dev
 ```
 
-Open [Swagger UI](http://localhost:3000/docs), select **Authorize**, and enter
-the real development user UUID printed by the seed command.
+Sign in through apps/web and open [Swagger UI](http://localhost:3000/docs) in
+the same browser. Follow the
+[session authentication guide](swagger-cooking-flow.md#session-authentication).
 
 ## Read the current profile
 
 Execute `GET /profile`.
 
-The seeded user returns HTTP 200. A valid user without a profile returns HTTP
+An account with an existing profile returns HTTP 200. Otherwise it returns HTTP
 404 with `PROFILE_NOT_FOUND`.
 
 ## Create or replace cooking preferences

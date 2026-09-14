@@ -17,12 +17,6 @@ if (!databaseUrl) {
 	throw new Error("DATABASE_URL is required to start @flemme/api");
 }
 
-if (Bun.env.NODE_ENV === "production") {
-	throw new Error(
-		"The development authentication adapter must be replaced before production",
-	);
-}
-
 const port = Number(Bun.env.PORT ?? 3000);
 
 if (!Number.isInteger(port) || port <= 0) {

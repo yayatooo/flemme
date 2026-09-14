@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	ProfileResponseSchema,
 	PutProfileRequestSchema,
@@ -38,10 +38,10 @@ const getProfileRouteDefinition = createRoute({
 	summary: "Get the current user's cooking profile",
 	description:
 		"Returns the persistent food and cooking preferences used by cooking-context orchestration.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	responses: {
 		200: jsonResponse(ProfileResponseSchema, "Current user's cooking profile"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		404: errorResponse("Profile has not been created"),
 		500: errorResponse("Persisted profile is invalid"),
 	},
@@ -54,14 +54,14 @@ const putProfileRouteDefinition = createRoute({
 	summary: "Create or replace the current user's cooking profile",
 	description:
 		"Upserts the profile and replaces both preference arrays as complete values. Empty arrays are valid.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		body: jsonBody(PutProfileRequestSchema),
 	},
 	responses: {
 		200: jsonResponse(ProfileResponseSchema, "Saved cooking profile"),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		500: errorResponse("Profile could not be saved"),
 	},
 });
@@ -83,8 +83,6 @@ export function createProfileRoute(db: FlemmeDatabase) {
 		},
 	});
 	const service = createProfileService(db);
-
-	route.use("*", createDevelopmentAuthMiddleware(db));
 
 	route.openapi(getProfileRouteDefinition, async (context) => {
 		const profile = await service.get(context.get("currentUserId"));

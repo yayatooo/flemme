@@ -18,6 +18,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { createApp } from "../app";
+import { createSessionAuth } from "../test-utils/session-auth";
 import { CookingRecommendationResponseSchema } from "./cooking-recommendation-schema";
 
 const databaseUrl = Bun.env.DATABASE_URL;
@@ -57,21 +58,20 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
 let runner: (context: CookingRecommendationInput) => Promise<unknown>;
 let capturedContext: CookingRecommendationInput | undefined;
 const app = createApp({
+	authFoundation,
 	db,
 	recommendationRunner: (context) => runner(context),
 });
 let userId = "";
 let contextlessUserId = "";
-
-function headers(currentUserId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": currentUserId,
-	};
-}
 
 async function requestRecommendation(currentUserId: string, body: unknown) {
 	return app.request("/cooking/recommendations", {
@@ -82,20 +82,8 @@ async function requestRecommendation(currentUserId: string, body: unknown) {
 }
 
 beforeAll(async () => {
-	const [user, contextlessUser] = await db
-		.insert(users)
-		.values([
-			{ email: `recommendation-${crypto.randomUUID()}@flemme.local` },
-			{ email: `contextless-${crypto.randomUUID()}@flemme.local` },
-		])
-		.returning({ id: users.id });
-
-	if (!user || !contextlessUser) {
-		throw new Error("Recommendation API test users could not be created");
-	}
-
-	userId = user.id;
-	contextlessUserId = contextlessUser.id;
+	userId = await createAuthenticatedUser();
+	contextlessUserId = await createAuthenticatedUser();
 
 	await db.insert(userProfiles).values({
 		userId,
@@ -234,19 +222,21 @@ describe("cooking recommendation API integration", () => {
 		expect(error.error.code).toBe("INVALID_REQUEST");
 	});
 
-	test("requires a valid development user", async () => {
+	test("rejects missing sessions and sessions for deleted users", async () => {
 		runner = async () => recommendationOutput;
+		const deletedUserId = await createAuthenticatedUser();
+		await db.delete(users).where(eq(users.id, deletedUserId));
 		const missingResponse = await app.request("/cooking/recommendations", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ session: {} }),
 		});
-		const unknownResponse = await requestRecommendation(crypto.randomUUID(), {
+		const deletedUserResponse = await requestRecommendation(deletedUserId, {
 			session: {},
 		});
 
 		expect(missingResponse.status).toBe(401);
-		expect(unknownResponse.status).toBe(401);
+		expect(deletedUserResponse.status).toBe(401);
 	});
 
 	test("reports missing persistent cooking context without inventing defaults", async () => {
@@ -282,7 +272,10 @@ describe("cooking recommendation API integration", () => {
 	});
 
 	test("reports missing agent configuration without exposing environment details", async () => {
-		const unconfiguredApp = createApp({ db });
+		const unconfiguredApp = createApp({
+			authFoundation,
+			db,
+		});
 		const response = await unconfiguredApp.request("/cooking/recommendations", {
 			method: "POST",
 			headers: headers(userId),

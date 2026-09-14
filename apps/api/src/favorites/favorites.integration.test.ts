@@ -3,6 +3,7 @@ import { cookingSessions, createDatabase, favorites, users } from "@flemme/db";
 import { eq, inArray, sql } from "drizzle-orm";
 import { createApp } from "../app";
 import { createCookingSessionService } from "../cooking-session/cooking-session-service";
+import { createSessionAuth } from "../test-utils/session-auth";
 import {
 	FavoriteResponseSchema,
 	FavoritesResponseSchema,
@@ -10,17 +11,18 @@ import {
 
 if (!Bun.env.DATABASE_URL) throw new Error("DATABASE_URL required");
 const { db, client } = createDatabase(Bun.env.DATABASE_URL);
-const app = createApp({ db });
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
+const app = createApp({ authFoundation, db });
 const sessionService = createCookingSessionService(db);
 const ids: string[] = [];
 async function user() {
-	const [row] = await db
-		.insert(users)
-		.values({ email: `favorites-${crypto.randomUUID()}@flemme.local` })
-		.returning();
-	if (!row) throw new Error("Missing user");
-	ids.push(row.id);
-	return row.id;
+	const userId = await createAuthenticatedUser();
+	ids.push(userId);
+	return userId;
 }
 afterAll(async () => {
 	if (ids.length) await db.delete(users).where(inArray(users.id, ids));
@@ -34,7 +36,7 @@ function request(
 ) {
 	return app.request(path, {
 		method,
-		headers: { "x-flemme-user-id": uid, "content-type": "application/json" },
+		headers: headers(uid),
 		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 	});
 }
@@ -126,7 +128,7 @@ test("empty, create, projection, duplicate, delete and preserved completed histo
 	expect(
 		(
 			await app.request(`/cooking-sessions/${cooked.id}`, {
-				headers: { "x-flemme-user-id": uid },
+				headers: headers(uid),
 			})
 		).status,
 	).toBe(200);
@@ -158,7 +160,7 @@ test("active, paused, abandoned and corrupt completed sessions are ineligible", 
 		await db.select().from(favorites).where(eq(favorites.userId, uid)),
 	).toHaveLength(0);
 });
-test("ownership, missing resources, development auth and strict payloads", async () => {
+test("ownership, missing resources, session auth and strict payloads", async () => {
 	const uid = await user(),
 		other = await user();
 	const cooked = await session(uid);
@@ -184,8 +186,9 @@ test("ownership, missing resources, development auth and strict payloads", async
 			})
 		).status,
 	).toBe(404);
-	for (const identity of ["invalid", crypto.randomUUID()])
-		expect((await request(identity)).status).toBe(401);
+	const deletedUserId = await user();
+	await db.delete(users).where(eq(users.id, deletedUserId));
+	expect((await request(deletedUserId)).status).toBe(401);
 	expect((await app.request("/favorites")).status).toBe(401);
 	for (const body of [
 		{},
@@ -233,7 +236,5 @@ test("OpenAPI includes authenticated Favorites operations", async () => {
 		["/favorites", "post"],
 		["/favorites/{id}", "delete"],
 	] as const)
-		expect(doc.paths[path]?.[method]?.security).toEqual([
-			{ DevelopmentUser: [] },
-		]);
+		expect(doc.paths[path]?.[method]?.security).toEqual([{ CurrentUser: [] }]);
 });

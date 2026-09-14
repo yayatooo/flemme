@@ -26,7 +26,10 @@ const auth = createAuthServer(db, {
 	GOOGLE_CLIENT_SECRET: "a4-test-secret",
 	NODE_ENV: "test",
 });
-const app = createApp({ db, authFoundation: { auth, webOrigin: origin } });
+const app = createApp({
+	db,
+	authFoundation: { auth, webOrigin: origin },
+});
 const createdEmails: string[] = [];
 const legacySessionIds: string[] = [];
 afterAll(async () => {
@@ -145,11 +148,10 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 	expect(restored.user).toMatchObject({ id: user.id });
 	expect(restored.session).toMatchObject({ id: session?.id, userId: user.id });
 	expect((restored.session as Record<string, unknown>).token).toBeUndefined();
-	expect((await jar.request("/profile")).status).toBe(401);
-	expect(
-		(await jar.request("/profile", undefined, { "x-flemme-user-id": user.id }))
-			.status,
-	).toBe(404);
+	expect(await (await jar.request("/auth/me")).json()).toEqual({
+		user: { id: user.id, email: address },
+	});
+	expect((await jar.request("/profile")).status).toBe(404);
 	for (const duplicate of [address, address.toUpperCase()]) {
 		const duplicateResponse = await new CookieJar().request(
 			"/auth/sign-up/email",

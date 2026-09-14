@@ -19,6 +19,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { createApp } from "../app";
+import { createSessionAuth } from "../test-utils/session-auth";
 import { PreCookingResponseSchema } from "./pre-cooking-schema";
 
 const databaseUrl = Bun.env.DATABASE_URL;
@@ -79,21 +80,20 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
 let runner: (input: PreCookingInput) => Promise<unknown>;
 let capturedInput: PreCookingInput | undefined;
 const app = createApp({
+	authFoundation,
 	db,
 	preCookingRunner: (input) => runner(input),
 });
 let userId = "";
 let contextlessUserId = "";
-
-function headers(currentUserId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": currentUserId,
-	};
-}
 
 async function requestPreCooking(currentUserId: string, body: unknown) {
 	return app.request("/cooking/pre-cooking", {
@@ -104,20 +104,8 @@ async function requestPreCooking(currentUserId: string, body: unknown) {
 }
 
 beforeAll(async () => {
-	const [user, contextlessUser] = await db
-		.insert(users)
-		.values([
-			{ email: `pre-cooking-${crypto.randomUUID()}@flemme.local` },
-			{ email: `pre-cooking-contextless-${crypto.randomUUID()}@flemme.local` },
-		])
-		.returning({ id: users.id });
-
-	if (!user || !contextlessUser) {
-		throw new Error("Pre-Cooking API test users could not be created");
-	}
-
-	userId = user.id;
-	contextlessUserId = contextlessUser.id;
+	userId = await createAuthenticatedUser();
+	contextlessUserId = await createAuthenticatedUser();
 
 	await db.insert(userProfiles).values({
 		userId,
@@ -259,20 +247,22 @@ describe("pre-cooking API integration", () => {
 		expect(error.error.code).toBe("INVALID_REQUEST");
 	});
 
-	test("requires a valid development user", async () => {
+	test("rejects missing sessions and sessions for deleted users", async () => {
 		runner = async () => preCookingOutput;
+		const deletedUserId = await createAuthenticatedUser();
+		await db.delete(users).where(eq(users.id, deletedUserId));
 		const missingResponse = await app.request("/cooking/pre-cooking", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ selectedRecipe, session: {} }),
 		});
-		const unknownResponse = await requestPreCooking(crypto.randomUUID(), {
+		const deletedUserResponse = await requestPreCooking(deletedUserId, {
 			selectedRecipe,
 			session: {},
 		});
 
 		expect(missingResponse.status).toBe(401);
-		expect(unknownResponse.status).toBe(401);
+		expect(deletedUserResponse.status).toBe(401);
 	});
 
 	test("reports missing persistent cooking context", async () => {
@@ -315,7 +305,10 @@ describe("pre-cooking API integration", () => {
 	});
 
 	test("reports missing agent configuration safely", async () => {
-		const unconfiguredApp = createApp({ db });
+		const unconfiguredApp = createApp({
+			authFoundation,
+			db,
+		});
 		const response = await unconfiguredApp.request("/cooking/pre-cooking", {
 			method: "POST",
 			headers: headers(userId),
@@ -335,10 +328,10 @@ describe("pre-cooking API integration", () => {
 			.object({
 				components: z.object({
 					securitySchemes: z.object({
-						DevelopmentUser: z.object({
+						CurrentUser: z.object({
 							type: z.literal("apiKey"),
-							in: z.literal("header"),
-							name: z.literal("x-flemme-user-id"),
+							in: z.literal("cookie"),
+							name: z.literal("better-auth.session_token"),
 						}),
 					}),
 				}),
@@ -348,15 +341,13 @@ describe("pre-cooking API integration", () => {
 		const preCookingOperation = z
 			.object({
 				post: z.object({
-					security: z.array(z.object({ DevelopmentUser: z.array(z.string()) })),
+					security: z.array(z.object({ CurrentUser: z.array(z.string()) })),
 				}),
 			})
 			.parse(specification.paths["/cooking/pre-cooking"]);
 
 		expect(response.status).toBe(200);
 		expect(Object.keys(specification.paths)).toContain("/cooking/pre-cooking");
-		expect(preCookingOperation.post.security).toEqual([
-			{ DevelopmentUser: [] },
-		]);
+		expect(preCookingOperation.post.security).toEqual([{ CurrentUser: [] }]);
 	});
 });

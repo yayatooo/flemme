@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { createApp } from "../app";
 import { createCookingContextService } from "../cooking/cooking-context-service";
+import { createSessionAuth } from "../test-utils/session-auth";
 import { KitchenResponseSchema } from "./kitchen-schema";
 import { createKitchenService } from "./kitchen-service";
 
@@ -19,28 +20,18 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
-const app = createApp({ db });
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
+const app = createApp({ authFoundation, db });
 const createdUserIds: string[] = [];
 
-function headers(userId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": userId,
-	};
-}
-
 async function createUser() {
-	const [user] = await db
-		.insert(users)
-		.values({ email: `kitchen-${crypto.randomUUID()}@flemme.local` })
-		.returning({ id: users.id });
-
-	if (!user) {
-		throw new Error("Kitchen API test user could not be created");
-	}
-
-	createdUserIds.push(user.id);
-	return user.id;
+	const userId = await createAuthenticatedUser();
+	createdUserIds.push(userId);
+	return userId;
 }
 
 async function putKitchen(userId: string, body: unknown) {
@@ -207,17 +198,19 @@ describe("Kitchen API integration", () => {
 		expect(second).toEqual({ equipment: ["air fryer"] });
 	});
 
-	test("requires an existing development user", async () => {
-		const missingHeaderResponse = await app.request("/kitchen");
-		const unknownUserResponse = await getKitchen(crypto.randomUUID());
+	test("rejects missing sessions and sessions for deleted users", async () => {
+		const userId = await createUser();
+		await db.delete(users).where(eq(users.id, userId));
+		const missingSessionResponse = await app.request("/kitchen");
+		const deletedUserResponse = await getKitchen(userId);
 
-		expect(missingHeaderResponse.status).toBe(401);
+		expect(missingSessionResponse.status).toBe(401);
 		expect(
-			ErrorResponseSchema.parse(await missingHeaderResponse.json()).error.code,
+			ErrorResponseSchema.parse(await missingSessionResponse.json()).error.code,
 		).toBe("UNAUTHENTICATED");
-		expect(unknownUserResponse.status).toBe(401);
+		expect(deletedUserResponse.status).toBe(401);
 		expect(
-			ErrorResponseSchema.parse(await unknownUserResponse.json()).error.code,
+			ErrorResponseSchema.parse(await deletedUserResponse.json()).error.code,
 		).toBe("UNAUTHENTICATED");
 	});
 

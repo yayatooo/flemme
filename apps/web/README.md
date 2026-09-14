@@ -1,32 +1,57 @@
-# React + TypeScript + Vite
+# `@flemme/web`
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React/Vite User Platform using TanStack Router and TanStack Query.
 
-Currently, two official plugins are available:
+## Public environment
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Set the public API origin in the root `.env`:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```env
+VITE_API_URL=http://localhost:3000
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+This must be an exact HTTP(S) origin. It is public browser configuration, not a
+secret. Never expose `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_SECRET`,
+`DATABASE_URL`, session tokens, or OAuth tokens through `VITE_*` variables.
+
+The API must use the matching `WEB_ORIGIN`. Better Auth sessions are required.
+
+## Authentication
+
+The official Better Auth React client owns email/password registration, login,
+Google initiation, and server logout. Its base path is `/auth`; browser requests
+include credentials. Flemme identity is restored separately through
+`GET /auth/me`, which returns only the canonical user UUID and email.
+
+No session or provider token is stored in localStorage/sessionStorage. The User
+Platform authenticates exclusively with server-managed HttpOnly cookies.
+
+Routes:
+
+- `/` — public landing page.
+- `/login` and `/register` — guest-only Auth pages.
+- `/app` — protected User Platform entry.
+- `/onboarding` — protected, bounded setup-status shell.
+
+After authentication, TanStack Query checks Profile, Household, Kitchen and
+Inventory. Their documented `*_NOT_FOUND` 404 responses mean onboarding is
+required; an existing empty Inventory is initialized. Unexpected failures remain
+errors. Auth state contains only the current user/loading status; Product Domain
+data remains separate server state.
+
+Logout invalidates the server session, clears the complete query cache, records
+an unauthenticated Auth result, and navigates to login. A Product Domain 401 does
+the same cache cleanup before returning to login. Product Domain 404 responses
+do not invalidate Auth.
+
+## Commands
+
+```bash
+bun run test
+bun run typecheck
+bun run build
+```
+
+The lightweight Bun tests cover credentialed Product Domain requests, Auth
+restore/actions, route-guard decisions, onboarding missing/initialized/error
+states, and logout cache isolation without adding a DOM test framework.

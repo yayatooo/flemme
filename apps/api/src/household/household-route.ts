@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	HouseholdResponseSchema,
 	PutHouseholdRequestSchema,
@@ -38,10 +38,10 @@ const getHouseholdRouteDefinition = createRoute({
 	summary: "Get the current user's household",
 	description:
 		"Returns aggregate household counts used by cooking-context orchestration.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	responses: {
 		200: jsonResponse(HouseholdResponseSchema, "Current user's household"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		404: errorResponse("Household has not been created"),
 		500: errorResponse("Persisted household is invalid"),
 	},
@@ -54,14 +54,14 @@ const putHouseholdRouteDefinition = createRoute({
 	summary: "Create or replace the current user's household",
 	description:
 		"Upserts the household and replaces the complete adults, children, and toddlers aggregate counts. Zero is valid.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		body: jsonBody(PutHouseholdRequestSchema),
 	},
 	responses: {
 		200: jsonResponse(HouseholdResponseSchema, "Saved household"),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		500: errorResponse("Household could not be saved"),
 	},
 });
@@ -83,8 +83,6 @@ export function createHouseholdRoute(db: FlemmeDatabase) {
 		},
 	});
 	const service = createHouseholdService(db);
-
-	route.use("*", createDevelopmentAuthMiddleware(db));
 
 	route.openapi(getHouseholdRouteDefinition, async (context) => {
 		const household = await service.get(context.get("currentUserId"));

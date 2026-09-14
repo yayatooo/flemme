@@ -3,6 +3,7 @@ import { createDatabase, inventories, inventoryItems, users } from "@flemme/db";
 import { eq, inArray } from "drizzle-orm";
 import { createApp } from "../app";
 import { createCookingContextService } from "../cooking/cooking-context-service";
+import { createSessionAuth } from "../test-utils/session-auth";
 import {
 	InventoryItemResponseSchema,
 	InventoryResponseSchema,
@@ -11,16 +12,17 @@ import { createInventoryService } from "./inventory-service";
 
 if (!Bun.env.DATABASE_URL) throw new Error("DATABASE_URL required");
 const { db, client } = createDatabase(Bun.env.DATABASE_URL);
-const app = createApp({ db });
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
+const app = createApp({ authFoundation, db });
 const ids: string[] = [];
 async function user() {
-	const [u] = await db
-		.insert(users)
-		.values({ email: `inventory-${crypto.randomUUID()}@flemme.local` })
-		.returning();
-	if (!u) throw new Error("Missing user");
-	ids.push(u.id);
-	return u.id;
+	const userId = await createAuthenticatedUser();
+	ids.push(userId);
+	return userId;
 }
 async function request(
 	uid: string,
@@ -30,7 +32,7 @@ async function request(
 ) {
 	return app.request(path, {
 		method,
-		headers: { "x-flemme-user-id": uid, "content-type": "application/json" },
+		headers: headers(uid),
 		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 	});
 }
@@ -155,8 +157,9 @@ test("ownership, identity and malformed payload rejection", async () => {
 		(await request(other, `/inventory/items/${crypto.randomUUID()}`, "DELETE"))
 			.status,
 	).toBe(404);
-	for (const identity of ["bad-id", crypto.randomUUID()])
-		expect((await request(identity)).status).toBe(401);
+	const deletedUserId = await user();
+	await db.delete(users).where(eq(users.id, deletedUserId));
+	expect((await request(deletedUserId)).status).toBe(401);
 	expect((await app.request("/inventory")).status).toBe(401);
 	for (const body of [
 		{ ...input, quantity: 0 },

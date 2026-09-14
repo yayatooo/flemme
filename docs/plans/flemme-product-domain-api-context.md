@@ -1,5 +1,10 @@
 # Flemme — Product Domain API Context
 
+> Historical Product Domain implementation context. Authentication instructions
+> below predate Auth v1 and are not current. Product Domain services retain the
+> same currentUserId boundary; HTTP authentication now uses Better Auth sessions.
+> See the [current guide](../testing/swagger-cooking-flow.md#session-authentication).
+
 ## Purpose
 
 This document is the handoff context for the next Flemme backend topic after the Cooking Engine work.

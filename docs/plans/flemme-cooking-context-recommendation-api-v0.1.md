@@ -1,5 +1,9 @@
 # Task — Flemme Cooking Context + Recommendation API v0.1
 
+> Archived implementation plan. Authentication instructions below describe the
+> pre-Auth-v1 checkpoint, not an available workflow. Use the current
+> [session authentication guide](../testing/swagger-cooking-flow.md#session-authentication).
+
 We are continuing Flemme API development incrementally.
 
 Current backend foundation is already complete and validated:

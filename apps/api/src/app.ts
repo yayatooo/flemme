@@ -7,6 +7,8 @@ import type { ActiveCookingRunner } from "./active-cooking/active-cooking-servic
 import type { ApiEnvironment } from "./api-environment";
 import { ApiError, createApiErrorPayload } from "./api-error";
 import type { AuthServer } from "./auth/auth-server";
+import { createCurrentUserMiddleware } from "./auth/current-user-middleware";
+import { createCurrentUserRoute } from "./auth/current-user-route";
 import { createCompletionRoute } from "./completion/completion-route";
 import type { CompletionRunner } from "./completion/completion-service";
 import { createCookingRecommendationRoute } from "./cooking-recommendation/cooking-recommendation-route";
@@ -22,7 +24,7 @@ import type { PreCookingRunner } from "./pre-cooking/pre-cooking-service";
 import { createProfileRoute } from "./profile/profile-route";
 
 interface CreateAppInput {
-	authFoundation?: { auth: AuthServer; webOrigin: string };
+	authFoundation: { auth: AuthServer; webOrigin: string };
 	db: FlemmeDatabase;
 	activeCookingRunner?: ActiveCookingRunner;
 	completionRunner?: CompletionRunner;
@@ -39,28 +41,29 @@ export function createApp({
 	preCookingRunner,
 }: CreateAppInput) {
 	const app = new OpenAPIHono<ApiEnvironment>();
-	// Optional injection preserves isolated domain tests; the real entry point
-	// always validates configuration and supplies the foundation.
-	if (authFoundation) {
-		app.use(
-			"*",
-			cors({
-				origin: (origin) =>
-					origin === authFoundation.webOrigin ? origin : undefined,
-				credentials: true,
-				allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-				allowHeaders: ["Content-Type", "x-flemme-user-id"],
-			}),
-		);
-		app.all("/auth/*", (c) => authFoundation.auth.handler(c.req.raw));
-	}
-	app.openAPIRegistry.registerComponent("securitySchemes", "DevelopmentUser", {
+	const currentUserMiddleware = createCurrentUserMiddleware(
+		authFoundation.auth,
+	);
+	app.use(
+		"*",
+		cors({
+			origin: (origin) =>
+				origin === authFoundation.webOrigin ? origin : undefined,
+			credentials: true,
+			allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+			allowHeaders: ["Content-Type"],
+		}),
+	);
+	app.openAPIRegistry.registerComponent("securitySchemes", "CurrentUser", {
 		type: "apiKey",
-		in: "header",
-		name: "x-flemme-user-id",
+		in: "cookie",
+		name: "better-auth.session_token",
 		description:
-			"Development-only UUID printed by `bun run --filter @flemme/db db:seed`",
+			"Better Auth HttpOnly session cookie. Secure deployments may apply the framework's __Secure- prefix.",
 	});
+	app.use("/auth/me", currentUserMiddleware);
+	app.route("/auth/me", createCurrentUserRoute(db));
+	app.all("/auth/*", (context) => authFoundation.auth.handler(context.req.raw));
 
 	app.openapi(
 		createRoute({
@@ -80,6 +83,22 @@ export function createApp({
 		}),
 		(context) => context.json({ status: "ok" as const }, 200),
 	);
+	for (const path of [
+		"/cooking/*",
+		"/cooking-sessions/*",
+		"/favorites",
+		"/favorites/*",
+		"/household",
+		"/household/*",
+		"/inventory",
+		"/inventory/*",
+		"/kitchen",
+		"/kitchen/*",
+		"/profile",
+		"/profile/*",
+	] as const) {
+		app.use(path, currentUserMiddleware);
+	}
 	app.route(
 		"/cooking/recommendations",
 		createCookingRecommendationRoute({ db, recommendationRunner }),

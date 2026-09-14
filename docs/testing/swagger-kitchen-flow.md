@@ -1,7 +1,8 @@
 # Swagger Kitchen / Equipment API v0.1
 
-Start the API with `bun run --filter @flemme/api dev`, open
-http://localhost:3000/docs, and authorize with an existing development user UUID.
+Start the API with `bun run --filter @flemme/api dev`, sign in through apps/web,
+then open http://localhost:3000/docs in the same browser. Follow the
+[session authentication guide](swagger-cooking-flow.md#session-authentication).
 PostgreSQL must be running; use `docker-compose up -d` if needed.
 
 1. Execute `GET /kitchen`. An existing kitchen returns its equipment; a user

@@ -2,7 +2,7 @@ import type { FlemmeDatabase } from "@flemme/db";
 import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	CreateFavoriteSchema,
 	FavoriteParamsSchema,
@@ -29,7 +29,7 @@ const errors = {
 		"Invalid persisted state or internal error",
 	),
 };
-const common = { tags: ["Favorites"], security: [{ DevelopmentUser: [] }] };
+const common = { tags: ["Favorites"], security: [{ CurrentUser: [] }] };
 export function createFavoritesRoute(db: FlemmeDatabase) {
 	const route = new OpenAPIHono<ApiEnvironment>({
 		defaultHook: (result, c) => {
@@ -46,7 +46,6 @@ export function createFavoritesRoute(db: FlemmeDatabase) {
 		},
 	});
 	const service = createFavoritesService(db);
-	route.use("*", createDevelopmentAuthMiddleware(db));
 	route.openapi(
 		createRoute({
 			...common,

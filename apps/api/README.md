@@ -5,11 +5,10 @@ application orchestration, user ownership, and persistence coordination.
 
 ## Local development
 
-A4 requires `BETTER_AUTH_SECRET` (your own random secret, at least 32 characters),
-`BETTER_AUTH_URL=http://localhost:3000`, and `WEB_ORIGIN=http://localhost:5173`
-and `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the root `.env`, in addition
-to DATABASE_URL. Missing/blank Google credentials fail startup validation.
-No fallback secret is supplied.
+Set `BETTER_AUTH_SECRET` (your own random secret, at least 32 characters),
+`BETTER_AUTH_URL=http://localhost:3000`, `WEB_ORIGIN=http://localhost:5173`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `DATABASE_URL`. Missing or
+invalid configuration fails startup; no authentication fallback is supplied.
 For example, generate a secret locally with `openssl rand -hex 32` and save it
 privately. Do not commit it or use a VITE-prefixed variable. Origins must have
 no path/trailing slash. Use localhost consistently for browser-facing URLs;
@@ -18,19 +17,20 @@ PostgreSQL may still use 127.0.0.1. Do not expose provider secrets through VITE_
 `/auth/*` delegates requests to Better Auth 1.7.4. A3 enables password signup
 and login, automatic sign-in, logout and session restoration. A4 enables Google
 login/registration through POST `/auth/sign-in/social` and GET
-`/auth/callback/google`. GET `/auth/get-session` returns 200/null without a valid cookie.
-No `/auth/me` or custom aliases are added. See
-`docs/plans/flemme-auth-v1-a3-email-password.md` for native contracts and cookie-jar
-testing. Required name is Auth-owned; no Profile row is initialized.
-See `docs/plans/flemme-auth-v1-a4-google.md` for Google setup and acceptance.
+`/auth/callback/google`. GET `/auth/get-session` retains Better Auth's native
+200/null behavior. Application-owned GET `/auth/me` uses the common current-user
+boundary and returns only `{ user: { id, email } }`; it never exposes session or
+provider tokens, account details, or Product Domain resources.
+Use the Google browser flow below for manual authentication.
 
 In Google Cloud Console, create an OAuth **Web application** client. Configure
 the consent screen/audience and test users as required by Google. Its Authorized
 redirect URI must be exactly `http://localhost:3000/auth/callback/google` locally
 (`<BETTER_AUTH_URL>/auth/callback/google` elsewhere), not `/api/auth/...`.
 Do not mix localhost and 127.0.0.1. Google client secrets remain on the API.
-Initiate with `{"provider":"google","callbackURL":"http://localhost:5173/"}`
-from the trusted origin. No web login UI is implemented yet.
+Open `http://localhost:5173/login` and choose **Continue with Google**. The
+official Better Auth client initiates authentication and returns to the protected
+User Platform. Do not construct Google authorization URLs manually.
 
 Google requests only openid/email/profile, online access, no incremental scopes.
 Extra scopes/authorization parameters and direct ID-token sign-in are disabled.
@@ -58,20 +58,20 @@ dynamic origin reflection. Preflight runs before protected-route authentication.
 All linking is currently disabled; implicit linking remains disabled for later
 phases. No domain creation hooks exist.
 
-Existing protected routes and Swagger still use DevelopmentUser. An identity
-header never authenticates Better Auth, and Better Auth does not populate
-currentUserId yet. Production startup remains prohibited until development auth
-is retired in A8. The server configuration's production cookie policy does not
-make the whole application production-ready.
+Protected Product Domain routes use one `currentUserId` HTTP boundary.
+`current-user-middleware.ts` resolves `auth.api.getSession({ headers })` and sets
+only the validated canonical Flemme user UUID. No session means
+`401 UNAUTHENTICATED`; there is no alternative adapter or fallback.
+Framework auth endpoints stay public to the application middleware and remain
+governed by Better Auth. `/auth/me` is the protected narrow identity endpoint.
+Production Auth startup is allowed with valid HTTPS API/web origins; the HTTPS
+guard remains because it protects cookie and origin transport security.
 
-Domain-only tests may construct createApp without authFoundation and need no
-auth secret. The real entry point always validates and injects the foundation;
-focused auth tests inject a fresh per-run test secret, fake Google configuration
-and real PostgreSQL. Google callback tests intercept the token exchange only;
-real Google credentials/consent acceptance remains a separate manual gate.
-Framework endpoints retain native response contracts, not manually duplicated
-Swagger schemas. Run `bun --env-file=../../.env test src/auth` from apps/api to
-test this boundary independently of future frontend flows.
+Focused auth tests inject fresh per-run test secrets, fake Google configuration
+and real PostgreSQL. Google callback tests intercept only the token exchange;
+real Google OAuth acceptance is complete. Framework endpoints retain native
+response contracts rather than manually duplicated Swagger schemas.
+Run `bun --env-file=../../.env test src/auth` from apps/api to test this boundary.
 
 Start PostgreSQL and the API from the repository root:
 
@@ -81,13 +81,14 @@ bun run --filter @flemme/db db:migrate
 bun run --filter @flemme/api dev
 ```
 
-`DATABASE_URL` must be present in the root `.env`. Cooking routes temporarily
-use the development-only `x-flemme-user-id` header. Its value must be the UUID
-of a real database user. The API refuses to start this adapter when
-`NODE_ENV=production` and binds to localhost while the adapter is active.
-Swagger exposes this header through its `DevelopmentUser` **Authorize** control.
-Run the development seed, copy the UUID printed in its output, and authorize
-once before testing protected cooking routes.
+Set the required Auth configuration above in the root `.env`.
+For manual API testing, register or sign in through `http://localhost:5173`,
+then open `http://localhost:3000/docs` in the same browser. The browser stores
+and sends the HttpOnly session cookie; do not paste tokens or user IDs into
+Swagger. `CurrentUser` documents cookie authentication, not an editable identity.
+Use the same localhost host throughout. See
+[`Swagger authentication`](../../docs/testing/swagger-cooking-flow.md#session-authentication)
+for browser and cookie-jar instructions.
 
 Real Recommendation, Pre-Cooking, Active Cooking, and Completion requests also
 require the existing Agent provider variables `MUX_API_KEY` and `BASE_URL`. If
@@ -98,6 +99,7 @@ persistence work, while those Agent-backed routes return the controlled
 ## Routes
 
 ```text
+GET   /auth/me
 GET   /health
 GET   /openapi.json
 GET   /docs

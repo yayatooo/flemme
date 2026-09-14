@@ -88,34 +88,56 @@ Web
 The web application must not directly access the database or private AI
 provider credentials.
 
+## Web Authentication
+
+Auth A7 connects `apps/web` to the API through the official Better Auth React
+client configured only by public `VITE_API_URL`. Password and Google actions use
+the API-owned `/auth` routes with credentials; HttpOnly cookies remain the sole
+session transport. The User Platform never stores session or provider tokens.
+
+TanStack Query restores the canonical Flemme identity from `/auth/me`. Auth
+state owns only user/loading/authenticated status. Product Domain resources stay
+separate server state. Public landing, guest-only login/register, protected app
+entry and protected onboarding shell use awaited TanStack Router guards to avoid
+session-restore flicker.
+
+Onboarding is derived from Profile, Household, Kitchen and Inventory API
+semantics, not Auth persistence. Expected `*_NOT_FOUND` responses indicate
+missing setup; an existing empty Inventory is initialized. Logout invalidates the
+server session and clears the user-scoped query cache before navigation. A
+Product Domain 401 clears the same state; domain 404s never invalidate Auth.
+
 ## API Foundation
 
 Auth A2 mounts Better Auth 1.7.4 at `/auth/*` with the existing Drizzle database
 instance and A1 table mappings. Centralized credentialed CORS allows only
-WEB_ORIGIN, before authentication middleware. Better Auth owns native framework
-responses. A3 enables password registration/login with Bun Argon2id, 8–128
-character passwords and automatic session establishment, without marking email
-verified. A scoped request plugin normalizes JSON emails before validation and
-omits session tokens from successful JSON responses. No Product Domain creation
-hooks exist. A4 enables Google authorization-code login/registration with
-openid/email/profile only, online access and no incremental authorization.
-Google subject maps to auth_accounts.accountId, with the same users.id UUID and
-database session model as passwords. Google profile fields stay Auth-owned;
-no Profile synchronization occurs. Implicit/explicit linking remains disabled:
-same-email password collisions fail with account_not_linked. Native provider
-token retrieval/refresh and linking routes are disabled. Redirect/state/PKCE
-remain framework-owned at /auth/callback/google; extra client scopes or
-authorization parameters are rejected. Built-in memory rate limiting is enabled;
-trusted client-IP deployment and distributed protection remain production gates.
-Database sessions have seven-day expiry, daily renewal and no cookie cache;
-cookies are HttpOnly, host-only, SameSite=Lax and Secure for HTTPS/production.
-The real entry point requires explicit secret/API URL/web origin and Google
-client ID/secret configuration, without fallback credentials. Google secrets
-are server-only; no Google domains are added to CORS. Controlled callback tests
-cover provisioning; real Google consent/callback acceptance is still pending.
-Product Domain routes continue using development currentUserId middleware, and
-the existing production startup prohibition remains until A8. Framework sessions
-and development headers are not fallback mechanisms for each other.
+WEB_ORIGIN, before authentication middleware. A3 enables password registration/login
+with Bun Argon2id, 8–128 character passwords and automatic session establishment,
+without marking email verified. A scoped request plugin normalizes JSON emails
+before validation and omits session tokens from successful JSON responses. No
+Product Domain creation hooks exist. A4 enables Google authorization-code
+login/registration with openid/email/profile only, online access and no
+incremental authorization. Google subject maps to auth_accounts.accountId, with
+the same users.id UUID and database session model as passwords. Google profile
+fields stay Auth-owned; no Profile synchronization occurs. Implicit/explicit
+linking remains disabled: same-email password collisions fail with
+account_not_linked. Native provider token retrieval/refresh and linking routes
+are disabled. Redirect/state/PKCE remain framework-owned at
+/auth/callback/google; extra client scopes or authorization parameters are
+rejected. Real Google signup, restoration, logout and returning-login acceptance
+are complete.
+
+Auth v1 has one HTTP `currentUserId` boundary. The common middleware calls
+`auth.api.getSession({ headers })` and sets only the validated canonical
+`users.id` UUID. Missing, invalid, expired and logged-out sessions return
+Flemme's `UNAUTHENTICATED` 401 without exposing framework internals. There is
+no alternative adapter, authentication selector, or fallback.
+Application-owned GET `/auth/me` runs through the same boundary and returns
+only canonical user ID plus email. Product Domain services and ownership
+queries remain provider/session agnostic and unchanged.
+Protected OpenAPI operations use `CurrentUser` with the actual HttpOnly
+session cookie. Valid production Auth configuration is allowed; HTTPS API and
+web origins remain required in production for transport security.
 
 API features use colocated Hono route, transport schema, and service modules.
 Routes validate HTTP input with Zod, services coordinate domain rules and
@@ -151,10 +173,9 @@ members or a second representation. The existing cooking-context service reads
 the saved row directly, while a request-level household remains a whole-object
 override for one cooking request.
 
-Until production authentication is implemented as a separate milestone,
-cooking routes use an isolated development middleware that accepts a real user
-UUID and verifies it against PostgreSQL. The API refuses to start that adapter
-when `NODE_ENV=production`.
+During the A5/A7 migration, local cooking routes may explicitly select the
+isolated development adapter, which accepts a real user UUID and verifies it
+against PostgreSQL. The API refuses production startup with that mode.
 
 ## Agent Boundary
 

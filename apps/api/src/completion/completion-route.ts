@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import { CookingSessionParamsSchema } from "../cooking-session/cooking-session-schema";
 import {
 	CompletionRequestSchema,
@@ -28,7 +28,7 @@ const completionRouteDefinition = createRoute({
 	summary: "Generate a completion summary",
 	description:
 		"Requires an owned completion-ready session and returns validated Completion AI output without mutating or completing the session. The output may be submitted as completionSnapshot to the separate complete endpoint.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
 		body: {
@@ -46,7 +46,7 @@ const completionRouteDefinition = createRoute({
 			},
 		},
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		409: errorResponse(
@@ -82,7 +82,6 @@ export function createCompletionRoute({
 	});
 	const service = createCompletionService({ db, completionRunner });
 
-	route.use("*", createDevelopmentAuthMiddleware(db));
 	route.openapi(completionRouteDefinition, async (context) => {
 		const output = await service.generate(
 			context.get("currentUserId"),

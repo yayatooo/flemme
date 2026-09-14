@@ -73,18 +73,18 @@ read Agent provider configuration
    ↓
 create @flemme/agent model when configured
    ↓
-createApp({ db, recommendationRunner })
+createApp({ db, authFoundation: { auth, webOrigin }, recommendationRunner })
    ↓
 Bun.serve on 127.0.0.1:3000
 ```
 
-`DATABASE_URL` is required because every protected route verifies a real user
-in PostgreSQL. The API can still serve health, Swagger, and persistence routes
-without Agent provider variables, but Recommendation returns a controlled
+`DATABASE_URL` and the required Auth environment are needed for PostgreSQL-backed
+Better Auth sessions. The API can serve health, Swagger, and persistence routes
+without Agent provider variables; Recommendation then returns the controlled
 `AGENT_NOT_CONFIGURED` error.
 
-The API currently refuses to start in production mode because development auth
-must be replaced before production deployment.
+Production Auth startup requires HTTPS API and web origins. There is no blanket
+production prohibition; deployment hardening remains a separate concern.
 
 ## 4. Application Factory and Route Registration
 
@@ -104,33 +104,29 @@ loading, and PostgreSQL behavior.
 
 ## 5. Common Protected-Request Flow
 
-All cooking endpoints currently require the development header:
-
-```http
-x-flemme-user-id: <real-user-uuid>
-```
+All cooking endpoints require a Better Auth session.
 
 The middleware in
-[`development-auth-middleware.ts`](../apps/api/src/auth/development-auth-middleware.ts)
-does not blindly trust the header.
+[`current-user-middleware.ts`](../apps/api/src/auth/current-user-middleware.ts)
+uses the official Better Auth server API:
 
 ```text
-HTTP request
+HTTP request headers
    ↓
-validate header as UUID
+auth.api.getSession({ headers })
    ↓
-query users table
+validate canonical session.user.id UUID
    ↓
-user missing? → 401 UNAUTHENTICATED
+session missing/invalid? → 401 UNAUTHENTICATED
    ↓
 store currentUserId in Hono request context
    ↓
 continue to route handler
 ```
 
-This is deliberately basic development authentication. The important
-architecture is already present: services receive a real current-user ID, and
-user-owned data is never accessed without it.
+Password and Google sessions share this boundary. Services receive a real
+current-user ID without understanding cookies or providers, and user-owned
+data is never accessed without it.
 
 ## 6. Route, Schema, Service, Database Pattern
 
@@ -448,7 +444,7 @@ Examples include:
 
 ```text
 400 → request validation failed
-401 → development user is missing or invalid
+401 → authenticated session is missing or invalid
 403 → cooking session belongs to another user
 404 → cooking session does not exist
 409 → lifecycle state does not allow the operation
@@ -483,7 +479,7 @@ The manual workflow is documented in
 API integration tests use real PostgreSQL for:
 
 ```text
-development user lookup
+real Better Auth session resolution
 context aggregation
 ownership
 session create/restore/update/complete
@@ -551,7 +547,7 @@ Read the implementation in this order:
 
 1. [`apps/api/index.ts`](../apps/api/index.ts) — process startup and dependency creation.
 2. [`apps/api/src/app.ts`](../apps/api/src/app.ts) — route registration and global errors.
-3. [`development-auth-middleware.ts`](../apps/api/src/auth/development-auth-middleware.ts) — current-user resolution.
+3. [`current-user-middleware.ts`](../apps/api/src/auth/current-user-middleware.ts) — session-backed current-user resolution.
 4. [`cooking-recommendation-schema.ts`](../apps/api/src/cooking-recommendation/cooking-recommendation-schema.ts) — transport contract.
 5. [`cooking-context-service.ts`](../apps/api/src/cooking/cooking-context-service.ts) — persistent context and overrides.
 6. [`cooking-recommendation-service.ts`](../apps/api/src/cooking-recommendation/cooking-recommendation-service.ts) — Agent orchestration.

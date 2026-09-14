@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	CookingRecommendationRequestSchema,
 	CookingRecommendationResponseSchema,
@@ -27,7 +27,7 @@ const recommendationRouteDefinition = createRoute({
 	summary: "Generate cooking recommendations",
 	description:
 		"Builds authenticated cooking context and invokes the Recommendation Agent. Does not select a recipe, persist a session, or mutate inventory.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		body: {
 			required: true,
@@ -44,7 +44,7 @@ const recommendationRouteDefinition = createRoute({
 			},
 		},
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		422: errorResponse("Required persistent cooking context is unavailable"),
 		502: errorResponse("Recommendation generation or output validation failed"),
 		503: errorResponse("Recommendation agent is not configured"),
@@ -78,7 +78,6 @@ export function createCookingRecommendationRoute({
 		recommendationRunner,
 	});
 
-	route.use("*", createDevelopmentAuthMiddleware(db));
 	route.openapi(recommendationRouteDefinition, async (context) => {
 		const recommendation = await service.recommend(
 			context.get("currentUserId"),

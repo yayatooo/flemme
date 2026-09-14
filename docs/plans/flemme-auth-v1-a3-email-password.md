@@ -1,5 +1,8 @@
 # Auth v1 A3 — Email / Password
 
+> Archived A3 checkpoint. Temporary authentication and startup restrictions below
+> were superseded by A8. Current setup is in [apps/api/README.md](../../apps/api/README.md).
+
 ## Active framework surface
 
 - POST `/auth/sign-up/email`: required framework `name`, `email`, `password`.

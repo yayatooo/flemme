@@ -25,7 +25,6 @@ From the repository root:
 ```bash
 docker-compose up -d
 bun run --filter @flemme/db db:migrate
-bun run --filter @flemme/db db:seed
 bun run --filter @flemme/api dev
 ```
 
@@ -33,6 +32,12 @@ Required root `.env` variable names:
 
 ```text
 DATABASE_URL
+BETTER_AUTH_SECRET
+BETTER_AUTH_URL
+WEB_ORIGIN
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+VITE_API_URL
 MUX_API_KEY
 BASE_URL
 ```
@@ -42,22 +47,40 @@ Do not put their values into Swagger, request bodies, screenshots, or logs.
 - Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
 - OpenAPI: [http://localhost:3000/openapi.json](http://localhost:3000/openapi.json)
 
-## Development authentication
+## Session authentication
 
-The seed command prints a real development user UUID.
+1. Start `apps/web` and open `http://localhost:5173/login`.
+2. Register or sign in with email/password, or choose **Continue with Google**
+   and finish the browser flow. Google returns through
+   `http://localhost:3000/auth/callback/google`.
+3. Open `http://localhost:3000/auth/me` in the same browser and confirm your
+   canonical identity.
+4. Open Swagger in that browser and execute protected requests. The browser
+   sends the HttpOnly cookie automatically; Swagger cannot read or manually
+   set it through an **Authorize** text field.
 
-1. Copy that UUID.
-2. Open Swagger and select **Authorize**.
-3. Paste the UUID into `DevelopmentUser` and select **Authorize**.
-4. Close the dialog.
-5. Confirm protected cooking endpoints show a closed-lock indicator.
+Use one account throughout the flow. Do not mix localhost and 127.0.0.1.
+For another account, sign out and sign in normally. Missing, invalid, expired,
+or logged-out sessions return `401 UNAUTHENTICATED`.
 
-Swagger sends this value as `x-flemme-user-id` on every protected request. Do
-not use an all-zero example UUID or commit a real developer UUID to this guide.
-A correctly formatted UUID that does not exist in PostgreSQL returns
-`UNAUTHENTICATED`.
+For command-line testing, use a private cookie jar and an existing disposable
+password account. Replace the example credentials locally; never commit real
+credentials or cookie jars:
 
-Use the same development user throughout the complete flow.
+```bash
+curl -c /tmp/flemme-session.cookies \
+  -H 'Origin: http://localhost:5173' -H 'Content-Type: application/json' \
+  -d '{"email":"tester@example.com","password":"your-test-password"}' \
+  http://localhost:3000/auth/sign-in/email
+curl -b /tmp/flemme-session.cookies http://localhost:3000/auth/me
+curl -b /tmp/flemme-session.cookies http://localhost:3000/profile
+curl -b /tmp/flemme-session.cookies -c /tmp/flemme-session.cookies \
+  -H 'Origin: http://localhost:5173' -H 'Content-Type: application/json' \
+  -d '{}' http://localhost:3000/auth/sign-out
+rm /tmp/flemme-session.cookies
+```
+
+Google authentication is a browser flow, not a manually assembled OAuth URL.
 
 ## Stable acceptance scenario
 

@@ -1,6 +1,12 @@
+import type { QueryClient } from "@tanstack/react-query";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { SessionLoading } from "../auth/auth-shell";
 
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+export interface RouterContext {
+	queryClient: QueryClient;
+}
 
-export const Route = createRootRoute({
-  component: () => <Outlet />,
+export const Route = createRootRouteWithContext<RouterContext>()({
+	component: Outlet,
+	pendingComponent: SessionLoading,
 });

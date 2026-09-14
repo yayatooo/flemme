@@ -17,6 +17,7 @@ import {
 	type CookingSessionResponse,
 	CookingSessionResponseSchema,
 } from "../cooking-session/cooking-session-schema";
+import { createSessionAuth } from "../test-utils/session-auth";
 
 const databaseUrl = Bun.env.DATABASE_URL;
 
@@ -78,16 +79,14 @@ const ErrorResponseSchema = z.object({
 });
 
 const { client, db } = createDatabase(databaseUrl);
-const app = createApp({ db });
+const {
+	authFoundation,
+	createUser: createAuthenticatedUser,
+	headers,
+} = createSessionAuth(db);
+const app = createApp({ authFoundation, db });
 let ownerUserId = "";
 let otherUserId = "";
-
-function headers(userId: string) {
-	return {
-		"content-type": "application/json",
-		"x-flemme-user-id": userId,
-	};
-}
 
 function recipeForPlan(
 	plan: PreCookingOutput,
@@ -176,20 +175,8 @@ async function complete(
 }
 
 beforeAll(async () => {
-	const [owner, other] = await db
-		.insert(users)
-		.values([
-			{ email: `nutrition-owner-${crypto.randomUUID()}@flemme.local` },
-			{ email: `nutrition-other-${crypto.randomUUID()}@flemme.local` },
-		])
-		.returning({ id: users.id });
-
-	if (!owner || !other) {
-		throw new Error("Nutrition API test users could not be created");
-	}
-
-	ownerUserId = owner.id;
-	otherUserId = other.id;
+	ownerUserId = await createAuthenticatedUser();
+	otherUserId = await createAuthenticatedUser();
 });
 
 afterAll(async () => {

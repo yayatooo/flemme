@@ -1,5 +1,9 @@
 # Auth v1 A4 — Google Login & Registration
 
+> Archived A4 checkpoint and provider acceptance evidence. Temporary domain
+> authentication and startup restrictions below were superseded by A8. Current
+> setup is in [apps/api/README.md](../../apps/api/README.md).
+
 ## Boundary and configuration
 
 Better Auth 1.7.4 owns POST `/auth/sign-in/social` and GET
@@ -129,40 +133,28 @@ not real Google signatures, consent, credential validity or Cloud configuration.
 Native state/PKCE, persistence, account linking and cookie behavior stay intact.
 Test users and their auth rows, plus test OAuth states, are cleaned up.
 
-## Real runtime acceptance — pending
+## Real runtime acceptance — complete
 
-Local credentials and all six required runtime variables are now present and
-pass configuration validation. PostgreSQL is healthy; repository migrations are
-current. Real API initiation returns 200 with the Google destination, exact
-localhost:3000/auth/callback/google URI, identity-only scopes, S256 PKCE and
-state cookie. No token endpoint interception was used for this runtime check.
-The unused isolated initiation state was cleaned up; no user was created.
+Local credentials and all six required runtime variables pass configuration
+validation. PostgreSQL migrations are current. Real API initiation returned the
+Google destination with the exact localhost callback, identity-only scopes,
+S256 PKCE and state cookie; no token endpoint interception was used.
 
-The user completed real Google login/callback and returned to Flemme. Database
-inspection confirmed one new user, one Google account and one valid session with
-matching UUID ownership; no Product Domain rows. Name/email/image are populated
-and emailVerified is true. Actual tokens include accessToken/idToken, no refresh
-token; returned scope uses Google's equivalent userinfo.email/userinfo.profile
-identifiers plus openid. No sensitive values were printed.
+Real Google signup and returning login completed in the same browser flow.
+Both resolved the same canonical Flemme users.id UUID without duplicating the
+user or Google account. Session restoration returned that UUID without a raw
+session token. Logout removed the current database session, and replaying the
+logged-out cookie remained unauthenticated. No Profile, Household, Kitchen,
+Inventory, Favorite, credits or Cooking Session rows were provisioned.
 
-The user then confirmed browser get-session restoration, successful logout and
-get-session=null. Subsequent DB inspection confirms zero remaining sessions for
-this identity, one user and one Google account. Returning real-provider login is
-not yet evidenced; browser response UUID/token omission and actual old-cookie
-replay remain pending direct verification (controlled tests pass). Browser
-control is unavailable, requiring user participation. Do not mark A4 accepted yet.
-Post-login regressions were rerun:
-A3/A4 focused 7 passed, full API 128 passed, lifecycle/typecheck/build/Drizzle,
-Auth-file Biome and diff checks passed. No implementation fixes were required.
+Private database inspection confirmed the Google account retained accessToken
+and idToken, no refresh token, and Google's equivalent identity scopes. No
+sensitive token values were printed or exposed through HTTP. Password/Google
+collision behavior remains covered by the controlled real-PostgreSQL tests.
 
-Once configured, start with the existing `bun run --filter @flemme/api dev`
-command. In the same browser cookie context, initiate social login and navigate
-to its Google URL. Verify new Google signup, returning login with the same UUID,
-GET get-session, logout, no Product Domain rows, and both collision directions.
-Check DB token-field presence privately, never print token values. The web
-destination may be an existing local page; no A7 login/callback UI is required.
-Swagger still documents DevelopmentUser for domain APIs; framework routes are
-tested separately and not manually duplicated in OpenAPI.
+The existing `bun run --filter @flemme/api dev` command runs the accepted flow.
+The web destination remains an existing local page; A7 owns login/callback UI.
+Swagger still documents the temporary DevelopmentUser flow for domain APIs.
 
 ## Validation results
 

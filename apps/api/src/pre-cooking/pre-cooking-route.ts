@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	PreCookingRequestSchema,
 	PreCookingResponseSchema,
@@ -27,7 +27,7 @@ const preCookingRouteDefinition = createRoute({
 	summary: "Generate a plan for the selected recipe",
 	description:
 		"Invokes the Pre-Cooking Agent with one selected recommendation and current cooking context. Returns a validated plan without persisting it or creating a cooking session.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		body: {
 			required: true,
@@ -44,7 +44,7 @@ const preCookingRouteDefinition = createRoute({
 			},
 		},
 		400: errorResponse("Invalid request or selected recipe"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		422: errorResponse("Required persistent cooking context is unavailable"),
 		502: errorResponse("Pre-cooking generation or output validation failed"),
 		503: errorResponse("Pre-cooking agent is not configured"),
@@ -75,7 +75,6 @@ export function createPreCookingRoute({
 	});
 	const service = createPreCookingService({ db, preCookingRunner });
 
-	route.use("*", createDevelopmentAuthMiddleware(db));
 	route.openapi(preCookingRouteDefinition, async (context) => {
 		const plan = await service.generate(
 			context.get("currentUserId"),

@@ -4,7 +4,7 @@ import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import { CookingSessionParamsSchema } from "../cooking-session/cooking-session-schema";
 import { createCookingSessionService } from "../cooking-session/cooking-session-service";
 import { calculateCookingSessionNutrition } from "./cooking-session-nutrition-service";
@@ -32,7 +32,7 @@ const getCookingSessionNutritionRouteDefinition = createRoute({
 	summary: "Preview cooking-session nutrition",
 	description:
 		"Calculates complete, partial, or unavailable nutrition from the persisted Cooking Session plan without mutation, AI, or a runtime USDA request.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
 	},
@@ -42,7 +42,7 @@ const getCookingSessionNutritionRouteDefinition = createRoute({
 			"Deterministic nutrition result for the persisted plan",
 		),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		500: errorResponse(
@@ -68,8 +68,6 @@ export function createNutritionRoute(db: FlemmeDatabase) {
 		},
 	});
 	const cookingSessions = createCookingSessionService(db);
-
-	route.use("*", createDevelopmentAuthMiddleware(db));
 
 	route.openapi(getCookingSessionNutritionRouteDefinition, async (context) => {
 		const session = await cookingSessions.get(

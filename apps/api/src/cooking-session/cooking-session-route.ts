@@ -2,7 +2,7 @@ import type { FlemmeDatabase } from "@flemme/db";
 import { createRoute, OpenAPIHono, type z } from "@hono/zod-openapi";
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import {
 	CompleteCookingSessionRequestSchema,
 	CookingSessionParamsSchema,
@@ -44,14 +44,14 @@ const createCookingSessionRouteDefinition = createRoute({
 	summary: "Create an active cooking session",
 	description:
 		"Persists existing Recommendation and Pre-Cooking snapshots with initial active progress. Does not invoke AI.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		body: jsonBody(CreateCookingSessionRequestSchema),
 	},
 	responses: {
 		201: jsonResponse(CookingSessionResponseSchema, "Cooking session created"),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		500: errorResponse("Cooking session could not be created"),
 	},
 });
@@ -63,14 +63,14 @@ const getCookingSessionRouteDefinition = createRoute({
 	summary: "Restore a cooking session",
 	description:
 		"Restores owned snapshots and relational progress from PostgreSQL without invoking AI.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
 	},
 	responses: {
 		200: jsonResponse(CookingSessionResponseSchema, "Cooking session restored"),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		500: errorResponse("Persisted cooking session is invalid"),
@@ -84,7 +84,7 @@ const updateCookingProgressRouteDefinition = createRoute({
 	summary: "Persist active cooking progress",
 	description:
 		"Updates only mutable session progress after validating it against the immutable cooking plan. Does not invoke Active Cooking AI.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
 		body: jsonBody(UpdateCookingProgressRequestSchema),
@@ -92,7 +92,7 @@ const updateCookingProgressRouteDefinition = createRoute({
 	responses: {
 		200: jsonResponse(CookingSessionResponseSchema, "Cooking progress updated"),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		409: errorResponse("Cooking session state does not allow progress updates"),
@@ -108,7 +108,7 @@ const completeCookingSessionRouteDefinition = createRoute({
 	summary: "Complete a cooking session",
 	description:
 		"Persists an already-valid Completion snapshot only after the recorded final step is completed, and atomically stores server-calculated nutrition from the persisted plan. Does not invoke AI or make a runtime USDA request.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
 		body: jsonBody(CompleteCookingSessionRequestSchema),
@@ -119,7 +119,7 @@ const completeCookingSessionRouteDefinition = createRoute({
 			"Cooking session completed",
 		),
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		409: errorResponse("Cooking session is not ready for completion"),
@@ -144,8 +144,6 @@ export function createCookingSessionRoute(db: FlemmeDatabase) {
 		},
 	});
 	const service = createCookingSessionService(db);
-
-	route.use("*", createDevelopmentAuthMiddleware(db));
 
 	route.openapi(createCookingSessionRouteDefinition, async (context) => {
 		const session = await service.create(

@@ -3,7 +3,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnvironment } from "../api-environment";
 import { ApiErrorResponseSchema } from "../api-error";
-import { createDevelopmentAuthMiddleware } from "../auth/development-auth-middleware";
+
 import { CookingSessionParamsSchema } from "../cooking-session/cooking-session-schema";
 import {
 	ActiveCookingRequestSchema,
@@ -28,7 +28,7 @@ const activeCookingRouteDefinition = createRoute({
 	summary: "Ask the Active Cooking Agent",
 	description:
 		"Restores the owned cooking plan and progress, then returns guidance and proposed actions for one message. Proposed actions are not persisted automatically.",
-	security: [{ DevelopmentUser: [] }],
+	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
 		body: {
@@ -46,7 +46,7 @@ const activeCookingRouteDefinition = createRoute({
 			},
 		},
 		400: errorResponse("Invalid request"),
-		401: errorResponse("Development user is not authenticated"),
+		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		409: errorResponse("Cooking session lifecycle does not allow interaction"),
@@ -80,7 +80,6 @@ export function createActiveCookingRoute({
 	});
 	const service = createActiveCookingService({ db, activeCookingRunner });
 
-	route.use("*", createDevelopmentAuthMiddleware(db));
 	route.openapi(activeCookingRouteDefinition, async (context) => {
 		const output = await service.respond(
 			context.get("currentUserId"),
