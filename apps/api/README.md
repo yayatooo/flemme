@@ -113,6 +113,7 @@ PUT   /household
 GET   /kitchen
 PUT   /kitchen
 GET   /inventory
+PUT   /inventory
 POST  /inventory/items
 PUT   /inventory/items/:id
 DELETE /inventory/items/:id
@@ -153,9 +154,11 @@ rows. Names are trimmed, case is preserved, and duplicates ignoring case are
 rejected. Empty equipment is valid. Responses sort names case-insensitively;
 input order is not stored. See `docs/testing/swagger-kitchen-flow.md`.
 
-Inventory supports canonical-key item creation, mutable-value replacement, and
-deletion. Missing inventory returns `INVENTORY_NOT_FOUND`; an existing empty
-inventory returns `{ items: [] }`. POST initializes the parent atomically.
+Inventory supports explicit initialization with `PUT /inventory`,
+canonical-key item creation, mutable-value replacement, and deletion. Missing
+inventory returns `INVENTORY_NOT_FOUND`; `PUT /inventory` creates an empty parent
+(and returns its current items). Existing empty and populated parents both return
+`200` with current `{ items: [...] }`. POST initializes the parent atomically.
 See `docs/testing/swagger-inventory-flow.md` for contracts and examples.
 
 The cooking-session endpoints persist existing generated snapshots; they do

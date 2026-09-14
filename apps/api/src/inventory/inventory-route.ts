@@ -60,6 +60,20 @@ export function createInventoryRoute(db: FlemmeDatabase) {
 	route.openapi(
 		createRoute({
 			...common,
+			method: "put",
+			path: "/",
+			summary: "Create or ensure inventory parent",
+			responses: {
+				200: response(InventoryResponseSchema, "Current inventory"),
+				...errors,
+			},
+		}),
+		async (c) => c.json(await service.ensure(c.get("currentUserId")), 200),
+	);
+
+	route.openapi(
+		createRoute({
+			...common,
 			method: "post",
 			path: "/items",
 			summary: "Add a canonical ingredient",

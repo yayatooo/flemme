@@ -4,15 +4,25 @@ import { useState } from "react";
 import { AuthActionError, signOut } from "../auth/auth-actions";
 import { requireAuthenticatedUser } from "../auth/auth-guards";
 import { useAuth } from "../auth/auth-query";
-import { onboardingQueryOptions } from "../onboarding/onboarding-query";
+import {
+	onboardingQueryOptions,
+	resolveOnboardingRedirect,
+} from "../onboarding/onboarding-query";
 
 export const Route = createFileRoute("/app")({
-	beforeLoad: async ({ context }) => {
+	beforeLoad: async ({ context, location }) => {
 		await requireAuthenticatedUser(context.queryClient);
 		const onboarding = await context.queryClient.ensureQueryData(
 			onboardingQueryOptions(context.queryClient),
 		);
-		if (onboarding.required) throw redirect({ to: "/onboarding" });
+		const target = resolveOnboardingRedirect(
+			onboarding,
+			location.pathname,
+			"app",
+		);
+		if (target) {
+			throw redirect({ to: target });
+		}
 	},
 	component: UserPlatformPage,
 });

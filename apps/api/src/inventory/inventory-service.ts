@@ -60,6 +60,30 @@ export function createInventoryService(db: FlemmeDatabase) {
 				.orderBy(inventoryItems.ingredientKey);
 			return { items: rows.map(restore) };
 		},
+		async ensure(userId: string) {
+			const [inventory] = await db
+				.insert(inventories)
+				.values({ userId })
+				.onConflictDoUpdate({
+					target: inventories.userId,
+					set: { updatedAt: new Date() },
+				})
+				.returning({ id: inventories.id });
+			if (!inventory) {
+				throw new ApiError(
+					500,
+					"INVENTORY_CREATE_FAILED",
+					"Inventory could not be initialized",
+				);
+			}
+			const rows = await db
+				.select()
+				.from(inventoryItems)
+				.where(eq(inventoryItems.inventoryId, inventory.id))
+				.orderBy(inventoryItems.ingredientKey);
+			return { items: rows.map(restore) };
+		},
+
 		async create(userId: string, input: CreateInventoryItem) {
 			if (!productionIngredientCatalog.getByKey(input.ingredientKey))
 				throw new ApiError(

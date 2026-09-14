@@ -4,14 +4,13 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Auth v1 — COMPLETE (A8 Accepted)
+User Platform Product Integration — O2 PROFILE PREFERENCES
 
 ## Current Goal
 
-Auth v1 is complete: Better Auth sessions are the sole application authentication
-path. Profile, Household, Kitchen / Equipment, Inventory, Favorites, and Auth v1
-are accepted. The next recommended phase is User Platform Product Integration /
-Onboarding; it has not started. Admin Platform work remains out of scope.
+Profile onboarding now collects persistent food and cooking preferences, supports
+explicit empty-profile Skip semantics, and advances immediately from recomputed
+server-backed onboarding state.
 
 ## Completed
 
@@ -56,6 +55,62 @@ Onboarding; it has not started. Admin Platform work remains out of scope.
 - No schema or migration changes. Temporary browser users and OAuth state were
   removed and acceptance servers stopped. Deferred verification, recovery,
   linking, distributed rate limiting, and Admin authorization were not added.
+
+### User Platform O1 — Onboarding Flow Foundation
+
+- Implemented onboarding route orchestration: `/app` and `/onboarding` now route directly to the first missing product domain step by server-state inspection.
+- Added onboarding step route shells for `/onboarding/profile`, `/onboarding/household`, `/onboarding/kitchen`, `/onboarding/inventory`.
+- Applied deterministic first-incomplete derivation for resume/re-entry semantics and preserved 404 `*_NOT_FOUND` as onboarding-incomplete semantics only.
+- Kept query/data handling on TanStack Query + Better Auth session ownership boundary; no form workflows or backend changes were added in O1.
+
+### User Platform F1 — Redirect Loop Fix
+
+- Added route-level redirect normalization to prevent parent/step self-redirect
+  loops when all Product Domain resources are missing and onboarding is incomplete.
+- Centralized route redirection decisions through `resolveOnboardingRedirect` and
+  applied explicit no-op behavior when current route already matches
+  `/onboarding/{nextStep}`.
+- Preserved existing O1 onboarding state semantics:
+  `*_NOT_FOUND` marks missing required resources; non-404/API errors stay errors.
+- Added focused route-redirection behavior tests for:
+  fresh-missing, self-route, mismatched-step reconciliation, and complete-user
+  reconciliation.
+
+### User Platform F2 — Empty Inventory Initialization
+
+- Added backend `PUT /inventory` to ensure a current-user inventory parent exists
+  without requiring item payloads; returns the current inventory representation.
+- `ensure` operation is idempotent and concurrency-safe through user-unique
+  upsert behavior.
+- Existing item create/update/delete flows still initialize inventory when needed
+  and continue validating canonical ingredients, ownership, and item-level errors.
+- Added integration coverage for:
+  - missing inventory transitions (404 -> init -> 200 with `items: []`)
+  - repeated initialization idempotency and duplicate parent prevention
+  - preservation of populated inventory on re-initialize
+  - `PUT /inventory` presence in OpenAPI
+  - unauthenticated initialization blocked by `CurrentUser`
+
+### User Platform O2 — Profile Preferences
+
+- Replaced `/onboarding/profile` placeholder content with a mobile-first,
+  keyboard-accessible multi-select preference form.
+- Fixed the concrete O1 integration issue where the parent onboarding route
+  rendered `null`; it now renders its child step through TanStack Router `Outlet`.
+- Added stable v0.1 stored values: food `indonesian`, `asian`, `western`,
+  `savory`, `spicy`, `sweet`; cooking `quick`, `simple`, `one-pan`,
+  `low-effort`, `fried`, `grilled`. Labels remain presentation-only.
+- Missing `PROFILE_NOT_FOUND` loads empty local selections without persistence.
+  Existing profiles prepopulate both arrays, including persisted values outside
+  the v0.1 vocabulary so revisiting cannot silently discard them.
+- Continue sends full replacement arrays. Skip explicitly persists empty arrays;
+  both actions disable during the shared mutation.
+- Successful saves update the Profile query, invalidate and refetch the actual
+  onboarding decision dependencies, then navigate to Household, another actual
+  missing step, or `/app`. Failed saves remain on the form.
+- Added focused frontend coverage for missing/existing profiles, selection
+  toggles, complete Continue/Skip payloads, legacy value preservation, Profile
+  cache synchronization, fresh/partial/complete routing, and failed mutations.
 
 ### Historical checkpoints
 

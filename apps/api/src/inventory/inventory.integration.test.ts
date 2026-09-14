@@ -103,6 +103,49 @@ test("inventory lifecycle, missing versus empty and cooking context visibility",
 	).toEqual({ items: [] });
 	expect((await context(uid)).inventory).toEqual([]);
 });
+test("PUT /inventory initializes and returns existing inventory state", async () => {
+	const uid = await user();
+	expect((await request(uid)).status).toBe(404);
+	expect(
+		await db.select().from(inventories).where(eq(inventories.userId, uid)),
+	).toHaveLength(0);
+
+	const first = await request(uid, "/inventory", "PUT");
+	expect(first.status).toBe(200);
+	expect(InventoryResponseSchema.parse(await first.json())).toEqual({
+		items: [],
+	});
+	expect(
+		InventoryResponseSchema.parse(await (await request(uid)).json()),
+	).toEqual({ items: [] });
+	expect(
+		await db.select().from(inventories).where(eq(inventories.userId, uid)),
+	).toHaveLength(1);
+
+	const second = await request(uid, "/inventory", "PUT");
+	expect(second.status).toBe(200);
+	expect(InventoryResponseSchema.parse(await second.json())).toEqual({
+		items: [],
+	});
+	expect(
+		await db.select().from(inventories).where(eq(inventories.userId, uid)),
+	).toHaveLength(1);
+
+	const created = await request(uid, "/inventory/items", "POST", input);
+	expect(created.status).toBe(201);
+	const item = InventoryItemResponseSchema.parse(await created.json());
+	const repeated = await request(uid, "/inventory", "PUT");
+	expect(repeated.status).toBe(200);
+	expect(InventoryResponseSchema.parse(await repeated.json()).items).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({
+				id: item.id,
+				ingredientKey: item.ingredientKey,
+			}),
+		]),
+	);
+});
+
 test("canonical-only input, duplicate conflict and unknown quantities", async () => {
 	const uid = await user();
 	for (const ingredientKey of ["invented-food", "telur", "salt"]) {
@@ -161,6 +204,7 @@ test("ownership, identity and malformed payload rejection", async () => {
 	await db.delete(users).where(eq(users.id, deletedUserId));
 	expect((await request(deletedUserId)).status).toBe(401);
 	expect((await app.request("/inventory")).status).toBe(401);
+	expect((await app.request("/inventory", { method: "PUT" })).status).toBe(401);
 	for (const body of [
 		{ ...input, quantity: 0 },
 		{ ...input, quantity: -1 },
@@ -209,6 +253,7 @@ test("OpenAPI inventory operations", async () => {
 		paths: Record<string, Record<string, unknown>>;
 	};
 	expect(document.paths["/inventory"]?.get).toBeDefined();
+	expect(document.paths["/inventory"]?.put).toBeDefined();
 	expect(document.paths["/inventory/items"]?.post).toBeDefined();
 	expect(document.paths["/inventory/items/{id}"]?.put).toBeDefined();
 	expect(document.paths["/inventory/items/{id}"]?.delete).toBeDefined();

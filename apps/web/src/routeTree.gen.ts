@@ -14,6 +14,10 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as OnboardingHouseholdRouteImport } from './routes/onboarding/household'
+import { Route as OnboardingInventoryRouteImport } from './routes/onboarding/inventory'
+import { Route as OnboardingKitchenRouteImport } from './routes/onboarding/kitchen'
+import { Route as OnboardingProfileRouteImport } from './routes/onboarding/profile'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,42 +44,102 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingHouseholdRoute = OnboardingHouseholdRouteImport.update({
+  id: '/household',
+  path: '/household',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingInventoryRoute = OnboardingInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingKitchenRoute = OnboardingKitchenRouteImport.update({
+  id: '/kitchen',
+  path: '/kitchen',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/onboarding/household': typeof OnboardingHouseholdRoute
+  '/onboarding/inventory': typeof OnboardingInventoryRoute
+  '/onboarding/kitchen': typeof OnboardingKitchenRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/onboarding/household': typeof OnboardingHouseholdRoute
+  '/onboarding/inventory': typeof OnboardingInventoryRoute
+  '/onboarding/kitchen': typeof OnboardingKitchenRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/onboarding/household': typeof OnboardingHouseholdRoute
+  '/onboarding/inventory': typeof OnboardingInventoryRoute
+  '/onboarding/kitchen': typeof OnboardingKitchenRoute
+  '/onboarding/profile': typeof OnboardingProfileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/login' | '/onboarding' | '/register'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/login'
+    | '/onboarding'
+    | '/register'
+    | '/onboarding/household'
+    | '/onboarding/inventory'
+    | '/onboarding/kitchen'
+    | '/onboarding/profile'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/login' | '/onboarding' | '/register'
-  id: '__root__' | '/' | '/app' | '/login' | '/onboarding' | '/register'
+  to:
+    | '/'
+    | '/app'
+    | '/login'
+    | '/onboarding'
+    | '/register'
+    | '/onboarding/household'
+    | '/onboarding/inventory'
+    | '/onboarding/kitchen'
+    | '/onboarding/profile'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/login'
+    | '/onboarding'
+    | '/register'
+    | '/onboarding/household'
+    | '/onboarding/inventory'
+    | '/onboarding/kitchen'
+    | '/onboarding/profile'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
   LoginRoute: typeof LoginRoute
-  OnboardingRoute: typeof OnboardingRoute
+  OnboardingRoute: typeof OnboardingRouteWithChildren
   RegisterRoute: typeof RegisterRoute
 }
 
@@ -116,14 +180,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/household': {
+      id: '/onboarding/household'
+      path: '/household'
+      fullPath: '/onboarding/household'
+      preLoaderRoute: typeof OnboardingHouseholdRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/inventory': {
+      id: '/onboarding/inventory'
+      path: '/inventory'
+      fullPath: '/onboarding/inventory'
+      preLoaderRoute: typeof OnboardingInventoryRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/kitchen': {
+      id: '/onboarding/kitchen'
+      path: '/kitchen'
+      fullPath: '/onboarding/kitchen'
+      preLoaderRoute: typeof OnboardingKitchenRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/profile': {
+      id: '/onboarding/profile'
+      path: '/profile'
+      fullPath: '/onboarding/profile'
+      preLoaderRoute: typeof OnboardingProfileRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
   }
 }
+
+interface OnboardingRouteChildren {
+  OnboardingHouseholdRoute: typeof OnboardingHouseholdRoute
+  OnboardingInventoryRoute: typeof OnboardingInventoryRoute
+  OnboardingKitchenRoute: typeof OnboardingKitchenRoute
+  OnboardingProfileRoute: typeof OnboardingProfileRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingHouseholdRoute: OnboardingHouseholdRoute,
+  OnboardingInventoryRoute: OnboardingInventoryRoute,
+  OnboardingKitchenRoute: OnboardingKitchenRoute,
+  OnboardingProfileRoute: OnboardingProfileRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   LoginRoute: LoginRoute,
-  OnboardingRoute: OnboardingRoute,
+  OnboardingRoute: OnboardingRouteWithChildren,
   RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport

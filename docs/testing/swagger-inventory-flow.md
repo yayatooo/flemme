@@ -9,7 +9,9 @@ persist real changes.
 1. GET `/inventory`. A user without a parent gets 404 `INVENTORY_NOT_FOUND`;
    GET does not initialize persistence. An existing empty parent returns
    `{ "items": [] }`.
-2. POST `/inventory/items` with the following body. Expect 201; copy its `id`.
+2. PUT `/inventory` creates an empty inventory parent for the current user
+   and returns `{ "items": [] }`. It is idempotent and preserves existing items.
+3. POST `/inventory/items` with the following body. Expect 201; copy its `id`.
 
 ```json
 {
@@ -21,9 +23,9 @@ persist real changes.
 }
 ```
 
-3. GET inventory and confirm the item and Indonesian canonical display name.
+4. GET inventory and confirm the item and Indonesian canonical display name.
    Repeating POST returns 409 `DUPLICATE_INVENTORY_ITEM`.
-4. PUT `/inventory/items/{id}` using the body below. All four fields are required;
+5. PUT `/inventory/items/{id}` using the body below. All four fields are required;
    `ingredientKey` is immutable and is not accepted in PUT.
 
 ```json
@@ -35,11 +37,11 @@ persist real changes.
 }
 ```
 
-5. GET and confirm replacement. PUT with both quantity and unit null is also
+6. GET and confirm replacement. PUT with both quantity and unit null is also
    valid; use `condition: "unknown"` when condition is unknown.
-6. DELETE the item; expect 204. GET confirms its removal; deleting the last item
+7. DELETE the item; expect 204. GET confirms its removal; deleting the last item
    leaves an empty inventory, not a missing parent.
-7. POST with `ingredientKey: "invented-food"` or `"telur"` returns 422
+8. POST with `ingredientKey: "invented-food"` or `"telur"` returns 422
    `INGREDIENT_NOT_FOUND`. Only exact production canonical keys are accepted,
    not aliases. Malformed keys/payloads return 400. No fuzzy fallback exists.
 
