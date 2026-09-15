@@ -1,20 +1,19 @@
 import { type FlemmeDatabase, inventories, inventoryItems } from "@flemme/db";
-import { productionIngredientCatalog } from "@flemme/ingredients";
+import {
+	normalizeIngredientName,
+	productionIngredientCatalog,
+} from "@flemme/ingredients";
 import { and, eq, inArray } from "drizzle-orm";
 import { ApiError } from "../../api-error";
 import {
 	type CreateInventoryItem,
 	InventoryItemResponseSchema,
+	type ReplaceInventoryItems,
 	type UpdateInventoryItem,
 } from "./inventory-schema";
 
 function restore(row: typeof inventoryItems.$inferSelect) {
-	const result = InventoryItemResponseSchema.safeParse({
-		...row,
-		name:
-			productionIngredientCatalog.getByKey(row.ingredientKey)?.names.id ??
-			row.ingredientKey,
-	});
+	const result = InventoryItemResponseSchema.safeParse(row);
 	if (!result.success)
 		throw new ApiError(
 			500,
@@ -57,7 +56,7 @@ export function createInventoryService(db: FlemmeDatabase) {
 				.select()
 				.from(inventoryItems)
 				.where(eq(inventoryItems.inventoryId, inventory.id))
-				.orderBy(inventoryItems.ingredientKey);
+				.orderBy(inventoryItems.identityKey);
 			return { items: rows.map(restore) };
 		},
 		async ensure(userId: string) {
@@ -80,7 +79,7 @@ export function createInventoryService(db: FlemmeDatabase) {
 				.select()
 				.from(inventoryItems)
 				.where(eq(inventoryItems.inventoryId, inventory.id))
-				.orderBy(inventoryItems.ingredientKey);
+				.orderBy(inventoryItems.identityKey);
 			return { items: rows.map(restore) };
 		},
 
@@ -101,11 +100,20 @@ export function createInventoryService(db: FlemmeDatabase) {
 					})
 					.returning();
 				if (!inventory) throw new Error("Inventory creation failed");
+				const ingredient = productionIngredientCatalog.getByKey(
+					input.ingredientKey,
+				);
+				if (!ingredient) throw new Error("Validated ingredient is missing");
 				const [item] = await tx
 					.insert(inventoryItems)
-					.values({ ...input, inventoryId: inventory.id })
+					.values({
+						...input,
+						inventoryId: inventory.id,
+						identityKey: input.ingredientKey,
+						name: ingredient.names.id,
+					})
 					.onConflictDoNothing({
-						target: [inventoryItems.inventoryId, inventoryItems.ingredientKey],
+						target: [inventoryItems.inventoryId, inventoryItems.identityKey],
 					})
 					.returning();
 				if (!item)
@@ -115,6 +123,55 @@ export function createInventoryService(db: FlemmeDatabase) {
 						"Ingredient already exists in inventory",
 					);
 				return restore(item);
+			});
+		},
+		async replace(userId: string, input: ReplaceInventoryItems) {
+			const itemsByIdentity = new Map<
+				string,
+				{ identityKey: string; ingredientKey: string | null; name: string }
+			>();
+			for (const item of input.items) {
+				const ingredient = productionIngredientCatalog.resolveName(item.name);
+				const identityKey =
+					ingredient?.key ?? normalizeIngredientName(item.name);
+				if (!itemsByIdentity.has(identityKey)) {
+					itemsByIdentity.set(identityKey, {
+						identityKey,
+						ingredientKey: ingredient?.key ?? null,
+						name: item.name,
+					});
+				}
+			}
+
+			return db.transaction(async (tx) => {
+				const [inventory] = await tx
+					.insert(inventories)
+					.values({ userId })
+					.onConflictDoUpdate({
+						target: inventories.userId,
+						set: { updatedAt: new Date() },
+					})
+					.returning({ id: inventories.id });
+				if (!inventory) throw new Error("Inventory creation failed");
+
+				await tx
+					.delete(inventoryItems)
+					.where(eq(inventoryItems.inventoryId, inventory.id));
+				if (itemsByIdentity.size > 0) {
+					await tx.insert(inventoryItems).values(
+						[...itemsByIdentity.values()].map((item) => ({
+							...item,
+							inventoryId: inventory.id,
+						})),
+					);
+				}
+
+				const rows = await tx
+					.select()
+					.from(inventoryItems)
+					.where(eq(inventoryItems.inventoryId, inventory.id))
+					.orderBy(inventoryItems.identityKey);
+				return { items: rows.map(restore) };
 			});
 		},
 		async update(userId: string, id: string, input: UpdateInventoryItem) {

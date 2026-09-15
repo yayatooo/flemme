@@ -133,6 +133,8 @@ beforeAll(async () => {
 	await db.insert(inventoryItems).values({
 		inventoryId: inventory.id,
 		ingredientKey: "salt",
+		identityKey: "salt",
+		name: "salt",
 		quantity: 250,
 		unit: "g",
 		condition: "fresh",

@@ -98,16 +98,17 @@ describe("Household API integration", () => {
 		expect(rows[0]?.id).toBe(before?.id);
 	});
 
-	test("persists zero for every aggregate count", async () => {
+	test("rejects a household with no members", async () => {
 		const userId = await createUser();
-		const input = { adults: 0, children: 0, toddlers: 0 };
-		const response = await putHousehold(userId, input);
-		const restored = HouseholdResponseSchema.parse(
-			await (await getHousehold(userId)).json(),
-		);
+		const response = await putHousehold(userId, {
+			adults: 0,
+			children: 0,
+			toddlers: 0,
+		});
+		const error = ErrorResponseSchema.parse(await response.json());
 
-		expect(response.status).toBe(200);
-		expect(restored).toEqual(input);
+		expect(response.status).toBe(400);
+		expect(error.error.code).toBe("INVALID_REQUEST");
 	});
 
 	test("updated counts feed cooking context while request overrides still replace", async () => {
@@ -160,9 +161,9 @@ describe("Household API integration", () => {
 		const invalidBodies = [
 			{ adults: -1, children: 0, toddlers: 0 },
 			{ adults: 1, children: 0.5, toddlers: 0 },
+			{ adults: 21, children: 0, toddlers: 0 },
 			{ adults: 1, children: 0 },
 			{ adults: 1, children: 0, toddlers: 0, userId: crypto.randomUUID() },
-			{ adults: 2_147_483_648, children: 0, toddlers: 0 },
 		];
 
 		for (const body of invalidBodies) {

@@ -53,7 +53,7 @@ const putHouseholdRouteDefinition = createRoute({
 	tags: ["Household"],
 	summary: "Create or replace the current user's household",
 	description:
-		"Upserts the household and replaces the complete adults, children, and toddlers aggregate counts. Zero is valid.",
+		"Upserts the complete adults, children, and toddlers aggregate counts. At least one member is required; each count is limited to 20.",
 	security: [{ CurrentUser: [] }],
 	request: {
 		body: jsonBody(PutHouseholdRequestSchema),

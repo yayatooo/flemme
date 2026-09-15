@@ -8,6 +8,7 @@ import {
 	InventoryItemParamsSchema,
 	InventoryItemResponseSchema,
 	InventoryResponseSchema,
+	ReplaceInventoryItemsSchema,
 	UpdateInventoryItemSchema,
 } from "./inventory-schema";
 import { createInventoryService } from "./inventory-service";
@@ -69,6 +70,33 @@ export function createInventoryRoute(db: FlemmeDatabase) {
 			},
 		}),
 		async (c) => c.json(await service.ensure(c.get("currentUserId")), 200),
+	);
+	route.openapi(
+		createRoute({
+			...common,
+			method: "put",
+			path: "/items",
+			summary: "Replace inventory from ingredient names",
+			description:
+				"Resolves known names to canonical ingredients, preserves unknown names, removes normalized duplicates, and atomically replaces the current inventory.",
+			request: {
+				body: {
+					required: true,
+					content: {
+						"application/json": { schema: ReplaceInventoryItemsSchema },
+					},
+				},
+			},
+			responses: {
+				200: response(InventoryResponseSchema, "Replaced inventory"),
+				...errors,
+			},
+		}),
+		async (c) =>
+			c.json(
+				await service.replace(c.get("currentUserId"), c.req.valid("json")),
+				200,
+			),
 	);
 
 	route.openapi(

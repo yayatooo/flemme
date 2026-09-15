@@ -55,7 +55,7 @@ afterAll(async () => {
 });
 
 describe("Kitchen API integration", () => {
-	test("returns not found until PUT creates normalized equipment", async () => {
+	test("returns not found until PUT creates canonical equipment", async () => {
 		const userId = await createUser();
 		const missingResponse = await getKitchen(userId);
 		const missingError = ErrorResponseSchema.parse(
@@ -65,28 +65,29 @@ describe("Kitchen API integration", () => {
 		expect(missingResponse.status).toBe(404);
 		expect(missingError.error.code).toBe("KITCHEN_NOT_FOUND");
 
-		const putResponse = await putKitchen(userId, {
-			equipment: [" Wajan ", "kompor", " Spatula"],
-		});
+		const input = { equipment: ["stove", "frying-pan", "rice-cooker"] };
+		const putResponse = await putKitchen(userId, input);
 		const saved = KitchenResponseSchema.parse(await putResponse.json());
 		const getResponse = await getKitchen(userId);
 		const restored = KitchenResponseSchema.parse(await getResponse.json());
 
 		expect(putResponse.status).toBe(200);
-		expect(saved.equipment).toEqual(["kompor", "Spatula", "Wajan"]);
+		expect(saved.equipment).toEqual(["frying-pan", "rice-cooker", "stove"]);
 		expect(getResponse.status).toBe(200);
 		expect(restored).toEqual(saved);
 	});
 
 	test("PUT fully replaces equipment without duplicating the Kitchen", async () => {
 		const userId = await createUser();
-		await putKitchen(userId, { equipment: ["kompor", "wajan", "blender"] });
+		await putKitchen(userId, {
+			equipment: ["stove", "frying-pan", "blender"],
+		});
 		const [before] = await db
 			.select({ id: kitchens.id })
 			.from(kitchens)
 			.where(eq(kitchens.userId, userId));
 
-		const response = await putKitchen(userId, { equipment: ["wajan"] });
+		const response = await putKitchen(userId, { equipment: ["frying-pan"] });
 		const saved = KitchenResponseSchema.parse(await response.json());
 		const kitchenRows = await db
 			.select()
@@ -100,33 +101,33 @@ describe("Kitchen API integration", () => {
 			: [];
 
 		expect(response.status).toBe(200);
-		expect(saved).toEqual({ equipment: ["wajan"] });
+		expect(saved).toEqual({ equipment: ["frying-pan"] });
 		expect(kitchenRows).toHaveLength(1);
 		expect(kitchenRows[0]?.id).toBe(before?.id);
-		expect(equipmentRows).toEqual([{ name: "wajan" }]);
+		expect(equipmentRows).toEqual([{ name: "frying-pan" }]);
 	});
 
-	test("accepts and persists an empty equipment list", async () => {
+	test("rejects an empty equipment list without changing saved state", async () => {
 		const userId = await createUser();
 		await putKitchen(userId, { equipment: ["oven"] });
 		const response = await putKitchen(userId, { equipment: [] });
-		const saved = KitchenResponseSchema.parse(await response.json());
+		const error = ErrorResponseSchema.parse(await response.json());
 		const restored = KitchenResponseSchema.parse(
 			await (await getKitchen(userId)).json(),
 		);
 
-		expect(response.status).toBe(200);
-		expect(saved).toEqual({ equipment: [] });
-		expect(restored).toEqual({ equipment: [] });
+		expect(response.status).toBe(400);
+		expect(error.error.code).toBe("INVALID_REQUEST");
+		expect(restored).toEqual({ equipment: ["oven"] });
 	});
 
 	test("rejects duplicate and invalid equipment without changing saved state", async () => {
 		const userId = await createUser();
-		await putKitchen(userId, { equipment: ["wajan"] });
+		await putKitchen(userId, { equipment: ["frying-pan"] });
 		const invalidBodies = [
-			{ equipment: ["wajan", "Wajan"] },
-			{ equipment: ["   "] },
-			{ equipment: ["wajan"], userId: crypto.randomUUID() },
+			{ equipment: ["stove", "stove"] },
+			{ equipment: ["wajan"] },
+			{ equipment: ["stove"], userId: crypto.randomUUID() },
 			{},
 		];
 
@@ -139,27 +140,27 @@ describe("Kitchen API integration", () => {
 
 		expect(
 			KitchenResponseSchema.parse(await (await getKitchen(userId)).json()),
-		).toEqual({ equipment: ["wajan"] });
+		).toEqual({ equipment: ["frying-pan"] });
 	});
 
 	test("rolls back replacement when a child insert fails", async () => {
 		const userId = await createUser();
 		const service = createKitchenService(db);
-		await service.put(userId, { equipment: ["kompor", "wajan"] });
+		await service.put(userId, { equipment: ["stove", "frying-pan"] });
 
 		await expect(
-			service.put(userId, { equipment: ["duplicate", "duplicate"] }),
+			service.put(userId, { equipment: ["stove", "stove"] }),
 		).rejects.toThrow();
 
 		expect(await service.get(userId)).toEqual({
-			equipment: ["kompor", "wajan"],
+			equipment: ["frying-pan", "stove"],
 		});
 	});
 
 	test("feeds persisted equipment to cooking context and preserves overrides", async () => {
 		const userId = await createUser();
 		await putKitchen(userId, {
-			equipment: ["kompor", "wajan", "blender"],
+			equipment: ["stove", "frying-pan", "blender"],
 		});
 		const service = createCookingContextService(db);
 		const context = await service.build(userId, {
@@ -169,23 +170,23 @@ describe("Kitchen API integration", () => {
 		});
 		const overridden = await service.build(userId, {
 			inventory: [],
-			kitchen: { equipment: ["wajan"] },
+			kitchen: { equipment: ["frying-pan"] },
 			household: { adults: 1, children: 0, toddlers: 0 },
 			session: { request: "Cook dinner", servings: 1 },
 		});
 
 		expect(context.kitchen.equipment).toEqual(
-			expect.arrayContaining(["kompor", "wajan", "blender"]),
+			expect.arrayContaining(["stove", "frying-pan", "blender"]),
 		);
 		expect(context.kitchen.equipment).toHaveLength(3);
-		expect(overridden.kitchen.equipment).toEqual(["wajan"]);
+		expect(overridden.kitchen.equipment).toEqual(["frying-pan"]);
 	});
 
 	test("isolates Kitchen state by authenticated user", async () => {
 		const firstUserId = await createUser();
 		const secondUserId = await createUser();
 		await putKitchen(firstUserId, { equipment: ["oven"] });
-		await putKitchen(secondUserId, { equipment: ["air fryer"] });
+		await putKitchen(secondUserId, { equipment: ["air-fryer"] });
 
 		const first = KitchenResponseSchema.parse(
 			await (await getKitchen(firstUserId)).json(),
@@ -195,7 +196,7 @@ describe("Kitchen API integration", () => {
 		);
 
 		expect(first).toEqual({ equipment: ["oven"] });
-		expect(second).toEqual({ equipment: ["air fryer"] });
+		expect(second).toEqual({ equipment: ["air-fryer"] });
 	});
 
 	test("rejects missing sessions and sessions for deleted users", async () => {

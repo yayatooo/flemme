@@ -19,6 +19,7 @@ import { createHouseholdRoute } from "./modules/household/household-route";
 import { createInventoryRoute } from "./modules/inventory/inventory-route";
 import { createKitchenRoute } from "./modules/kitchen/kitchen-route";
 import { createNutritionRoute } from "./modules/nutrition/nutrition-route";
+import { createOnboardingRoute } from "./modules/onboarding/onboarding-route";
 import { createPreCookingRoute } from "./modules/pre-cooking/pre-cooking-route";
 import type { PreCookingRunner } from "./modules/pre-cooking/pre-cooking-service";
 import { createProfileRoute } from "./modules/profile/profile-route";
@@ -91,6 +92,8 @@ export function createApp({
 		"/household",
 		"/household/*",
 		"/inventory",
+		"/onboarding",
+		"/onboarding/*",
 		"/inventory/*",
 		"/kitchen",
 		"/kitchen/*",
@@ -111,6 +114,7 @@ export function createApp({
 	app.route("/favorites", createFavoritesRoute(db));
 	app.route("/household", createHouseholdRoute(db));
 	app.route("/inventory", createInventoryRoute(db));
+	app.route("/onboarding", createOnboardingRoute(db));
 	app.route("/kitchen", createKitchenRoute(db));
 	app.route("/cooking-sessions", createCookingSessionRoute(db));
 	app.route("/cooking-sessions", createNutritionRoute(db));

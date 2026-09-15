@@ -111,11 +111,13 @@ try {
 			.values({
 				inventoryId: inventory.id,
 				ingredientKey: "salt",
+				identityKey: "salt",
+				name: "salt",
 				quantity: 250,
 				unit: "g",
 			})
 			.onConflictDoUpdate({
-				target: [inventoryItems.inventoryId, inventoryItems.ingredientKey],
+				target: [inventoryItems.inventoryId, inventoryItems.identityKey],
 				set: { quantity: 250, unit: "g", updatedAt: new Date() },
 			});
 

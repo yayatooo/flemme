@@ -26,7 +26,9 @@ export const inventoryItems = pgTable(
 		inventoryId: uuid("inventory_id")
 			.notNull()
 			.references(() => inventories.id, { onDelete: "cascade" }),
-		ingredientKey: text("ingredient_key").notNull(),
+		identityKey: text("identity_key").notNull(),
+		ingredientKey: text("ingredient_key"),
+		name: text("name").notNull(),
 		quantity: numeric("quantity", {
 			precision: 14,
 			scale: 3,
@@ -43,13 +45,17 @@ export const inventoryItems = pgTable(
 			.notNull(),
 	},
 	(table) => [
-		unique("inventory_items_inventory_id_ingredient_key_unique").on(
+		unique("inventory_items_inventory_id_identity_key_unique").on(
 			table.inventoryId,
-			table.ingredientKey,
+			table.identityKey,
+		),
+		check(
+			"inventory_items_identity_key_normalized",
+			sql`${table.identityKey} = lower(btrim(${table.identityKey})) and ${table.identityKey} !~ '\\s{2,}' and length(${table.identityKey}) > 0`,
 		),
 		check(
 			"inventory_items_ingredient_key_kebab_case",
-			sql`${table.ingredientKey} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`,
+			sql`${table.ingredientKey} is null or ${table.ingredientKey} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`,
 		),
 		check(
 			"inventory_items_quantity_positive",

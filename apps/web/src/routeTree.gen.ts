@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as OnboardingCompleteRouteImport } from './routes/onboarding/complete'
 import { Route as OnboardingHouseholdRouteImport } from './routes/onboarding/household'
 import { Route as OnboardingInventoryRouteImport } from './routes/onboarding/inventory'
 import { Route as OnboardingKitchenRouteImport } from './routes/onboarding/kitchen'
@@ -44,6 +45,11 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingCompleteRoute = OnboardingCompleteRouteImport.update({
+  id: '/complete',
+  path: '/complete',
+  getParentRoute: () => OnboardingRoute,
+} as any)
 const OnboardingHouseholdRoute = OnboardingHouseholdRouteImport.update({
   id: '/household',
   path: '/household',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
   '/onboarding/inventory': typeof OnboardingInventoryRoute
   '/onboarding/kitchen': typeof OnboardingKitchenRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
   '/onboarding/inventory': typeof OnboardingInventoryRoute
   '/onboarding/kitchen': typeof OnboardingKitchenRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
   '/onboarding/inventory': typeof OnboardingInventoryRoute
   '/onboarding/kitchen': typeof OnboardingKitchenRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/register'
+    | '/onboarding/complete'
     | '/onboarding/household'
     | '/onboarding/inventory'
     | '/onboarding/kitchen'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/register'
+    | '/onboarding/complete'
     | '/onboarding/household'
     | '/onboarding/inventory'
     | '/onboarding/kitchen'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/register'
+    | '/onboarding/complete'
     | '/onboarding/household'
     | '/onboarding/inventory'
     | '/onboarding/kitchen'
@@ -180,6 +192,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/complete': {
+      id: '/onboarding/complete'
+      path: '/complete'
+      fullPath: '/onboarding/complete'
+      preLoaderRoute: typeof OnboardingCompleteRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
     '/onboarding/household': {
       id: '/onboarding/household'
       path: '/household'
@@ -212,6 +231,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface OnboardingRouteChildren {
+  OnboardingCompleteRoute: typeof OnboardingCompleteRoute
   OnboardingHouseholdRoute: typeof OnboardingHouseholdRoute
   OnboardingInventoryRoute: typeof OnboardingInventoryRoute
   OnboardingKitchenRoute: typeof OnboardingKitchenRoute
@@ -219,6 +239,7 @@ interface OnboardingRouteChildren {
 }
 
 const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingCompleteRoute: OnboardingCompleteRoute,
   OnboardingHouseholdRoute: OnboardingHouseholdRoute,
   OnboardingInventoryRoute: OnboardingInventoryRoute,
   OnboardingKitchenRoute: OnboardingKitchenRoute,

@@ -4,12 +4,14 @@ import { type ReactNode, useState } from "react";
 import { AuthActionError, signOut } from "../auth/auth-actions";
 
 interface OnboardingStepShellProps {
+	eyebrow?: string;
 	title: string;
 	description: string;
 	children: ReactNode;
 }
 
 export function OnboardingStepShell({
+	eyebrow = "First, your cooking context",
 	title,
 	description,
 	children,
@@ -41,7 +43,7 @@ export function OnboardingStepShell({
 				</button>
 			</header>
 			<section className="welcome-card onboarding-card">
-				<p className="eyebrow">First, your cooking context</p>
+				<p className="eyebrow">{eyebrow}</p>
 				<h1>{title}</h1>
 				<p className="shell-note">{description}</p>
 				{children}

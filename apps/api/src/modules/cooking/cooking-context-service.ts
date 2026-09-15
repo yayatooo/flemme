@@ -29,18 +29,27 @@ function formatInventoryQuantity(item: {
 	return `${item.isApproximate ? "approximately " : ""}${item.quantity} ${item.unit}`;
 }
 
-function validatePersistedIngredientKey(ingredientKey: string) {
-	const result = IngredientKeySchema.safeParse(ingredientKey);
-
-	if (!result.success) {
+function inventoryContextName(item: {
+	ingredientKey: string | null;
+	name: string;
+}) {
+	if (item.ingredientKey === null) {
+		const name = item.name.trim();
+		if (name.length > 0) return name;
 		throw new ApiError(
 			500,
-			"INVALID_PERSISTED_INGREDIENT_KEY",
-			"Persistent inventory contains an invalid canonical ingredient key",
+			"INVALID_PERSISTED_INGREDIENT_NAME",
+			"Persistent inventory contains an invalid ingredient name",
 		);
 	}
 
-	return result.data;
+	const result = IngredientKeySchema.safeParse(item.ingredientKey);
+	if (result.success) return result.data;
+	throw new ApiError(
+		500,
+		"INVALID_PERSISTED_INGREDIENT_KEY",
+		"Persistent inventory contains an invalid canonical ingredient key",
+	);
 }
 
 export function createCookingContextService(db: FlemmeDatabase) {
@@ -92,6 +101,7 @@ export function createCookingContextService(db: FlemmeDatabase) {
 					? db
 							.select({
 								ingredientKey: inventoryItems.ingredientKey,
+								name: inventoryItems.name,
 								quantity: inventoryItems.quantity,
 								unit: inventoryItems.unit,
 								isApproximate: inventoryItems.isApproximate,
@@ -106,7 +116,7 @@ export function createCookingContextService(db: FlemmeDatabase) {
 				inventory:
 					overrides.inventory ??
 					items.map((item) => ({
-						name: validatePersistedIngredientKey(item.ingredientKey),
+						name: inventoryContextName(item),
 						quantity: formatInventoryQuantity(item),
 						condition: item.condition,
 					})),

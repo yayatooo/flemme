@@ -239,15 +239,68 @@ test("legacy keys remain readable without alias remapping", async () => {
 		.values({ userId: uid })
 		.returning();
 	if (!inv) throw new Error("Missing inventory");
-	await db
-		.insert(inventoryItems)
-		.values({ inventoryId: inv.id, ingredientKey: "salt" });
+	await db.insert(inventoryItems).values({
+		inventoryId: inv.id,
+		identityKey: "salt",
+		ingredientKey: "salt",
+		name: "salt",
+	});
 	const result = InventoryResponseSchema.parse(
 		await (await request(uid)).json(),
 	);
 	expect(result.items[0]?.ingredientKey).toBe("salt");
 	expect(result.items[0]?.name).toBe("salt");
 });
+test("onboarding replacement resolves known names and preserves unknown names", async () => {
+	const uid = await user();
+	const response = await request(uid, "/inventory/items", "PUT", {
+		items: [
+			{ name: "Telur" },
+			{ name: "egg" },
+			{ name: "  DAUN   GEDI " },
+			{ name: "daun gedi" },
+			{ name: "Garlic" },
+		],
+	});
+	const saved = InventoryResponseSchema.parse(await response.json());
+
+	expect(response.status).toBe(200);
+	expect(saved.items).toHaveLength(3);
+	expect(saved.items).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({
+				ingredientKey: "egg",
+				name: "Telur",
+				quantity: null,
+			}),
+			expect.objectContaining({
+				ingredientKey: "garlic",
+				name: "Garlic",
+				quantity: null,
+			}),
+			expect.objectContaining({
+				ingredientKey: null,
+				name: "DAUN GEDI",
+				quantity: null,
+			}),
+		]),
+	);
+	expect((await context(uid)).inventory).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({ name: "egg" }),
+			expect.objectContaining({ name: "garlic" }),
+			expect.objectContaining({ name: "DAUN GEDI" }),
+		]),
+	);
+
+	const cleared = await request(uid, "/inventory/items", "PUT", { items: [] });
+	expect(cleared.status).toBe(200);
+	expect(InventoryResponseSchema.parse(await cleared.json())).toEqual({
+		items: [],
+	});
+	expect((await context(uid)).inventory).toEqual([]);
+});
+
 test("OpenAPI inventory operations", async () => {
 	const document = (await (await app.request("/openapi.json")).json()) as {
 		paths: Record<string, Record<string, unknown>>;
@@ -255,6 +308,7 @@ test("OpenAPI inventory operations", async () => {
 	expect(document.paths["/inventory"]?.get).toBeDefined();
 	expect(document.paths["/inventory"]?.put).toBeDefined();
 	expect(document.paths["/inventory/items"]?.post).toBeDefined();
+	expect(document.paths["/inventory/items"]?.put).toBeDefined();
 	expect(document.paths["/inventory/items/{id}"]?.put).toBeDefined();
 	expect(document.paths["/inventory/items/{id}"]?.delete).toBeDefined();
 });

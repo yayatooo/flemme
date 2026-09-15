@@ -37,7 +37,7 @@ const getKitchenRouteDefinition = createRoute({
 	tags: ["Kitchen"],
 	summary: "Get the current user's kitchen",
 	description:
-		"Returns the current user's persisted cooking equipment in deterministic name order.",
+		"Returns the current user's persisted canonical cooking-equipment keys in deterministic order.",
 	security: [{ CurrentUser: [] }],
 	responses: {
 		200: jsonResponse(KitchenResponseSchema, "Current user's kitchen"),
@@ -53,7 +53,7 @@ const putKitchenRouteDefinition = createRoute({
 	tags: ["Kitchen"],
 	summary: "Create or replace the current user's kitchen",
 	description:
-		"Atomically upserts the Kitchen and replaces its complete free-form equipment list. Empty equipment is valid.",
+		"Atomically upserts the Kitchen and replaces its complete canonical equipment selection. At least one supported, unique key is required.",
 	security: [{ CurrentUser: [] }],
 	request: {
 		body: jsonBody(PutKitchenRequestSchema),

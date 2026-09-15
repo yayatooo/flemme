@@ -35,12 +35,30 @@ export const UpdateInventoryItemSchema =
 	);
 export const InventoryItemResponseSchema = InventoryItemValuesSchema.extend({
 	id: z.string().uuid(),
-	ingredientKey: IngredientKeySchema,
-	name: z.string().min(1),
+	ingredientKey: IngredientKeySchema.nullable(),
+	name: z.string().trim().min(1),
 }).refine(paired, "Invalid persisted quantity/unit pair");
 export const InventoryResponseSchema = z.object({
 	items: z.array(InventoryItemResponseSchema),
 });
+const InventoryOnboardingNameSchema = z
+	.string()
+	.trim()
+	.min(1)
+	.max(120)
+	.transform((name) => name.replace(/\s+/gu, " "));
+
+export const ReplaceInventoryItemsSchema = z
+	.object({
+		items: z.array(
+			z
+				.object({
+					name: InventoryOnboardingNameSchema,
+				})
+				.strict(),
+		),
+	})
+	.strict();
 export const InventoryItemParamsSchema = z.object({
 	id: z
 		.string()
@@ -48,4 +66,5 @@ export const InventoryItemParamsSchema = z.object({
 		.openapi({ param: { name: "id", in: "path" } }),
 });
 export type CreateInventoryItem = z.infer<typeof CreateInventoryItemSchema>;
+export type ReplaceInventoryItems = z.infer<typeof ReplaceInventoryItemsSchema>;
 export type UpdateInventoryItem = z.infer<typeof UpdateInventoryItemSchema>;

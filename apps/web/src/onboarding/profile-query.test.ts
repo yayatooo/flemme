@@ -101,21 +101,13 @@ test("successful save updates Profile cache and advances a fresh user to Househo
 		const path = new URL(String(input)).pathname;
 		requests.push({ path, method: init?.method ?? "GET" });
 		if (path === "/profile" && init?.method === "PUT") return json(payload);
-		if (path === "/profile") return json(payload);
-		return json(
-			{
-				error: {
-					code:
-						path === "/household"
-							? "HOUSEHOLD_NOT_FOUND"
-							: path === "/kitchen"
-								? "KITCHEN_NOT_FOUND"
-								: "INVENTORY_NOT_FOUND",
-					message: "Missing",
-				},
-			},
-			404,
-		);
+		if (path === "/onboarding")
+			return json({
+				completed: false,
+				completedAt: null,
+				nextStep: "household",
+			});
+		return json(payload);
 	}) as typeof fetch;
 	const queryClient = new QueryClient();
 
@@ -135,12 +127,12 @@ test("save recomputes and navigates to the actual incomplete step", async () => 
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
 		if (path === "/profile" && init?.method === "PUT") return json(payload);
-		if (path === "/kitchen") {
-			return json(
-				{ error: { code: "KITCHEN_NOT_FOUND", message: "Missing" } },
-				404,
-			);
-		}
+		if (path === "/onboarding")
+			return json({
+				completed: false,
+				completedAt: null,
+				nextStep: "kitchen",
+			});
 		return json({ ok: true });
 	}) as typeof fetch;
 
@@ -158,6 +150,12 @@ test("save resolves a complete user to app", async () => {
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
 		if (path === "/profile" && init?.method === "PUT") return json(payload);
+		if (path === "/onboarding")
+			return json({
+				completed: true,
+				completedAt: "2026-09-15T00:00:00.000Z",
+				nextStep: null,
+			});
 		return json({ ok: true });
 	}) as typeof fetch;
 

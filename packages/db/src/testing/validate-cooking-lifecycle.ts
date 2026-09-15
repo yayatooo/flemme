@@ -151,6 +151,8 @@ try {
 	await db.insert(inventoryItems).values({
 		inventoryId: inventory.id,
 		ingredientKey: canonicalSalt.key,
+		identityKey: canonicalSalt.key,
+		name: canonicalSalt.names.id,
 		quantity: 100,
 		unit: "g",
 		condition: "fresh",

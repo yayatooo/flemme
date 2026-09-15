@@ -1,5 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { AuthActionError, signOut } from "../auth/auth-actions";
 import { requireAuthenticatedUser } from "../auth/auth-guards";
@@ -62,6 +67,22 @@ function UserPlatformPage() {
 					Signed in as <strong>{auth.user?.email}</strong>. Your cooking
 					workspace is ready for the next product flow.
 				</p>
+				<div className="platform-actions">
+					<Link
+						className="secondary-button"
+						to="/onboarding/household"
+						search={{ edit: true }}
+					>
+						Edit household
+					</Link>
+					<Link
+						className="secondary-button"
+						to="/onboarding/kitchen"
+						search={{ edit: true }}
+					>
+						Edit kitchen equipment
+					</Link>
+				</div>
 				{error ? (
 					<p className="form-error" role="alert">
 						{error}

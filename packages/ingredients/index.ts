@@ -15,6 +15,7 @@ export {
 	type IngredientCatalog,
 	resolveIngredient,
 } from "./src/ingredient-catalog";
+export { normalizeIngredientName } from "./src/normalize-ingredient-name";
 export {
 	PRODUCTION_CANONICAL_INGREDIENTS,
 	productionIngredientCatalog,

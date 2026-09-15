@@ -15,6 +15,7 @@
 	"peerDependencies": {},
 	"dependencies": {
 		"@flemme/agent": "workspace:*",
+		"@flemme/contracts": "workspace:*",
 		"@flemme/db": "workspace:*",
 		"@flemme/ingredients": "workspace:*",
 		"@flemme/nutrition": "workspace:*",

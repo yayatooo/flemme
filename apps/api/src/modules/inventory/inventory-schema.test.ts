@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
-import { CreateInventoryItemSchema } from "./inventory-schema";
+import {
+	CreateInventoryItemSchema,
+	ReplaceInventoryItemsSchema,
+} from "./inventory-schema";
 
 test("quantity precision, nullable pair and strict inventory contracts", () => {
 	const base = { ingredientKey: "egg", quantity: 1.125, unit: "g" };
@@ -19,4 +22,23 @@ test("quantity precision, nullable pair and strict inventory contracts", () => {
 		CreateInventoryItemSchema.safeParse({ ...base, userId: "untrusted" })
 			.success,
 	).toBe(false);
+});
+
+test("onboarding inventory accepts normalized names and an empty list", () => {
+	expect(
+		ReplaceInventoryItemsSchema.parse({
+			items: [{ name: "  Daun   Gedi  " }, { name: "Telur" }],
+		}),
+	).toEqual({ items: [{ name: "Daun Gedi" }, { name: "Telur" }] });
+	expect(ReplaceInventoryItemsSchema.parse({ items: [] })).toEqual({
+		items: [],
+	});
+	for (const input of [
+		{ items: [{ name: " " }] },
+		{ items: [{ name: "x".repeat(121) }] },
+		{ items: [{ name: "Egg", ingredientKey: "egg" }] },
+		{},
+	]) {
+		expect(ReplaceInventoryItemsSchema.safeParse(input).success).toBe(false);
+	}
 });
