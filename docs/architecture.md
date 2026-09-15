@@ -18,6 +18,19 @@
 | ORM | Drizzle | Database schema and access |
 | Validation | Zod | Runtime contracts |
 
+## Web UI Foundation
+
+`apps/web` uses Tailwind CSS v4 through the existing Vite pipeline and keeps
+shadcn/ui source primitives under `src/components/ui`. The `@/*` TypeScript and
+Vite alias resolves from `src`, and shadcn generation targets the same path.
+
+The global theme maps Flemme's cream, ink, orange, lime, lavender, danger,
+radius, typography, and hard-shadow decisions to semantic Tailwind/shadcn
+tokens. Shared primitives own accessible interaction structure and Flemme's
+neubrutalist presentation; Product Domain behavior remains outside
+`components/ui`. Existing page migration remains incremental rather than a
+single application rewrite.
+
 ## System Boundaries
 
 - `apps/web`

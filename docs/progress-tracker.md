@@ -4,14 +4,53 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Onboarding Completion → Home v0.1
+Landing Page Tailwind + shadcn Migration
 
 ## Current Goal
 
-Onboarding v0.1 is complete. The next bounded product unit begins from Home.
+The public landing is migrated; authenticated surfaces remain the next
+incremental presentation units.
 
 
 ## Completed
+### Landing Page Tailwind + shadcn Migration
+
+- Replaced all landing-specific vanilla CSS selectors with Tailwind utilities
+  colocated in `landing-page.tsx`; global CSS retains only the shared semantic
+  tokens and marquee keyframes that cannot reasonably live in JSX.
+- Composed landing CTAs, mobile navigation control, recipe actions, recipe
+  surfaces, and the early-access surface from the shared shadcn Button, Card,
+  and Badge primitives.
+- Preserved the existing Flemme structure, copy, cream/ink/orange/lime/lavender
+  palette, expressive typography, ingredient illustration, rotated ticker,
+  hard shadows, bold borders, rounded forms, and groovy-retro neubrutalist
+  hierarchy.
+- Preserved all public anchors and Login/Register routes. No authentication,
+  onboarding, API, or Product Domain behavior changed.
+- Mobile browser acceptance at 390px confirmed the complete page, accessible
+  expandable navigation, all CTAs, and zero horizontal overflow. Desktop
+  acceptance at 1440px confirmed desktop navigation, the two-column hero,
+  responsive section layouts, and zero horizontal overflow.
+
+### Web UI Foundation v0.1
+
+- Confirmed Tailwind CSS v4, the Vite plugin, the `@/*` source alias, the global
+  stylesheet entry, and shadcn generation paths without replacing the installed
+  setup.
+- Replaced default neutral shadcn tokens with semantic Flemme cream, ink,
+  orange, lime, lavender, muted, success, danger, radius, typography, border,
+  and hard-shadow tokens while preserving existing legacy visual tokens.
+- Customized Button, Card, Input, Textarea, Badge, Avatar, Dialog, Drawer,
+  Skeleton, and Sonner primitives with Flemme's tactile neubrutalist interaction
+  language, readable focus states, and mobile-sized controls.
+- Kept all primitives reusable and free of authentication, routing, API,
+  onboarding, inventory, or cooking behavior. Existing pages remain an
+  incremental migration unit rather than being rewritten in this foundation.
+- Added scoped Biome Tailwind-directive parsing for the web package.
+- Browser smoke verification at 390px confirmed readable controls, dialog and
+  drawer behavior, 44–48px primary targets, and zero horizontal overflow.
+  Desktop verification at 1440px retained a centered 576px application surface.
+
 ### User Platform O6 — Completion → Home
 
 - Added canonical `GET /onboarding` status resolution and idempotent
