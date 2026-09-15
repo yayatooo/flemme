@@ -4,15 +4,145 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-User Platform Product Integration — O2 PROFILE PREFERENCES
+Onboarding Completion → Home v0.1
 
 ## Current Goal
 
-Profile onboarding now collects persistent food and cooking preferences, supports
-explicit empty-profile Skip semantics, and advances immediately from recomputed
-server-backed onboarding state.
+Onboarding v0.1 is complete. The next bounded product unit begins from Home.
+
 
 ## Completed
+### User Platform O6 — Completion → Home
+
+- Added canonical `GET /onboarding` status resolution and idempotent
+  `POST /onboarding/complete`. The server verifies Profile, Household, Kitchen,
+  and the Initial Inventory decision before persisting
+  `users.onboarding_completed_at`.
+- Kept Initial Inventory content optional: both saved items and Add later create
+  the Inventory decision, then advance to `/onboarding/complete`.
+- Added the mobile-first Setup complete screen with honest inventory-safe copy,
+  a single Start Cooking action, submission locking, saved-state retry messaging,
+  and stale-state recovery to the actual incomplete step.
+- Route guards now send incomplete Home access to the backend-resolved next step,
+  completed onboarding access to `/app`, and preserve explicit Household and
+  Kitchen editing through `?edit=true` without changing completion state.
+- Completion navigation replaces the transition entry. Canonical guards prevent
+  refresh and browser Back from reopening onboarding; logout, login, and another
+  device restore completion from backend state.
+- Completion remains separate from Cooking Completion and invokes neither a
+  cooking Agent nor Recommendation. Home remains usable with an empty Inventory.
+- Mobile browser acceptance at 390px confirmed Add later, the completion screen,
+  zero horizontal overflow, Start Cooking, Home entry, and guarded Back behavior.
+- Validation: 46 web tests / 110 expectations, 132 API tests / 1,150
+  expectations, focused Onboarding API integration, seven-package typecheck,
+  API/web builds, and Drizzle migration check pass.
+
+### User Platform O5 — Initial Inventory
+
+- Replaced `/onboarding/inventory` placeholder content with a mobile-first
+  free-form ingredient entry flow, safe canonical suggestions, removable chips,
+  duplicate feedback, a dynamic ingredient count, Finish Setup, and Add later.
+- Natural English and Indonesian catalog names and aliases resolve through
+  `@flemme/ingredients`; unknown names remain valid. Canonical and normalized
+  free-text duplicates collapse to one persisted item.
+- Added atomic `PUT /inventory/items` full replacement for onboarding while
+  retaining the existing Inventory Management create/update/delete API. No
+  onboarding-only persistence model was introduced.
+- Inventory rows now preserve a normalized identity key, optional canonical key,
+  and submitted display name. Migration `0002_eager_norman_osborn.sql` backfills
+  existing rows before applying non-null and uniqueness constraints.
+- Cooking context projects canonical keys for resolved entries and stored names
+  for unresolved entries. Request-level inventory remains authoritative and no
+  recommendation or cooking path mutates persistence.
+- Finish Setup persists all chips and advances to Completion. Add later
+  idempotently initializes the same empty Inventory parent and also advances to
+  Completion. Both paths prevent submission races; failed saves preserve chips
+  and leave Add later available.
+- Mobile browser acceptance at 390px confirmed the empty Add later state,
+  free-form resolved/unresolved entry, canonical duplicate prevention, no
+  horizontal overflow, persistence, and navigation to Completion. A separate
+  user confirmed Add later creates an empty inventory.
+- Validation: 45 web tests / 103 expectations, 128 API tests / 1,136
+  expectations, focused Inventory integration, seven-package typecheck,
+  API/web builds, Drizzle migration check, migration preservation, cooking
+  lifecycle validation, and scoped Biome checks pass.
+
+### User Platform O4 — Kitchen Equipment
+
+- Added the shared v0.1 equipment catalog with 19 canonical keys, display labels,
+  and five presentation categories in `@flemme/contracts`.
+- Replaced `/onboarding/kitchen` placeholder content with grouped, mobile-first,
+  keyboard-operable multi-select cards. Missing kitchens start with no selection
+  and no equipment is silently assumed.
+- Enforced at least one unique, supported canonical equipment key at the API
+  boundary. Empty, duplicate, label-form, and unsupported values are rejected
+  without replacing existing persistence.
+- Continue persists the full selection, synchronizes the Kitchen query cache,
+  recomputes onboarding state, and advances to Initial Inventory, another actual
+  missing step, or `/app`. Failed saves retain the selection and duplicate
+  submission is prevented; no Skip exists.
+- Completed users can reopen the prepopulated Kitchen editor from `/app`; saving
+  returns to `/app` without restarting onboarding.
+- Existing Kitchen persistence transactions, cooking-context projection,
+  recommendation use, request-level whole-object overrides, Inventory
+  separation, and historical Cooking Session behavior remain unchanged.
+- Mobile browser acceptance at 390px confirmed the empty-invalid state, all 19
+  grouped items, selection/deselection semantics, accessible pressed states,
+  save to Initial Inventory, zero horizontal overflow, completed-user editing,
+  prepopulation, and return to `/app`.
+- Validation: 39 web tests / 84 expectations, 126 API tests / 1,122
+  expectations, seven-package workspace typecheck, API/web production builds,
+  focused Kitchen integration, and scoped Biome checks pass.
+
+### User Platform O3 — Household
+
+- Replaced `/onboarding/household` placeholder content with a mobile-first
+  adults, children, and toddlers stepper form.
+- Missing households start locally at one adult; existing households prepopulate
+  all counts for onboarding resume and post-onboarding editing.
+- Enforced the v0.1 contract at both UI and API boundaries: integer counts from
+  0 through 20 per category and at least one household member overall.
+- Added accessible increase/decrease labels, 48px touch controls, readable count
+  outputs, singular/plural household summaries, disabled invalid/limit controls,
+  duplicate-submit prevention, retained selections on failure, and no Skip.
+- Continue persists the complete household aggregate, synchronizes its query
+  cache, recomputes onboarding state, and advances to Kitchen Equipment, the
+  actual next missing step, or `/app`.
+- Completed users can reopen the household editor from `/app`; changes affect
+  the persistent cooking context through the existing Household API without
+  modifying inventory or historical Cooking Sessions.
+- Existing API cooking-context integration and whole-object request overrides
+  remain unchanged.
+- Mobile browser acceptance at 390px confirmed default, empty-invalid, saved
+  navigation, zero horizontal overflow, completed-user reopening, prepopulation,
+  editing, and return to `/app`.
+- Validation: 32 web tests / 67 expectations, 127 API tests / 1,123
+  expectations, focused Household API integration, API/web typechecks and
+  builds, and scoped Biome checks pass.
+
+### Web Landing Visual Foundation
+
+- Replaced the minimal public home screen with a complete editorial landing:
+  consumer-brand navigation, food-first hero, statement ticker, Discover,
+  About, cooking journey, personalization, early-access pricing, final CTA, and
+  footer.
+- Added the locked Calistoga, Shrikhand, and Plus Jakarta Sans fonts as local
+  build dependencies and established the cream, ink, orange, tomato, mustard,
+  lime, lavender, and soft-pink semantic palette with shared radius, border,
+  shadow, and container tokens.
+- Built the hero and recipe imagery from intentional CSS illustration rather
+  than a generic dashboard, AI graphic, stock photo, fake metric, or new image
+  dependency.
+- Added a distinct mobile navigation menu, single-column 390px composition,
+  desktop editorial asymmetry, tactile controls, visible focus treatment, and
+  reduced-motion fallbacks.
+- Preserved all login, registration, onboarding, and authenticated application
+  routes and behavior.
+- Browser acceptance at 390px and 1440px confirmed the intended fonts,
+  responsive navigation, all landing sections, working mobile menu, and zero
+  horizontal overflow.
+- Web typecheck and production build pass. Web lint reports only the existing
+  Fast Refresh warnings.
 
 ### API Module Structure Cleanup
 

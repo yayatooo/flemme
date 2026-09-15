@@ -76,7 +76,8 @@ It is a development concern only; application containers and production
 deployment infrastructure remain outside the current architecture.
 
 - `packages/contracts`
-  Owns shared Zod contracts used across workspace boundaries.
+  Owns shared Zod contracts and controlled cross-workspace catalogs used across
+  workspace boundaries.
 
 ## Request Flow
 
@@ -101,10 +102,13 @@ separate server state. Public landing, guest-only login/register, protected app
 entry and protected onboarding shell use awaited TanStack Router guards to avoid
 session-restore flicker.
 
-Onboarding is derived from Profile, Household, Kitchen and Inventory API
-semantics, not Auth persistence. Expected `*_NOT_FOUND` responses indicate
-missing setup; an existing empty Inventory is initialized. Logout invalidates the
-server session and clears the user-scoped query cache before navigation. A
+Onboarding status and completion are application-owned backend state. The
+`GET /onboarding` route resolves the first missing Profile, Household, Kitchen or Inventory
+decision and then the explicit Completion step. `POST /onboarding/complete`
+server-verifies those prerequisites and idempotently persists
+`users.onboarding_completed_at`; an existing empty Inventory is a valid decision.
+TanStack Query caches this canonical status for route guards. Logout invalidates
+the server session and clears the user-scoped query cache before navigation. A
 Product Domain 401 clears the same state; domain 404s never invalidate Auth.
 
 ## API Foundation
@@ -170,10 +174,11 @@ persistent arrays for one request.
 
 Household v0.1 follows the same current-user resource boundary over the
 existing optional one-to-one `households` row. Its API replaces the complete
-aggregate adults, children, and toddlers counts without introducing household
-members or a second representation. The existing cooking-context service reads
-the saved row directly, while a request-level household remains a whole-object
-override for one cooking request.
+aggregate adults, children, and toddlers counts, requiring at least one member
+and limiting each category to 20, without introducing household members or a
+second representation. The existing cooking-context service reads the saved row
+directly, while a request-level household remains a whole-object override for
+one cooking request.
 
 During the A5/A7 migration, local cooking routes may explicitly select the
 isolated development adapter, which accepts a real user UUID and verifies it
@@ -186,23 +191,27 @@ The API reuses session restoration and projects historical recipe summaries.
 Creation uses an ownership/status-filtered insert and the existing composite
 session/user FK and unique constraint. Removing a favorite preserves history.
 No AI, current cooking context, copied snapshot or new history table is involved.
-
-Inventory API writes the existing inventory parent and item rows. Ingredient
-identity is validated by the production catalog in `@flemme/ingredients`, not
-by a new database master table. Creation atomically initializes the parent and
-inserts a unique canonical-key item. Updates preserve ingredient identity;
-updates and deletes include authenticated ownership in their SQL predicates.
-Legacy keys outside the production catalog remain readable with their key as
-the display fallback; they are never guessed or silently remapped. New unknown
-keys are rejected. Cooking-context loading and request overrides are unchanged.
+Inventory API writes the existing inventory parent and item rows. Regular
+Inventory Management creation remains canonical-key based and validates
+identity through `@flemme/ingredients`. Initial onboarding uses the same domain
+through an atomic full replacement by names: known bilingual names and aliases
+resolve to canonical keys, while unresolved names remain valid user-owned
+inventory entries. Each row stores a normalized identity key for duplicate
+prevention, an optional canonical ingredient key, and the submitted display
+name. Existing quantity, ownership, update, and deletion rules remain
+unchanged. Cooking context projects canonical keys when available and stored
+names otherwise; request-level inventory overrides remain authoritative without
+silently mutating persistence.
 
 Kitchen API uses the existing user-owned kitchen parent and equipment child
-rows. Equipment identity remains free-form text. A full replacement upserts the
-parent, deletes previous child rows, and inserts the requested names in one
-PostgreSQL transaction. The parent upsert serializes concurrent replacements
-for the same user. Cooking-context orchestration reads these same child rows;
-its existing unspecified ordering and whole-request override behavior remain
-unchanged. The Kitchen response alone sorts names deterministically.
+rows. Equipment identity is a canonical key from the controlled v0.1 catalog in
+`packages/contracts`; API writes require at least one supported, unique key. A
+full replacement upserts the parent, deletes previous child rows, and inserts
+the requested keys in one PostgreSQL transaction. The parent upsert serializes
+concurrent replacements for the same user. Cooking-context orchestration reads
+these same child rows; its existing unspecified ordering and whole-request
+override behavior remain unchanged. The Kitchen response alone sorts keys
+deterministically.
 
 The agent is a reusable capability, not an independent backend.
 
