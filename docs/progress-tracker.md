@@ -4,15 +4,192 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Landing Page Component Refactor v0.1
+Flemme Web — Phase 5A: Create Cooking Session v0.1
 
 ## Current Goal
 
-The public landing now has independently maintainable section components.
-Future visual changes can target one section without changing page composition.
+Start Cooking now persists the reviewed immutable plan, receives a stable
+Cooking Session ID, and enters a refresh-safe session route. Phase 5B can build
+Active Cooking controls on the persisted server session.
 
 
 ## Completed
+### Flemme Web — Phase 5A: Create Cooking Session v0.1
+
+- Added `features/cooking-session` with a dedicated TanStack Query creation
+  mutation, synchronous duplicate-submission lock, stable per-session query key,
+  schema-validated create/read requests, controlled errors, and retry.
+- Start Cooking now uses the exact Phase 4 handoff and retained Recommendation
+  snapshot. The create payload preserves the selected recipe and immutable plan,
+  uses the first existing cooking-stage and step IDs, and starts active with
+  empty completed-step and change arrays.
+- Added browser-safe shared Cooking Session create/response contracts under
+  `@flemme/contracts/cooking-session`, backed by schema-only Agent and Nutrition
+  package exports. The API now re-exports the same shared schemas instead of
+  maintaining a parallel transport contract.
+- Pending creation keeps the complete Pre-Cooking review visible, disables the
+  action, and uses concise Starting cooking copy. Failure preserves the handoff
+  and plan, hides raw server detail, and exposes keyboard-accessible retry.
+- Successful creation seeds the validated response under its stable session
+  query key before navigating to `/app/cooking/$sessionId`. The minimal route
+  boundary reads persisted server data only and deliberately includes no Active
+  Cooking progress controls.
+- Refresh restores the route through `GET /cooking-sessions/:id` without
+  Recommendation or Pre-Cooking memory. Invalid IDs, missing sessions,
+  ownership failures, and invalid persisted snapshots map to controlled UI
+  messages while existing API authorization remains unchanged.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and 1920px:
+  zero overflow, the 576px desktop canvas, hidden BottomNavigation, visible 3px
+  keyboard focus, plan-visible pending/error states, one request per click or
+  retry despite double clicks, no immediate GET after cache seeding, and one GET
+  after refresh. The transition made zero Recommendation, Pre-Cooking,
+  Inventory, Completion, or Favorite requests.
+- Validation: web typecheck and production build pass; all 90 web tests / 263
+  expectations pass; the focused Cooking Session API integration passes all 8
+  tests / 42 expectations; shared-contract typecheck, API build, scoped Biome,
+  and Oxlint pass. Oxlint reports only the 22 established Fast Refresh warnings,
+  including the new generated-style session route. The standalone API typecheck
+  remains blocked separately by the known malformed OpenAI declaration parser
+  issue in `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Phase 4: Pre-Cooking & Plan Review v0.1
+
+- Connected recipe selection to `POST /cooking/pre-cooking` through a TanStack
+  Query mutation. The request preserves the exact Recommendation object and
+  trimmed `session.request`; persistent cooking context remains API-owned.
+- Added the guarded `/app/pre-cooking` focused-flow route. Missing or mismatched
+  selection state returns to current Recommendations when available and Home
+  otherwise. BottomNavigation remains hidden.
+- Added the dedicated `features/pre-cooking` review composition with a
+  plan-specific loading state, retryable controlled errors, back behavior,
+  preparation summary, optional recipe-level times, compact ingredient and
+  equipment requirements, ordered preparation steps, qualitative timing and
+  cues, and collapsed cooking-stage disclosure.
+- Added the browser-safe `@flemme/agent/pre-cooking-output` package subpath and
+  reused its runtime schema. No local cooking-plan contract was introduced.
+- Cached successful generation per current exact selection to prevent incidental
+  duplicate calls. A new Recommendation clears downstream plan and handoff
+  state; stale concurrent results cannot replace a newer selection.
+- Start Cooking preserves the exact request, selected recipe object, and
+  validated plan object in the Phase 5 handoff cache. It performs no
+  Cooking Session request, progress mutation, or Inventory mutation.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px with no
+  horizontal overflow, readable vertical requirements and preparation steps,
+  usable stage expand/collapse, reachable Start Cooking, a visible 3px keyboard
+  focus outline, hidden BottomNavigation, and the existing 576px desktop canvas.
+- Validation: web typecheck and production build pass; all 79 web tests / 217
+  expectations pass; scoped Biome checks pass. Oxlint passes with only the 21
+  established Fast Refresh warnings in route and shared primitive modules.
+
+### Flemme Web — Recommendation Card Refactor v0.2
+
+- Refactored each Recommendation Card into one layered decision surface:
+  feasibility, title, concise rationale, metadata, readiness summaries,
+  confirmations, warnings, matches, optional detail, then selection.
+- Replaced the always-visible ingredient and equipment columns with compact
+  two-block counts for available, quick-check, missing, and all-ready states.
+- Kept required confirmations and safety warnings visible while collapsed.
+  Preference matches remain compact and conditional.
+- Added the shared shadcn/Base UI Collapsible primitive. Ingredient and
+  equipment names, quantities, notes, and optional ingredients now render in
+  full-width vertical sections only when explicitly expanded.
+- Removed repeated available pills from detail rows. Available requirements use
+  a quiet check treatment; unconfirmed and missing states retain textual badges
+  and distinct icons.
+- Kept the full-width Select recipe action at the card bottom and available
+  without expansion. Recommendation requests, Query cache state, clarification,
+  no-viable handling, exact-object selection, and the non-executing Pre-Cooking
+  boundary are unchanged.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px with no
+  overflow, natural two-to-three-line title wrapping, readable two-column
+  summaries, obvious confirmations, balanced vertical expanded details,
+  keyboard-operable disclosure, reachable CTAs, and the unchanged 572px desktop
+  canvas.
+- Validation: web typecheck, production build, all 66 web tests / 162
+  expectations, scoped Biome checks, and oxlint pass. Oxlint reports only the
+  established Fast Refresh warning category for route and primitive modules.
+
+### Flemme Web — Phase 3: Recommendation & Selection v0.1
+
+- Connected the Home cooking prompt to `POST /cooking/recommendations` through
+  TanStack Query. The browser submits only the trimmed `session.request`;
+  persistent Profile, Household, Kitchen, Inventory, and preference context
+  remains API-owned.
+- Kept Quick Start as the Phase 2 populate-then-confirm interaction. Every
+  option fills the same prompt and therefore reaches the same submission path
+  without a duplicate API integration.
+- Added the guarded `/app/recommendation` route and dedicated
+  `features/recommendation` composition. Request, validated output, and selected
+  recipe state survive route transitions in the Query cache.
+- Reused the Agent-owned Recommendation output schema through a schema-only
+  package subpath, so malformed output is rejected without pulling Agent runtime
+  or model-provider modules into the browser build.
+- Added accessible loading and controlled retryable API-error states, plus
+  distinct `recommendations`, `clarification`, and
+  `no_viable_recommendation` domain presentations.
+- Added one-to-three vertical shadcn Card results with visible reason, duration,
+  servings, named ingredient and equipment readiness, preference matches,
+  required confirmations, optional ingredients, warnings, and one full-width
+  Select recipe action per result.
+- Selecting a recipe preserves the exact response object and request at the
+  Pre-Cooking handoff boundary. It does not regenerate Recommendation, create a
+  Cooking Session, invoke Pre-Cooking, or mutate Inventory.
+- Recommendation intentionally hides BottomNavigation while retaining the
+  compact authenticated AppShell. Its Home/back actions restore the cached
+  request and result.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px with
+  zero horizontal overflow, readable wrapping, reachable selection actions,
+  hidden Recommendation navigation, a 572px rendered desktop canvas, working
+  recipe selection/back behavior, and a visible 3px keyboard-focus outline.
+- Validation: web typecheck, production build, all 65 web tests / 155
+  expectations, scoped Biome checks, and oxlint pass. Oxlint reports only the
+  established Fast Refresh warning category for route and primitive modules.
+
+### Flemme Web — Phase 2: Home Composition v0.1
+
+- Replaced the `/app` placeholder with a thin route that renders the dedicated
+  `features/home` composition through the existing PageContainer and AppShell.
+- Added a shared identity presenter. The canonical Auth response still exposes
+  only ID and email, so Home uses the email username rather than the complete
+  address and falls back to `User`; the header derives its initial identically.
+- Added the controlled shadcn Textarea cooking prompt with accessible idle,
+  focus, value, submitting, and recoverable-error presentation boundaries.
+  Recommendation submission remains deliberately unbound until Phase 3.
+- Added four touch-friendly Quick Start actions that populate a valid
+  `session.request` string without inventing inventory or persistent context.
+- Added reusable shadcn Card compositions for persisted active-session
+  continuity, the Inventory shortcut, and a three-item Recent Cooking preview.
+  With no active-session/history listing integration in this phase, Home omits
+  the active section and renders the compact recent empty hint instead of fake
+  session data.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px with no
+  horizontal overflow, navigation-safe content, a centered 576px desktop
+  canvas, working Quick Start selection, Inventory/Home routing, and visible
+  keyboard focus.
+- Validation: web typecheck, production build, all 49 web tests / 116
+  expectations, oxlint, and scoped Biome checks pass. Oxlint reports only the
+  established Fast Refresh warning category for route and primitive modules.
+
+### Flemme Web — Phase 1: App Foundation v0.1
+
+- Added a compact `max-w-xl` authenticated AppShell with a semantic AppHeader,
+  consistent PageContainer spacing, and fixed safe-area-aware BottomNavigation.
+- Added Home, Inventory, History, and Favorites routes. TanStack Router provides
+  route-aware active states with visible labels, borders, and `aria-current`.
+- Added generic shadcn-backed LoadingState, EmptyState, and ErrorState
+  components and exposed the shared app component API through one barrel.
+- Preserved the existing `/app` authentication and onboarding guards plus the
+  post-onboarding Household and Kitchen edit entry points. The compact header
+  presents only the user's rounded initial; it does not expose their email or a
+  logout icon. No Product Domain request, persistence, or cooking behavior
+  changed.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px with no
+  horizontal overflow, a 576px centered tablet/desktop canvas, visible global
+  navigation, navigation-safe content, no sidebar, and keyboard-visible focus.
+- Validation: web typecheck, production build, all 46 existing web tests,
+  oxlint, and scoped Biome checks pass. Oxlint retains only its established Fast
+  Refresh warnings for route and shared primitive files.
+
 
 ### Landing Page Component Refactor v0.1
 

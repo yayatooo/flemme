@@ -30,6 +30,89 @@ tokens. Shared primitives own accessible interaction structure and Flemme's
 neubrutalist presentation; Product Domain behavior remains outside
 `components/ui`. Existing page migration remains incremental rather than a
 single application rewrite.
+Authenticated global application pages compose one compact, mobile-first
+`max-w-xl` AppShell at the guarded `/app` route. The route layout owns the
+shared AppHeader and safe-area-aware BottomNavigation once; child pages consume
+PageContainer and reusable loading, empty, and recoverable error states. Global
+navigation remains Home, Inventory, History, and Favorites, while the focused
+Recommendation route intentionally hides BottomNavigation without introducing
+a second shell.
+
+The authenticated Home implementation lives under `src/features/home`; its
+`/app` index route only selects HomePage. Home reuses the shared shell and page
+container, while section components own the cooking prompt, Quick Start,
+active-session summary, Inventory shortcut, and Recent Cooking presentation.
+The prompt and Quick Start populate the same `session.request` boundary. Home
+then posts only that request to `POST /cooking/recommendations`; persistent
+Profile, Household, Kitchen, Inventory, and preference context remains resolved
+by the API.
+
+The Recommendation flow lives under `src/features/recommendation` and uses a
+TanStack Query mutation plus query-cache state to preserve the current request,
+the validated Agent-owned output, and the exact selected recommendation across
+route transitions. The browser consumes the dedicated
+`@flemme/agent/cooking-recommendation-output` schema export, keeping Agent
+runtime and provider modules outside the web build. `/app/recommendation`
+renders loading and controlled API
+errors separately from the `recommendations`, `clarification`, and
+`no_viable_recommendation` domain variants. Selecting a result preserves the
+exact response object and current request, starts one Pre-Cooking mutation, and
+navigates into the guarded review route. It does not regenerate a recommendation,
+create a Cooking Session, or mutate Inventory.
+
+Recommendation cards are decision summaries rather than full recipe-detail
+surfaces. The collapsed layer prioritizes one feasibility badge, title, reason,
+duration and servings, compact ingredient/equipment counts, required
+confirmations, warnings, preference matches, and the Select recipe action.
+Named requirements, quantities, notes, and optional ingredients remain
+available in one shared shadcn Collapsible, rendered as full-width vertical
+sections when expanded. Available rows use a quiet check treatment; only
+unconfirmed and missing requirements receive attention badges. Expansion is
+never required before selection.
+
+The Pre-Cooking flow lives under `src/features/pre-cooking`.
+`/app/pre-cooking` requires the current selected recommendation and matching
+generation state, and remains inside the focused compact shell without global
+BottomNavigation. Its TanStack Query mutation posts the exact selection plus the
+current `session.request` to `POST /cooking/pre-cooking`; persistent Profile,
+Household, Kitchen, Inventory, and preference context remains API-owned. The
+browser validates output through the dedicated
+`@flemme/agent/pre-cooking-output` schema export and preserves that exact plan
+snapshot with the request and selected recipe.
+
+The review surface renders the preparation summary, optional recipe-level
+times, ingredient and equipment requirements, ordered preparation steps,
+qualitative timing and cues, and collapsed cooking-stage details. It contains no
+completion or progress controls. Successful generation also preserves the exact
+request, selected recipe, and plan object in the transient Pre-Cooking handoff.
+
+The Cooking Session web boundary lives under `src/features/cooking-session`.
+Start Cooking validates the current handoff against the retained Recommendation
+snapshot, derives the first cooking-stage and step IDs without changing the
+plan, and posts the shared `CreateCookingSessionRequest` to
+`POST /cooking-sessions`. New progress starts active with no completed steps or
+changes. One synchronous query-cache lock plus the disabled pending action
+prevents duplicate browser submissions; a failed request leaves the plan and
+handoff available for retry. Creation invokes no Agent, Completion, Inventory,
+Favorite, or history side effect.
+
+`@flemme/contracts/cooking-session` owns the browser-safe create and response
+schemas composed from schema-only Agent and Nutrition exports. A validated,
+complete create response seeds the stable session-ID query cache before
+navigation. `/app/cooking/$sessionId` reads only the persisted session response;
+it does not depend on Recommendation or Pre-Cooking memory. The initial
+placeholder intentionally contains no Active Cooking controls. A fresh page
+load restores through `GET /cooking-sessions/:id`, preserving API-owned
+authentication, ownership, missing-session, and corrupt-snapshot behavior. The
+focused session route remains inside the compact app canvas without
+BottomNavigation.
+
+Active-session and recent-history sections accept persisted summary data and
+never synthesize progress or cooked meals. The current Auth identity exposes
+only ID and email, so one shared presenter derives the non-email greeting label
+and header initial from the email username with a `User` fallback.
+
+
 
 The public landing page composes section exports from `src/components/landing`.
 That directory owns marketing layouts, static display data, and decorative

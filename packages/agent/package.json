@@ -1,6 +1,13 @@
 {
 	"name": "@flemme/agent",
 	"module": "index.ts",
+	"exports": {
+		".": "./index.ts",
+		"./cooking-recommendation-output": "./src/schemas/cooking-recommendation-output.ts",
+		"./pre-cooking-output": "./src/schemas/pre-cooking-output.ts",
+		"./active-cooking-input": "./src/schemas/active-cooking-input.ts",
+		"./completion-output": "./src/schemas/completion-output.ts"
+	},
 	"type": "module",
 	"private": true,
 	"scripts": {

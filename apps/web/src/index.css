@@ -336,11 +336,6 @@ button:disabled {
 	opacity: 0.6;
 	transform: none;
 }
-.platform-actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.75rem;
-}
 .preference-section {
 	margin: 0;
 	border: 0;

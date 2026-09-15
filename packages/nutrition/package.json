@@ -1,6 +1,10 @@
 {
 	"name": "@flemme/nutrition",
 	"module": "index.ts",
+	"exports": {
+		".": "./index.ts",
+		"./recipe-nutrition": "./src/contracts.ts"
+	},
 	"type": "module",
 	"private": true,
 	"scripts": {

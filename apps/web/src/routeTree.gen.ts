@@ -14,11 +14,18 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppFavoritesRouteImport } from './routes/app/favorites'
+import { Route as AppHistoryRouteImport } from './routes/app/history'
+import { Route as AppInventoryRouteImport } from './routes/app/inventory'
+import { Route as AppPreCookingRouteImport } from './routes/app/pre-cooking'
+import { Route as AppRecommendationRouteImport } from './routes/app/recommendation'
 import { Route as OnboardingCompleteRouteImport } from './routes/onboarding/complete'
 import { Route as OnboardingHouseholdRouteImport } from './routes/onboarding/household'
 import { Route as OnboardingInventoryRouteImport } from './routes/onboarding/inventory'
 import { Route as OnboardingKitchenRouteImport } from './routes/onboarding/kitchen'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding/profile'
+import { Route as AppCookingSessionIdRouteImport } from './routes/app/cooking/$sessionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +52,36 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFavoritesRoute = AppFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInventoryRoute = AppInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPreCookingRoute = AppPreCookingRouteImport.update({
+  id: '/pre-cooking',
+  path: '/pre-cooking',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRecommendationRoute = AppRecommendationRouteImport.update({
+  id: '/recommendation',
+  path: '/recommendation',
+  getParentRoute: () => AppRoute,
+} as any)
 const OnboardingCompleteRoute = OnboardingCompleteRouteImport.update({
   id: '/complete',
   path: '/complete',
@@ -70,43 +107,68 @@ const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => OnboardingRoute,
 } as any)
+const AppCookingSessionIdRoute = AppCookingSessionIdRouteImport.update({
+  id: '/cooking/$sessionId',
+  path: '/cooking/$sessionId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/app/favorites': typeof AppFavoritesRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/inventory': typeof AppInventoryRoute
+  '/app/pre-cooking': typeof AppPreCookingRoute
+  '/app/recommendation': typeof AppRecommendationRoute
   '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
   '/onboarding/inventory': typeof OnboardingInventoryRoute
   '/onboarding/kitchen': typeof OnboardingKitchenRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
+  '/app/': typeof AppIndexRoute
+  '/app/cooking/$sessionId': typeof AppCookingSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/app/favorites': typeof AppFavoritesRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/inventory': typeof AppInventoryRoute
+  '/app/pre-cooking': typeof AppPreCookingRoute
+  '/app/recommendation': typeof AppRecommendationRoute
   '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
   '/onboarding/inventory': typeof OnboardingInventoryRoute
   '/onboarding/kitchen': typeof OnboardingKitchenRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
+  '/app': typeof AppIndexRoute
+  '/app/cooking/$sessionId': typeof AppCookingSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRouteWithChildren
   '/register': typeof RegisterRoute
+  '/app/favorites': typeof AppFavoritesRoute
+  '/app/history': typeof AppHistoryRoute
+  '/app/inventory': typeof AppInventoryRoute
+  '/app/pre-cooking': typeof AppPreCookingRoute
+  '/app/recommendation': typeof AppRecommendationRoute
   '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
   '/onboarding/inventory': typeof OnboardingInventoryRoute
   '/onboarding/kitchen': typeof OnboardingKitchenRoute
   '/onboarding/profile': typeof OnboardingProfileRoute
+  '/app/': typeof AppIndexRoute
+  '/app/cooking/$sessionId': typeof AppCookingSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,23 +178,36 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/register'
+    | '/app/favorites'
+    | '/app/history'
+    | '/app/inventory'
+    | '/app/pre-cooking'
+    | '/app/recommendation'
     | '/onboarding/complete'
     | '/onboarding/household'
     | '/onboarding/inventory'
     | '/onboarding/kitchen'
     | '/onboarding/profile'
+    | '/app/'
+    | '/app/cooking/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/app'
     | '/login'
     | '/onboarding'
     | '/register'
+    | '/app/favorites'
+    | '/app/history'
+    | '/app/inventory'
+    | '/app/pre-cooking'
+    | '/app/recommendation'
     | '/onboarding/complete'
     | '/onboarding/household'
     | '/onboarding/inventory'
     | '/onboarding/kitchen'
     | '/onboarding/profile'
+    | '/app'
+    | '/app/cooking/$sessionId'
   id:
     | '__root__'
     | '/'
@@ -140,16 +215,23 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/register'
+    | '/app/favorites'
+    | '/app/history'
+    | '/app/inventory'
+    | '/app/pre-cooking'
+    | '/app/recommendation'
     | '/onboarding/complete'
     | '/onboarding/household'
     | '/onboarding/inventory'
     | '/onboarding/kitchen'
     | '/onboarding/profile'
+    | '/app/'
+    | '/app/cooking/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
+  AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRouteWithChildren
   RegisterRoute: typeof RegisterRoute
@@ -192,6 +274,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/favorites': {
+      id: '/app/favorites'
+      path: '/favorites'
+      fullPath: '/app/favorites'
+      preLoaderRoute: typeof AppFavoritesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/history': {
+      id: '/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/inventory': {
+      id: '/app/inventory'
+      path: '/inventory'
+      fullPath: '/app/inventory'
+      preLoaderRoute: typeof AppInventoryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/pre-cooking': {
+      id: '/app/pre-cooking'
+      path: '/pre-cooking'
+      fullPath: '/app/pre-cooking'
+      preLoaderRoute: typeof AppPreCookingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/recommendation': {
+      id: '/app/recommendation'
+      path: '/recommendation'
+      fullPath: '/app/recommendation'
+      preLoaderRoute: typeof AppRecommendationRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/onboarding/complete': {
       id: '/onboarding/complete'
       path: '/complete'
@@ -227,8 +351,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingProfileRouteImport
       parentRoute: typeof OnboardingRoute
     }
+    '/app/cooking/$sessionId': {
+      id: '/app/cooking/$sessionId'
+      path: '/cooking/$sessionId'
+      fullPath: '/app/cooking/$sessionId'
+      preLoaderRoute: typeof AppCookingSessionIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
+
+interface AppRouteChildren {
+  AppFavoritesRoute: typeof AppFavoritesRoute
+  AppHistoryRoute: typeof AppHistoryRoute
+  AppInventoryRoute: typeof AppInventoryRoute
+  AppPreCookingRoute: typeof AppPreCookingRoute
+  AppRecommendationRoute: typeof AppRecommendationRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppCookingSessionIdRoute: typeof AppCookingSessionIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppFavoritesRoute: AppFavoritesRoute,
+  AppHistoryRoute: AppHistoryRoute,
+  AppInventoryRoute: AppInventoryRoute,
+  AppPreCookingRoute: AppPreCookingRoute,
+  AppRecommendationRoute: AppRecommendationRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppCookingSessionIdRoute: AppCookingSessionIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface OnboardingRouteChildren {
   OnboardingCompleteRoute: typeof OnboardingCompleteRoute
@@ -252,7 +405,7 @@ const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
+  AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRouteWithChildren,
   RegisterRoute: RegisterRoute,

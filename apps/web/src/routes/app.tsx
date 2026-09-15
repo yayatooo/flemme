@@ -1,12 +1,11 @@
-import { useQueryClient } from "@tanstack/react-query";
 import {
 	createFileRoute,
-	Link,
+	Outlet,
 	redirect,
-	useNavigate,
+	useRouterState,
 } from "@tanstack/react-router";
-import { useState } from "react";
-import { AuthActionError, signOut } from "../auth/auth-actions";
+import { getUserInitial } from "@/auth/user-display-name";
+import { AppHeader, AppShell, BottomNavigation } from "@/components/app";
 import { requireAuthenticatedUser } from "../auth/auth-guards";
 import { useAuth } from "../auth/auth-query";
 import {
@@ -29,66 +28,26 @@ export const Route = createFileRoute("/app")({
 			throw redirect({ to: target });
 		}
 	},
-	component: UserPlatformPage,
+	component: AppLayout,
 });
 
-function UserPlatformPage() {
+function AppLayout() {
 	const auth = useAuth();
-	const queryClient = useQueryClient();
-	const navigate = useNavigate();
-	const [error, setError] = useState<string | null>(null);
-
-	async function logout() {
-		setError(null);
-		try {
-			await signOut(queryClient);
-			await navigate({ to: "/login", search: { error: undefined } });
-		} catch (cause) {
-			setError(
-				cause instanceof AuthActionError
-					? cause.message
-					: "Unable to sign out. Please try again.",
-			);
-		}
-	}
+	const initial = getUserInitial(auth.user);
+	const hideBottomNavigation = useRouterState({
+		select: (state) =>
+			state.location.pathname.startsWith("/app/recommendation") ||
+			state.location.pathname.startsWith("/app/pre-cooking") ||
+			state.location.pathname.startsWith("/app/cooking/"),
+	});
 
 	return (
-		<main className="platform-page">
-			<header className="platform-header">
-				<span className="brand-mark">Flemme</span>
-				<button type="button" className="text-button" onClick={logout}>
-					Sign out
-				</button>
-			</header>
-			<section className="welcome-card">
-				<p className="eyebrow">Kitchen ready</p>
-				<h1>What feels good to cook today?</h1>
-				<p>
-					Signed in as <strong>{auth.user?.email}</strong>. Your cooking
-					workspace is ready for the next product flow.
-				</p>
-				<div className="platform-actions">
-					<Link
-						className="secondary-button"
-						to="/onboarding/household"
-						search={{ edit: true }}
-					>
-						Edit household
-					</Link>
-					<Link
-						className="secondary-button"
-						to="/onboarding/kitchen"
-						search={{ edit: true }}
-					>
-						Edit kitchen equipment
-					</Link>
-				</div>
-				{error ? (
-					<p className="form-error" role="alert">
-						{error}
-					</p>
-				) : null}
-			</section>
-		</main>
+		<AppShell>
+			<AppHeader initial={initial} />
+			<main className="flex-1">
+				<Outlet />
+			</main>
+			{hideBottomNavigation ? null : <BottomNavigation />}
+		</AppShell>
 	);
 }

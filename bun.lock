@@ -33,6 +33,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@base-ui/react": "^1.8.0",
+        "@flemme/agent": "workspace:*",
         "@flemme/contracts": "workspace:*",
         "@flemme/ingredients": "workspace:*",
         "@fontsource-variable/geist": "^5.3.0",
@@ -81,6 +82,8 @@
     "packages/contracts": {
       "name": "@flemme/contracts",
       "dependencies": {
+        "@flemme/agent": "workspace:*",
+        "@flemme/nutrition": "workspace:*",
         "zod": "^4.5.4",
       },
       "devDependencies": {

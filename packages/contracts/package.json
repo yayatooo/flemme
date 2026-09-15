@@ -1,18 +1,22 @@
 {
-  "name": "@flemme/contracts",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-  },
-  "dependencies": {
-    "zod": "^4.5.4"
-  }
+	"name": "@flemme/contracts",
+	"module": "index.ts",
+	"exports": {
+		".": "./index.ts",
+		"./cooking-session": "./cooking-session.ts"
+	},
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {},
+	"dependencies": {
+		"@flemme/agent": "workspace:*",
+		"@flemme/nutrition": "workspace:*",
+		"zod": "^4.5.4"
+	}
 }
