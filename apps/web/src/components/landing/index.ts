@@ -1,0 +1,10 @@
+export { AboutSection } from "./about-section";
+export { LandingBanner } from "./banner";
+export { BrandTicker } from "./brand-ticker";
+export { DiscoverSection } from "./discover-section";
+export { FinalCtaSection } from "./final-cta-section";
+export { LandingFooter } from "./footer";
+export { HowItWorksSection } from "./how-it-works-section";
+export { LandingNavbar } from "./navbar";
+export { PersonalizationSection } from "./personalization-section";
+export { PricingSection } from "./pricing-section";

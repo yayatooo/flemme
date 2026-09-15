@@ -31,6 +31,11 @@ neubrutalist presentation; Product Domain behavior remains outside
 `components/ui`. Existing page migration remains incremental rather than a
 single application rewrite.
 
+The public landing page composes section exports from `src/components/landing`.
+That directory owns marketing layouts, static display data, and decorative
+helpers; `src/landing/landing-page.tsx` owns section order only. Landing-specific
+recipe cards wrap the generic shadcn Card without modifying shared primitives.
+
 ## System Boundaries
 
 - `apps/web`

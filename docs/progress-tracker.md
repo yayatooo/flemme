@@ -4,15 +4,66 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Landing Page Tailwind + shadcn Migration
+Landing Page Component Refactor v0.1
 
 ## Current Goal
 
-The public landing is migrated; authenticated surfaces remain the next
-incremental presentation units.
+The public landing now has independently maintainable section components.
+Future visual changes can target one section without changing page composition.
 
 
 ## Completed
+
+### Landing Page Component Refactor v0.1
+
+- Corrected the landing banner barrel export and page import so the refactored
+  landing composition resolves the existing `banner.tsx` module successfully.
+- Restored the typed ticker, journey, and recipe presentation data required by
+  the extracted landing components without changing their styling or markup.
+- Aligned the redesigned recipe card call site and shared RecipeArt props so
+  its responsive art sizing typechecks without changing any Tailwind classes.
+- Replaced the Nasi goreng landing-card illustration with the provided local
+  food photograph, including descriptive alternative text and the existing
+  responsive bordered presentation; other recipe artwork remains unchanged.
+- Corrected the recipe image rendering to read its typed `src` and `alt`
+  fields; no CSS classes, layout behavior, or visual styling changed.
+- Connected the provided Ayam kecap and creamy sambal pasta photographs to
+  their landing recipe records with descriptive alternative text.
+- Replaced the About section's desktop yellow text badge with the transparent
+  Flemme fish mascot, removing the old frame/background spacing and retaining
+  a playful rotated placement.
+- Enlarged the mobile Personalization section's supporting copy, context-label
+  pills, central badge, visual canvas, spacing, and lavender section area while
+  preserving the established desktop grid. Increased the central orange badge
+  further across breakpoints to tighten its spacing within the dashed orbit.
+- Replaced the Personalization orbit's orange Flemme badge with the provided
+  transparent brain mascot while retaining the centered responsive footprint.
+- Restored the original brain mascot unchanged and replaced the Personalization
+  section's lavender background with Flemme mustard for stronger harmony with
+  the mascot's cream, forest-green, and orange artwork.
+- Made the brand ticker loop seamless at wide viewports by rendering two equal,
+  viewport-filling statement groups; copy, separators, styling, and speed are
+  unchanged.
+- Cleared landing-component formatting and Tailwind utility warnings by using
+  valid Tailwind v4 canonical forms for equivalent aspect, size, radius,
+  rotation, and custom-property utilities; rendered values remain unchanged.
+- Reduced `src/landing/landing-page.tsx` to 29 lines of ordered section
+  composition; the TanStack route and shared UI primitives remain unchanged.
+- Extracted navbar, banner, ticker, discover, about, journey, personalization,
+  pricing, final CTA, and footer into `src/components/landing`.
+- Kept hero artwork and context stickers local to their owning sections.
+  Extracted shared BrandMark, SectionHeading, decorative RecipeArt, and the
+  shadcn-backed LandingRecipeCard wrapper.
+- Moved static recipe, ticker, and journey arrays to `data.ts`, with an inferred
+  recipe type. A small landing-only styles module retains shared class strings.
+  The barrel exports sections only; internal modules use direct imports.
+- Preserved existing copy, Tailwind classes, semantic markup, route links,
+  anchors, menu state, reduced motion, and groovy-retro neubrutalist styling.
+- Browser verification found exact before/after rendered DOM parity at 390px
+  and 1440px, with no horizontal overflow. Menu open/close, About anchor,
+  Login/Register navigation, and reduced-motion ticker behavior passed.
+- Web typecheck, production build, Biome, and all 46 existing tests passed.
+
 ### Landing Page Tailwind + shadcn Migration
 
 - Replaced all landing-specific vanilla CSS selectors with Tailwind utilities
