@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CookingSessionPage } from "@/features/cooking-session";
+import { ActiveCookingPage } from "@/features/active-cooking";
 
 export const Route = createFileRoute("/app/cooking/$sessionId")({
 	component: CookingSessionRoute,
@@ -7,5 +7,5 @@ export const Route = createFileRoute("/app/cooking/$sessionId")({
 
 function CookingSessionRoute() {
 	const { sessionId } = Route.useParams();
-	return <CookingSessionPage sessionId={sessionId} />;
+	return <ActiveCookingPage sessionId={sessionId} />;
 }

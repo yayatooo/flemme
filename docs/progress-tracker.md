@@ -4,16 +4,65 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Phase 5A: Create Cooking Session v0.1
+Flemme Web — Phase 5B: Active Cooking v0.1
 
 ## Current Goal
 
-Start Cooking now persists the reviewed immutable plan, receives a stable
-Cooking Session ID, and enters a refresh-safe session route. Phase 5B can build
-Active Cooking controls on the persisted server session.
+Persisted Cooking Sessions now drive the complete Active Cooking experience
+through the final-step boundary. Phase 6 can generate and review Completion
+output from the saved completion-ready session.
 
 
 ## Completed
+### Flemme Web — Phase 5B: Active Cooking v0.1
+
+- Added `features/active-cooking` with a focused cooking header, structural
+  stage and overall-step progress, a dominant current instruction, qualitative
+  timing and completion cue, large Previous/Next controls, and no global
+  AppHeader or BottomNavigation.
+- `/app/cooking/$sessionId` restores only the canonical persisted session.
+  Current stage and step resolve by stable IDs; invalid positions, missing
+  sessions, ownership failures, corrupt snapshots, and network failures remain
+  controlled states with no fake fallback plan.
+- Previous and Next derive accepted progress from immutable plan order and send
+  exactly one explicit `PATCH /progress`. The validated server response replaces
+  the canonical query cache; a synchronous per-session lock prevents duplicate
+  or conflicting lifecycle writes.
+- Stage boundaries persist correctly. `Finish cooking` records the final step
+  and stops at the refresh-safe completion-ready boundary without invoking
+  Completion AI, `POST /complete`, Nutrition, Inventory, Favorites, or another
+  cooking flow.
+- Pause persists one shared-contract reason and disables normal step controls;
+  Resume restores the same position. Record Change supports every shared kind
+  and an optional stable current-step reference without modifying the cooking
+  plan or Inventory.
+- Enabled terminal abandonment through the existing progress boundary. The UI
+  requires explicit destructive confirmation, and abandoned sessions cannot
+  reactivate or expose Active Cooking controls.
+- Added the compact contextual Cooking Assistant against the existing
+  message-only Active Cooking API. Reply-only and clarification results do not
+  mutate progress; accepted structured actions produce at most one explicit
+  progress write; duplicate submission is locked; Agent-proposed abandonment
+  still requires confirmation.
+- Active, paused, completion-ready, completed, and abandoned presentations are
+  intentional. Loading restores persisted state before showing instructions,
+  and assistant/progress failures preserve the last server-authoritative
+  session.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and 1920px:
+  zero horizontal overflow, readable current-step hierarchy, 56px primary
+  controls, visible 3px keyboard focus, usable mobile dialogs, a 572px desktop
+  canvas, and hidden BottomNavigation. Advance, Previous, Pause, Resume, Record
+  Change, assistant guidance/action, final boundary, and confirmed abandonment
+  each produced only their intended request; refresh restored every exercised
+  persisted state.
+- Validation: web typecheck and production build pass; all 111 web tests / 339
+  expectations pass; all 133 API tests / 1,156 expectations pass; all 41 Agent
+  tests / 60 expectations pass; shared-contract typecheck, API build, scoped
+  Biome, and Oxlint pass. Oxlint reports only the 22 established Fast Refresh
+  warnings. The standalone API typecheck remains blocked separately by the
+  known malformed OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
 ### Flemme Web — Phase 5A: Create Cooking Session v0.1
 
 - Added `features/cooking-session` with a dedicated TanStack Query creation

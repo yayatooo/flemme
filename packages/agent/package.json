@@ -6,6 +6,7 @@
 		"./cooking-recommendation-output": "./src/schemas/cooking-recommendation-output.ts",
 		"./pre-cooking-output": "./src/schemas/pre-cooking-output.ts",
 		"./active-cooking-input": "./src/schemas/active-cooking-input.ts",
+		"./active-cooking-output": "./src/schemas/active-cooking-output.ts",
 		"./completion-output": "./src/schemas/completion-output.ts"
 	},
 	"type": "module",

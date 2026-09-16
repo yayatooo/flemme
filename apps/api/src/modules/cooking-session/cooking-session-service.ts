@@ -203,12 +203,13 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 
 			if (
 				input.session.status !== "active" &&
-				input.session.status !== "paused"
+				input.session.status !== "paused" &&
+				input.session.status !== "abandoned"
 			) {
 				throw new ApiError(
 					422,
 					"INVALID_PROGRESS_TRANSITION",
-					"Progress updates may only activate or pause a cooking session",
+					"Progress updates may only activate, pause, or abandon a cooking session",
 				);
 			}
 

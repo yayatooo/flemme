@@ -81,9 +81,9 @@ const updateCookingProgressRouteDefinition = createRoute({
 	method: "patch",
 	path: "/{id}/progress",
 	tags: ["Cooking Sessions"],
-	summary: "Persist active cooking progress",
+	summary: "Persist active cooking progress or lifecycle state",
 	description:
-		"Updates only mutable session progress after validating it against the immutable cooking plan. Does not invoke Active Cooking AI.",
+		"Updates mutable session progress, including pause, resume, and abandonment, after validating it against the immutable cooking plan. Does not invoke Active Cooking AI.",
 	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,

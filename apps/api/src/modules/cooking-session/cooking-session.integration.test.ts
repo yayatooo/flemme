@@ -347,6 +347,48 @@ describe("cooking-session API integration", () => {
 		expect(error.error.code).toBe("INVALID_COOKING_PROGRESS");
 	});
 
+	test("abandons an active session and prevents reactivation", async () => {
+		const created = await createSession(ownerUserId);
+		const abandonedResponse = await app.request(
+			`/cooking-sessions/${created.id}/progress`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({
+					session: {
+						...created.session,
+						status: "abandoned",
+					},
+				}),
+			},
+		);
+		const abandoned = CookingSessionResponseSchema.parse(
+			await abandonedResponse.json(),
+		);
+
+		expect(abandonedResponse.status).toBe(200);
+		expect(abandoned.session.status).toBe("abandoned");
+		expect(abandoned.cookingPlan).toEqual(cookingPlan);
+
+		const reactivateResponse = await app.request(
+			`/cooking-sessions/${created.id}/progress`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({
+					session: {
+						...created.session,
+						status: "active",
+					},
+				}),
+			},
+		);
+		const error = ErrorResponseSchema.parse(await reactivateResponse.json());
+
+		expect(reactivateResponse.status).toBe(409);
+		expect(error.error.code).toBe("INVALID_SESSION_STATE");
+	});
+
 	test("returns a controlled error for an invalid persisted snapshot", async () => {
 		const created = await createSession(ownerUserId);
 

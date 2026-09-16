@@ -107,6 +107,35 @@ authentication, ownership, missing-session, and corrupt-snapshot behavior. The
 focused session route remains inside the compact app canvas without
 BottomNavigation.
 
+The Phase 5B Active Cooking experience lives under
+`src/features/active-cooking`. `/app/cooking/$sessionId` owns a focused cooking
+header and continues to hide global navigation. It restores only the canonical
+Cooking Session query, resolves the current cooking stage and step by their
+persisted stable IDs, and treats unresolved positions as corrupt instead of
+falling back by array order or completion count.
+
+Manual controls and accepted structured Agent actions derive one next mutable
+progress snapshot from the immutable persisted plan, submit it explicitly to
+`PATCH /cooking-sessions/:id/progress`, and replace the canonical query cache
+only with the validated server response. One shared per-session mutation lock
+prevents conflicting progress writes. Pause, resume, recorded changes, and
+confirmed abandonment use this same boundary; abandonment is terminal and
+cannot reactivate. Recorded changes retain shared contract kinds and optional
+stable step references without rewriting the plan or Inventory.
+
+`Finish cooking` records the final cooking step through the progress boundary
+and stops at the saved completion-ready boundary while the session remains
+active. Phase 5B does not call Completion AI, persist Completion output, or
+calculate final Nutrition. Existing completed sessions and abandoned sessions
+render as closed states without Active Cooking controls.
+
+The compact Cooking Assistant posts only the latest message to the existing
+Active Cooking API. Replies are displayed independently from structured
+actions. Reply-only and clarification output perform no write; accepted
+advance, previous, pause, resume, record-change, and final-step actions produce
+at most one explicit progress mutation. Agent-proposed abandonment always
+requires user confirmation before persistence.
+
 Active-session and recent-history sections accept persisted summary data and
 never synthesize progress or cooked meals. The current Auth identity exposes
 only ID and email, so one shared presenter derives the non-email greeting label

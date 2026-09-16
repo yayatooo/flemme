@@ -34,16 +34,18 @@ export const Route = createFileRoute("/app")({
 function AppLayout() {
 	const auth = useAuth();
 	const initial = getUserInitial(auth.user);
-	const hideBottomNavigation = useRouterState({
-		select: (state) =>
-			state.location.pathname.startsWith("/app/recommendation") ||
-			state.location.pathname.startsWith("/app/pre-cooking") ||
-			state.location.pathname.startsWith("/app/cooking/"),
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
 	});
+	const isCooking = pathname.startsWith("/app/cooking/");
+	const hideBottomNavigation =
+		isCooking ||
+		pathname.startsWith("/app/recommendation") ||
+		pathname.startsWith("/app/pre-cooking");
 
 	return (
-		<AppShell>
-			<AppHeader initial={initial} />
+		<AppShell hasBottomNavigation={!hideBottomNavigation}>
+			{isCooking ? null : <AppHeader initial={initial} />}
 			<main className="flex-1">
 				<Outlet />
 			</main>
