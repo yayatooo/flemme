@@ -25,9 +25,9 @@ const completionRouteDefinition = createRoute({
 	method: "post",
 	path: "/{id}/completion",
 	tags: ["Completion"],
-	summary: "Generate a completion summary",
+	summary: "Generate or restore a completion summary",
 	description:
-		"Requires an owned completion-ready session and returns validated Completion AI output without mutating or completing the session. The output may be submitted as completionSnapshot to the separate complete endpoint.",
+		"Requires an owned completed Cooking Session. Generates and durably persists Completion output once, then returns the canonical completed session on retries and refreshes without invoking Nutrition.",
 	security: [{ CurrentUser: [] }],
 	request: {
 		params: CookingSessionParamsSchema,
@@ -40,7 +40,7 @@ const completionRouteDefinition = createRoute({
 	},
 	responses: {
 		200: {
-			description: "Validated Completion AI output",
+			description: "Completed Cooking Session with canonical Completion output",
 			content: {
 				"application/json": { schema: CompletionResponseSchema },
 			},
@@ -49,9 +49,7 @@ const completionRouteDefinition = createRoute({
 		401: errorResponse("Authentication is required"),
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
-		409: errorResponse(
-			"Session state or final-step progress is not ready for Completion AI",
-		),
+		409: errorResponse("Cooking session is not completed"),
 		500: errorResponse("Persisted cooking session is invalid"),
 		502: errorResponse("Completion generation or output validation failed"),
 		503: errorResponse("Completion agent is not configured"),
@@ -83,13 +81,13 @@ export function createCompletionRoute({
 	const service = createCompletionService({ db, completionRunner });
 
 	route.openapi(completionRouteDefinition, async (context) => {
-		const output = await service.generate(
+		const session = await service.generate(
 			context.get("currentUserId"),
 			context.req.valid("param").id,
 			context.req.valid("json"),
 		);
 
-		return context.json(output, 200);
+		return context.json(session, 200);
 	});
 
 	return route;

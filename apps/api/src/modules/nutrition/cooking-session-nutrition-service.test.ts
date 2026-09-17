@@ -37,6 +37,7 @@ describe("calculateCookingSessionNutrition", () => {
 				{ name: "garam", quantity: 1, unit: "sdt" },
 			]),
 			servings: 2,
+			changes: [],
 		});
 
 		expect(RecipeNutritionResultSchema.parse(result)).toEqual(result);
@@ -57,6 +58,7 @@ describe("calculateCookingSessionNutrition", () => {
 				{ name: "potato", quantity: 1, unit: "cup" },
 			]),
 			servings: 1,
+			changes: [],
 		});
 
 		expect(result.status).toBe("partial");
@@ -89,6 +91,7 @@ describe("calculateCookingSessionNutrition", () => {
 				{ name: "garam" },
 			]),
 			servings: 2,
+			changes: [],
 		});
 
 		expect(result.status).toBe("unavailable");
@@ -102,6 +105,35 @@ describe("calculateCookingSessionNutrition", () => {
 				"unit-unsupported",
 				"ingredient-unresolved",
 				"quantity-missing",
+			]);
+		}
+	});
+
+	test("marks unquantified ingredient and serving changes as limitations", () => {
+		const result = calculateCookingSessionNutrition({
+			cookingPlan: planWithIngredients([
+				{ name: "tomato", quantity: 100, unit: "g" },
+			]),
+			servings: 2,
+			changes: [
+				{ kind: "ingredient", description: "Used less tomato." },
+				{ kind: "servings", description: "Served one extra person." },
+				{ kind: "step", description: "Cooked over lower heat." },
+			],
+		});
+
+		expect(result.status).toBe("partial");
+		if (result.status === "partial") {
+			expect(result.servings).toBe(2);
+			expect(result.issues).toEqual([
+				{
+					reason: "unquantified-change",
+					changeDescription: "Used less tomato.",
+				},
+				{
+					reason: "unquantified-change",
+					changeDescription: "Served one extra person.",
+				},
 			]);
 		}
 	});

@@ -4,16 +4,228 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Phase 5B: Active Cooking v0.1
+Flemme Web — Phase 7: Nutrition & Nutrition Review v0.1
 
 ## Current Goal
 
-Persisted Cooking Sessions now drive the complete Active Cooking experience
-through the final-step boundary. Phase 6 can generate and review Completion
-output from the saved completion-ready session.
-
+Phase 7 now derives one deterministic, historical Nutrition snapshot from the
+persisted completed Cooking Session and presents complete, partial, or
+unavailable coverage honestly. The mobile-first review is refresh-safe and ends
+at the non-mutating Favorite boundary.
 
 ## Completed
+
+### Flemme Web — Phase 7: Nutrition & Nutrition Review v0.1
+
+- Extended the browser-safe Nutrition result contract with the exact normalized
+  ingredients that contributed to calculation while keeping that field optional
+  for pre-Phase 7 snapshots. Added an explicit `unquantified-change` coverage
+  issue without weakening the existing complete, partial, and unavailable
+  variants.
+- Reused the production canonical ingredient resolver, reviewed unit-to-gram
+  conversions, committed Nutrition references, and deterministic calculator.
+  The projection derives from persisted `cookingPlan.ingredients`, selected
+  servings, and recorded changes. Ingredient and serving changes remain
+  unapplied when their current free-text contract lacks quantitative structure;
+  the snapshot discloses that limitation instead of parsing or guessing it.
+- Added canonical `POST /cooking-sessions/:id/nutrition` generation. The API
+  requires an owned completed session with Completion output, calculates
+  without an Agent or runtime network reference, stores `nutrition_snapshot`,
+  and returns the complete restored Cooking Session.
+- Added transaction-scoped row locking and snapshot reuse. Concurrent requests
+  serialize, the first persisted result wins, retries preserve the same
+  `updatedAt`, and refresh restores the historical snapshot without recalculating
+  against later reference changes.
+- Kept the existing read-only Nutrition preview available while separating it
+  from canonical Phase 7 persistence. Active, paused, abandoned, missing,
+  cross-user, missing-Completion, and corrupt-snapshot paths retain controlled
+  API behavior.
+- Wired Completion's Continue to Nutrition action to the persisted
+  `/app/cooking/$sessionId/nutrition` route. The dedicated TanStack Query sends
+  one generation POST only when the restored completed session lacks a snapshot,
+  then seeds the canonical Cooking Session cache.
+- Added mobile-first Nutrition loading, retryable error, lifecycle guard,
+  complete, partial, and unavailable surfaces. The review preserves display-name
+  priority, emphasizes per-serving calories plus protein/carbs/fat, states the
+  serving basis, uses approximate markers for partial totals, and never renders
+  unavailable ingredients as zero nutrition.
+- Added an accessible Collapsible with exact included gram amounts, excluded
+  ingredient reasons, and unquantified recorded-change disclosures. The visible
+  Save to favorites action is disabled as the Phase 8 boundary; Nutrition makes
+  no Inventory or Favorite mutation.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and 1920px:
+  zero horizontal overflow, long-title wrapping, reachable actions, a visible
+  3px keyboard focus outline, hidden BottomNavigation, and the 572px desktop
+  canvas. First visit made one Cooking Session GET and one canonical Nutrition
+  request. Direct refresh made only auth/onboarding reads plus the Cooking
+  Session GET and restored the same snapshot with zero Nutrition regeneration.
+  The active-session guard made no Nutrition request. Coverage expansion showed
+  exact included grams and the recorded change limitation. Browser fixtures
+  were removed afterward.
+- Verified generation preserves Completion output, the immutable cooking plan,
+  progress, `customName`, Inventory, and Favorites. Integration coverage also
+  proves ownership, missing resources, lifecycle guards, complete/partial/
+  unavailable calculation, no fake unavailable totals, corrupt persistence,
+  idempotent retry, and concurrent serialization.
+- Validation: 60 Nutrition tests / 131 expectations, 19 Ingredient tests / 28
+  expectations, 4 shared-contract tests / 5 expectations, 126 web tests / 404
+  expectations, and 147 API tests / 1,290 expectations pass. Focused Nutrition
+  API coverage passes 22 tests / 125 expectations. Nutrition, Ingredient,
+  shared-contract, and web typechecks; web production build; API build; scoped
+  Biome; and Oxlint pass. Oxlint reports only the 24 established/new route Fast
+  Refresh warnings. Standalone API typecheck remains blocked separately by the
+  unchanged malformed OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
+### Flemme — Active Cooking Guardrails v0.1
+
+- Added the Agent-owned `ActiveCookingScopeSchema` with `in_scope`,
+  `out_of_phase`, `off_topic`, and `ambiguous` outcomes. The deterministic
+  resolver uses explicit phase/off-topic rules, cooking and lifecycle signals,
+  and persisted plan/session terms rather than an isolated keyword check.
+- Added the resolver at both earliest runtime boundaries:
+  `runActiveCooking` branches before `generateCompletion`, and the Active
+  Cooking API service branches before model-availability checks or its injected
+  runner. Clear non-cooking requests therefore add no model call, latency, or
+  provider cost.
+- Added deterministic off-topic, Nutrition/Favorites/History and other
+  out-of-phase redirects, plus a current-step-specific clarification for
+  scope-ambiguous input. Every controlled response keeps the existing
+  `reply`/`actions` output contract and returns `actions: []`.
+- Added a post-output scope invariant that strips every structured lifecycle
+  action from non-`in_scope` output. Existing in-scope action validation,
+  one-primary-action rules, explicit abandonment confirmation, and prose/action
+  separation remain unchanged.
+- Strengthened shared cooking instructions and the Active Cooking prompt with
+  explicit cooking-only scope, phase ownership, zero-action redirects, and
+  cooking-safety preservation. These prompt rules are defense in depth; runtime
+  enforcement does not depend on model compliance.
+- Added the required HTML regression: the response contains no HTML or markup
+  explanation, returns the short cooking redirect, never invokes the runner,
+  and preserves the complete persisted Cooking Session. Added React hooks,
+  World Cup, email, unknown-topic, Nutrition, Favorites, History, contextual
+  ambiguity, quantities, substitutions, lifecycle, and cooking-safety coverage.
+- Added web coverage proving the controlled redirect renders in Ask Flemme,
+  sends only the Active Cooking assistant request, does not send a progress or
+  downstream product mutation, and leaves the canonical session cache
+  unchanged.
+- Browser/network acceptance passed in the current 390px Active Cooking UI:
+  asking `What is HTML?` rendered only the concise cooking-scope redirect. The
+  stage, current step, completed-step IDs, status, changes, and controls stayed
+  unchanged. Network activity was limited to the expected Active Cooking POST
+  and browser CORS preflight; there were zero progress, Completion, Nutrition,
+  Inventory, Favorite, profile, or history requests.
+- Validation: 62 Agent tests / 107 expectations, 120 web tests / 375
+  expectations, and 139 API tests / 1,235 expectations pass. Focused scope
+  coverage passes 16 tests / 57 expectations; focused Active Cooking web passes
+  20 tests / 44 expectations; focused Active Cooking API integration passes 16
+  tests / 81 expectations. Web typecheck and production build, API build,
+  scoped Biome, and Oxlint pass. Oxlint reports only the 23 established Fast
+  Refresh warnings. Agent and standalone API typecheck remain blocked
+  separately by the unchanged malformed OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Phase 6: Completion Output & Review v0.1
+
+- Final Active Cooking progress now persists the final completed step together
+  with `phase = completion`, `status = completed`, and `completedAt` before
+  navigation. Completion and Nutrition snapshots remain absent at that
+  boundary, and only the confirmed server response navigates to Completion.
+- Changed `POST /cooking-sessions/:id/completion` from a transient projection
+  into the canonical owner-only persistence boundary. The API loads the
+  persisted completed session, uses its exact immutable plan and recorded
+  changes to construct the existing `CompletionInput`, validates
+  `CompletionOutput`, stores `completion_snapshot`, and returns the restored
+  Cooking Session.
+- Added transaction-scoped row locking around Completion generation. Concurrent
+  calls serialize by session; the first valid result wins and every retry
+  returns the same persisted snapshot without invoking the Agent again. Failed
+  generation leaves the completed session untouched and retryable.
+- Completed sessions may now be restored before their Completion snapshot
+  exists. Active, paused, and abandoned sessions cannot generate normal
+  Completion; missing, cross-user, and corrupt persisted sessions retain
+  controlled API behavior.
+- Added the refresh-safe, session-ID route
+  `/app/cooking/$sessionId/completion` and `features/completion`. Its TanStack
+  Query state is separate from the canonical Cooking Session query; an existing
+  snapshot renders without a generation POST, while a missing snapshot uses the
+  single idempotent Completion endpoint and updates the canonical cache.
+- Added controlled loading, generation error/retry, and lifecycle guard
+  surfaces. The focused review renders the persisted display-name priority,
+  Completion reply, generated summary, exact recorded changes, lightweight
+  no-change state, optional notes, Home exit, and visible Phase 7 Continue to
+  Nutrition boundary. It does not render chat, Nutrition, Inventory, Favorite,
+  or history behavior.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and 1920px:
+  zero horizontal overflow, natural long-title wrapping, readable vertical
+  sections, reachable CTA, visible 3px keyboard focus, hidden BottomNavigation,
+  and a 572px desktop canvas. Direct access and full refresh restored the same
+  custom name and Completion output using only auth/onboarding reads plus one
+  Cooking Session GET; no Recommendation, Pre-Cooking, session-create, progress,
+  Completion-generation, Inventory, Nutrition, or Favorite request occurred
+  when a canonical snapshot already existed. An active-session direct route
+  rendered its guard without a Completion request.
+- Added Completion API coverage for completed-session authority, exact input,
+  custom-name exclusion from the Agent contract, persistence, concurrent
+  idempotency, canonical retry, failure recovery, lifecycle guards, final-step
+  validation, ownership, missing and corrupt sessions, invalid Agent output,
+  and missing provider configuration. Added web coverage for canonical cache
+  seeding, refresh without generation, summary/changes/notes rendering, empty
+  states, and loading.
+- Validation: 4 shared-contract tests / 5 expectations, 119 web tests / 370
+  expectations, 135 API tests / 1,194 expectations, focused Completion API
+  10 tests / 51 expectations, focused Completion web 5 tests / 20 expectations,
+  and 41 Agent tests / 60 expectations pass. Shared-contract and web typecheck,
+  web production build, API build, scoped Biome, and Oxlint pass. Oxlint reports
+  only the 23 established Fast Refresh warnings, including the new route.
+  Standalone API typecheck remains blocked separately by the known malformed
+  OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Cooking Session customName / Rename Dish v0.1
+
+- Added optional nullable `customName` to the canonical shared Cooking Session
+  response plus a trimmed, non-empty, 100-character rename request contract.
+  Whitespace strings and overlong names are rejected; `null` restores the
+  original recipe name.
+- Added nullable `cooking_sessions.custom_name` persistence through generated
+  migration `0004_tiresome_wallflower.sql`. Restore and every successful
+  metadata update return the complete schema-validated latest session snapshot.
+- Added authenticated `PATCH /cooking-sessions/:id`. The route preserves the
+  established owner-only 403 and missing-session 404 behavior, permits rename
+  in active, paused, completed, and abandoned states, and changes only
+  `custom_name` plus `updated_at`.
+- Kept `selectedRecipeSnapshot`, the approved cooking plan, lifecycle state,
+  progress IDs, completed steps, `changes`, Completion, Inventory, and all Agent
+  boundaries unchanged.
+- Added a dedicated TanStack Query rename mutation under the canonical
+  `cookingSessionQueryKey(sessionId)`. It shares the existing synchronous
+  per-session mutation lock with progress writes and replaces the cache only
+  with the validated server response.
+- Added a shadcn/Base UI overflow menu action and mobile-first rename dialog.
+  The form preloads the current display name, trims saves, prevents duplicate
+  submission, keeps typed input and a controlled message on failure, and sends
+  `null` when cleared or reset to the original recipe name.
+- The focused header now resolves `customName` before the immutable selected
+  recipe name and intentionally clamps long names to two lines without moving
+  the back or overflow controls.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and 1920px:
+  zero horizontal overflow, a fitting mobile dialog, visible keyboard focus,
+  reachable save/cancel actions, intentional long-title truncation, and the
+  unchanged 572px desktop canvas. Rename, duplicate-click locking, controlled
+  failure/retry state, clear-to-original, and full-refresh restoration passed.
+  Each successful rename or clear produced exactly one Cooking Session metadata
+  request and no Recommendation, Pre-Cooking, Active Cooking, progress,
+  Inventory, Completion, or Favorite request.
+- Validation: all 4 shared-contract tests / 5 expectations, 114 web tests / 350
+  expectations, 137 API tests / 1,186 expectations, and the focused 13-test / 78
+  expectation Cooking Session integration pass. Shared-contract and web
+  typecheck, production web build, API build, Drizzle migration check, scoped
+  Biome, and Oxlint pass. Oxlint reports only the 22 established Fast Refresh
+  warnings. Standalone API typecheck remains blocked separately by the known
+  malformed OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
 ### Flemme Web — Phase 5B: Active Cooking v0.1
 
 - Added `features/active-cooking` with a focused cooking header, structural

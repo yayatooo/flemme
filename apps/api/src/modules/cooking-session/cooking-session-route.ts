@@ -9,6 +9,7 @@ import {
 	CookingSessionResponseSchema,
 	CreateCookingSessionRequestSchema,
 	UpdateCookingProgressRequestSchema,
+	UpdateCookingSessionRequestSchema,
 } from "./cooking-session-schema";
 import { createCookingSessionService } from "./cooking-session-service";
 
@@ -74,6 +75,28 @@ const getCookingSessionRouteDefinition = createRoute({
 		403: errorResponse("Cooking session belongs to another user"),
 		404: errorResponse("Cooking session not found"),
 		500: errorResponse("Persisted cooking session is invalid"),
+	},
+});
+
+const updateCookingSessionRouteDefinition = createRoute({
+	method: "patch",
+	path: "/{id}",
+	tags: ["Cooking Sessions"],
+	summary: "Rename a cooking session",
+	description:
+		"Updates user-facing session naming metadata without changing the original recipe, cooking plan, progress, or lifecycle state.",
+	security: [{ CurrentUser: [] }],
+	request: {
+		params: CookingSessionParamsSchema,
+		body: jsonBody(UpdateCookingSessionRequestSchema),
+	},
+	responses: {
+		200: jsonResponse(CookingSessionResponseSchema, "Cooking session renamed"),
+		400: errorResponse("Invalid request"),
+		401: errorResponse("Authentication is required"),
+		403: errorResponse("Cooking session belongs to another user"),
+		404: errorResponse("Cooking session not found"),
+		500: errorResponse("Cooking session could not be renamed"),
 	},
 });
 
@@ -157,6 +180,15 @@ export function createCookingSessionRoute(db: FlemmeDatabase) {
 		const session = await service.get(
 			context.get("currentUserId"),
 			context.req.valid("param").id,
+		);
+		return context.json(session, 200);
+	});
+
+	route.openapi(updateCookingSessionRouteDefinition, async (context) => {
+		const session = await service.update(
+			context.get("currentUserId"),
+			context.req.valid("param").id,
+			context.req.valid("json"),
 		);
 		return context.json(session, 200);
 	});

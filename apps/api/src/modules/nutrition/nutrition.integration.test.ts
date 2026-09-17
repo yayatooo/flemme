@@ -4,7 +4,13 @@ import type {
 	CookingRecommendationOutput,
 	PreCookingOutput,
 } from "@flemme/agent";
-import { cookingSessions, createDatabase, users } from "@flemme/db";
+import {
+	cookingSessions,
+	createDatabase,
+	favorites,
+	inventories,
+	users,
+} from "@flemme/db";
 import {
 	type RecipeNutritionResult,
 	RecipeNutritionResultSchema,
@@ -163,6 +169,45 @@ async function restore(sessionId: string) {
 	return CookingSessionResponseSchema.parse(await response.json());
 }
 
+async function markCompleted(
+	sessionId: string,
+	options: {
+		customName?: string;
+		changes?: Array<{
+			kind: "ingredient" | "equipment" | "servings" | "step" | "other";
+			description: string;
+			relatedStepId?: string;
+		}>;
+	} = {},
+) {
+	const completedAt = new Date();
+	const [updated] = await db
+		.update(cookingSessions)
+		.set({
+			phase: "completion",
+			status: "completed",
+			completionSnapshot,
+			nutritionSnapshot: null,
+			completedAt,
+			updatedAt: completedAt,
+			...(options.customName ? { customName: options.customName } : {}),
+			...(options.changes ? { changes: options.changes } : {}),
+		})
+		.where(eq(cookingSessions.id, sessionId))
+		.returning();
+	if (!updated) throw new Error("Nutrition fixture session was not completed");
+	return CookingSessionResponseSchema.parse({
+		...(await restore(sessionId)),
+	});
+}
+
+async function generate(sessionId: string, userId = ownerUserId) {
+	return app.request(`/cooking-sessions/${sessionId}/nutrition`, {
+		method: "POST",
+		headers: headers(userId),
+	});
+}
+
 async function complete(
 	sessionId: string,
 	body: unknown = { completionSnapshot },
@@ -276,6 +321,180 @@ describe("Nutrition API integration", () => {
 		);
 	});
 
+	test("generates and persists canonical Nutrition without mutating session inputs or adjacent domains", async () => {
+		const created = await createSession(completePlan);
+		const before = await markCompleted(created.id, {
+			customName: "Nutrition night",
+			changes: [
+				{
+					kind: "ingredient",
+					description: "Used less tomato than planned.",
+				},
+			],
+		});
+		const inventoryBefore = await db
+			.select()
+			.from(inventories)
+			.where(eq(inventories.userId, ownerUserId));
+		const favoritesBefore = await db
+			.select()
+			.from(favorites)
+			.where(eq(favorites.userId, ownerUserId));
+
+		const response = await generate(created.id);
+		const generated = CookingSessionResponseSchema.parse(await response.json());
+		const restored = await restore(created.id);
+
+		expect(response.status).toBe(200);
+		expect(generated.nutritionSnapshot?.status).toBe("partial");
+		expect(generated.nutritionSnapshot?.includedIngredients).toHaveLength(3);
+		if (generated.nutritionSnapshot?.status === "partial") {
+			expect(generated.nutritionSnapshot.servings).toBe(2);
+			expect(
+				generated.nutritionSnapshot.knownNutrition.perServing.caloriesKcal,
+			).toBeGreaterThan(0);
+			expect(generated.nutritionSnapshot.issues).toContainEqual({
+				reason: "unquantified-change",
+				changeDescription: "Used less tomato than planned.",
+			});
+		}
+		expect(generated.completionSnapshot).toEqual(before.completionSnapshot);
+		expect(generated.cookingPlan).toEqual(before.cookingPlan);
+		expect(generated.session).toEqual(before.session);
+		expect(generated.customName).toBe("Nutrition night");
+		expect(restored.nutritionSnapshot).toEqual(generated.nutritionSnapshot);
+		expect(
+			await db
+				.select()
+				.from(inventories)
+				.where(eq(inventories.userId, ownerUserId)),
+		).toEqual(inventoryBefore);
+		expect(
+			await db
+				.select()
+				.from(favorites)
+				.where(eq(favorites.userId, ownerUserId)),
+		).toEqual(favoritesBefore);
+	});
+
+	test("rejects non-completed sessions and completed sessions without Completion output", async () => {
+		const active = await createSession(completePlan);
+		const paused = await createSession(completePlan);
+		await db
+			.update(cookingSessions)
+			.set({ status: "paused", pauseReason: "user-request" })
+			.where(eq(cookingSessions.id, paused.id));
+		const abandoned = await createSession(completePlan);
+		await db
+			.update(cookingSessions)
+			.set({ status: "abandoned" })
+			.where(eq(cookingSessions.id, abandoned.id));
+		const missingCompletion = await createSession(completePlan);
+		const completedAt = new Date();
+		await db
+			.update(cookingSessions)
+			.set({
+				phase: "completion",
+				status: "completed",
+				completedAt,
+				updatedAt: completedAt,
+			})
+			.where(eq(cookingSessions.id, missingCompletion.id));
+
+		for (const sessionId of [
+			active.id,
+			paused.id,
+			abandoned.id,
+			missingCompletion.id,
+		]) {
+			const response = await generate(sessionId);
+			expect(response.status).toBe(409);
+			expect(ErrorResponseSchema.parse(await response.json()).error.code).toBe(
+				"INVALID_SESSION_STATE",
+			);
+		}
+	});
+
+	test("enforces generation ownership and missing-session behavior", async () => {
+		const created = await createSession(completePlan);
+		await markCompleted(created.id);
+		const forbidden = await generate(created.id, otherUserId);
+		const missing = await generate(crypto.randomUUID());
+
+		expect(forbidden.status).toBe(403);
+		expect(ErrorResponseSchema.parse(await forbidden.json()).error.code).toBe(
+			"COOKING_SESSION_FORBIDDEN",
+		);
+		expect(missing.status).toBe(404);
+		expect(ErrorResponseSchema.parse(await missing.json()).error.code).toBe(
+			"COOKING_SESSION_NOT_FOUND",
+		);
+	});
+
+	test("serializes concurrent generation and reuses the persisted snapshot", async () => {
+		const created = await createSession(completePlan);
+		await markCompleted(created.id);
+		const [firstResponse, secondResponse] = await Promise.all([
+			generate(created.id),
+			generate(created.id),
+		]);
+		const first = CookingSessionResponseSchema.parse(
+			await firstResponse.json(),
+		);
+		const second = CookingSessionResponseSchema.parse(
+			await secondResponse.json(),
+		);
+		const retryResponse = await generate(created.id);
+		const retry = CookingSessionResponseSchema.parse(
+			await retryResponse.json(),
+		);
+
+		expect(firstResponse.status).toBe(200);
+		expect(secondResponse.status).toBe(200);
+		expect(retryResponse.status).toBe(200);
+		expect(first.nutritionSnapshot).toEqual(second.nutritionSnapshot);
+		expect(retry.nutritionSnapshot).toEqual(first.nutritionSnapshot);
+		expect(second.updatedAt).toBe(first.updatedAt);
+		expect(retry.updatedAt).toBe(first.updatedAt);
+	});
+
+	for (const [expectedStatus, plan] of [
+		["partial", partialPlan],
+		["unavailable", unavailablePlan],
+	] as const) {
+		test(`persists honest ${expectedStatus} coverage through the canonical endpoint`, async () => {
+			const created = await createSession(plan);
+			await markCompleted(created.id);
+			const response = await generate(created.id);
+			const generated = CookingSessionResponseSchema.parse(
+				await response.json(),
+			);
+
+			expect(response.status).toBe(200);
+			expect(generated.nutritionSnapshot?.status).toBe(expectedStatus);
+			if (expectedStatus === "unavailable") {
+				expect("total" in (generated.nutritionSnapshot ?? {})).toBe(false);
+				expect("perServing" in (generated.nutritionSnapshot ?? {})).toBe(false);
+			}
+		});
+	}
+
+	test("returns a controlled error for a corrupt persisted Nutrition snapshot", async () => {
+		const created = await createSession(completePlan);
+		await markCompleted(created.id);
+		await db
+			.update(cookingSessions)
+			.set({ nutritionSnapshot: { status: "complete" } as never })
+			.where(eq(cookingSessions.id, created.id));
+
+		const response = await generate(created.id);
+
+		expect(response.status).toBe(500);
+		expect(ErrorResponseSchema.parse(await response.json()).error.code).toBe(
+			"INVALID_PERSISTED_SNAPSHOT",
+		);
+	});
+
 	for (const [expectedStatus, plan] of [
 		["complete", completePlan],
 		["partial", partialPlan],
@@ -349,7 +568,7 @@ describe("Nutrition API integration", () => {
 		expect(unchanged.nutritionSnapshot).toBeNull();
 	});
 
-	test("publishes preview and server-owned completion contracts in OpenAPI", async () => {
+	test("publishes preview, canonical generation, and server-owned completion contracts in OpenAPI", async () => {
 		const response = await app.request("/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<
@@ -362,6 +581,13 @@ describe("Nutrition API integration", () => {
 		expect(specification.paths).toHaveProperty(
 			"/cooking-sessions/{id}/nutrition",
 		);
+		expect(
+			specification.paths["/cooking-sessions/{id}/nutrition"]?.post,
+		).toBeDefined();
+		expect(
+			specification.paths["/cooking-sessions/{id}/nutrition"]?.post
+				?.requestBody,
+		).toBeUndefined();
 		expect(
 			JSON.stringify(
 				specification.paths["/cooking-sessions/{id}/complete"]?.post

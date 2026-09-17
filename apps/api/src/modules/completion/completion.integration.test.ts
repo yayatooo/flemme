@@ -15,7 +15,6 @@ import {
 	CookingSessionResponseSchema,
 	type CreateCookingSessionRequest,
 } from "../cooking-session/cooking-session-schema";
-import { CompletionResponseSchema } from "./completion-schema";
 
 const databaseUrl = Bun.env.DATABASE_URL;
 
@@ -120,11 +119,31 @@ async function createSession(
 			session,
 		}),
 	});
-
 	if (response.status !== 201) {
 		throw new Error("Completion API test session could not be created");
 	}
+	return CookingSessionResponseSchema.parse(await response.json());
+}
 
+async function updateProgress(
+	sessionId: string,
+	session: CreateCookingSessionRequest["session"],
+) {
+	return app.request(`/cooking-sessions/${sessionId}/progress`, {
+		method: "PATCH",
+		headers: headers(ownerUserId),
+		body: JSON.stringify({ session }),
+	});
+}
+
+async function completeSession(sessionId: string) {
+	const response = await updateProgress(sessionId, {
+		...completionReadySession,
+		status: "completed",
+	});
+	if (response.status !== 200) {
+		throw new Error("Completion API test session could not be completed");
+	}
 	return CookingSessionResponseSchema.parse(await response.json());
 }
 
@@ -144,7 +163,6 @@ async function restore(sessionId: string) {
 	const response = await app.request(`/cooking-sessions/${sessionId}`, {
 		headers: headers(ownerUserId),
 	});
-
 	return CookingSessionResponseSchema.parse(await response.json());
 }
 
@@ -154,21 +172,24 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-	if (ownerUserId) {
-		await db.delete(users).where(eq(users.id, ownerUserId));
-	}
-
-	if (otherUserId) {
-		await db.delete(users).where(eq(users.id, otherUserId));
-	}
-
+	if (ownerUserId) await db.delete(users).where(eq(users.id, ownerUserId));
+	if (otherUserId) await db.delete(users).where(eq(users.id, otherUserId));
 	await client.end();
 });
 
 describe("Completion AI API integration", () => {
-	test("projects a completion-ready session without persisting completion", async () => {
+	test("generates from an owned completed session and persists canonical output", async () => {
 		const created = await createSession();
-		const before = await restore(created.id);
+		const renameResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{
+				method: "PATCH",
+				headers: headers(ownerUserId),
+				body: JSON.stringify({ customName: "Friday shallots" }),
+			},
+		);
+		expect(renameResponse.status).toBe(200);
+		const completed = await completeSession(created.id);
 		runner = async (input) => {
 			capturedInput = input;
 			return completionOutput;
@@ -177,179 +198,180 @@ describe("Completion AI API integration", () => {
 		const response = await generate(created.id, {
 			message: "  Masakannya sudah selesai.  ",
 		});
-		const output = CompletionResponseSchema.parse(await response.json());
-		const after = await restore(created.id);
+		const result = CookingSessionResponseSchema.parse(await response.json());
+		const restored = await restore(created.id);
 
 		expect(response.status).toBe(200);
-		expect(output).toEqual(completionOutput);
+		expect(completed.phase).toBe("completion");
+		expect(completed.session.status).toBe("completed");
+		expect(completed.completionSnapshot).toBeNull();
+		expect(completed.nutritionSnapshot).toBeNull();
 		expect(capturedInput).toEqual({
 			cookingPlan,
-			session: {
-				...completionReadySession,
-				status: "completed",
-			},
+			session: { ...completionReadySession, status: "completed" },
 			message: "Masakannya sudah selesai.",
 		});
-		expect(after).toEqual(before);
-		expect(after.phase).toBe("active_cooking");
-		expect(after.session.status).toBe("active");
-		expect(after.completionSnapshot).toBeNull();
-		expect(after.completedAt).toBeNull();
+		expect(result.customName).toBe("Friday shallots");
+		expect(result.completionSnapshot).toEqual(completionOutput);
+		expect(result.nutritionSnapshot).toBeNull();
+		expect(restored.completionSnapshot).toEqual(completionOutput);
+		expect(restored.nutritionSnapshot).toBeNull();
 	});
 
-	test("accepts an omitted optional completion message", async () => {
+	test("returns persisted output on retries without invoking the agent again", async () => {
 		const created = await createSession();
-		runner = async (input) => {
-			capturedInput = input;
+		await completeSession(created.id);
+		let calls = 0;
+		runner = async () => {
+			calls += 1;
 			return completionOutput;
 		};
 
-		const response = await generate(created.id, {});
+		const first = await generate(created.id, {});
+		const second = await generate(created.id, { message: "Different retry" });
+		const firstResult = CookingSessionResponseSchema.parse(await first.json());
+		const secondResult = CookingSessionResponseSchema.parse(
+			await second.json(),
+		);
 
-		expect(response.status).toBe(200);
-		expect(capturedInput?.message).toBeUndefined();
+		expect(first.status).toBe(200);
+		expect(second.status).toBe(200);
+		expect(calls).toBe(1);
+		expect(secondResult.completionSnapshot).toEqual(
+			firstResult.completionSnapshot,
+		);
 	});
 
-	test("rejects an incomplete final step without invoking the agent", async () => {
+	test("serializes concurrent generation so only one output is produced", async () => {
+		const created = await createSession();
+		await completeSession(created.id);
+		let calls = 0;
+		let markStarted: (() => void) | undefined;
+		let releaseRunner: (() => void) | undefined;
+		const started = new Promise<void>((resolve) => {
+			markStarted = resolve;
+		});
+		const release = new Promise<void>((resolve) => {
+			releaseRunner = resolve;
+		});
+		runner = async () => {
+			calls += 1;
+			markStarted?.();
+			await release;
+			return completionOutput;
+		};
+
+		const firstRequest = generate(created.id, {});
+		await started;
+		const secondRequest = generate(created.id, {});
+		releaseRunner?.();
+		const [first, second] = await Promise.all([firstRequest, secondRequest]);
+
+		expect(first.status).toBe(200);
+		expect(second.status).toBe(200);
+		expect(calls).toBe(1);
+	});
+
+	test("keeps completion retryable after generation failure", async () => {
+		const created = await createSession();
+		await completeSession(created.id);
+		let calls = 0;
+		runner = async () => {
+			calls += 1;
+			if (calls === 1) throw new Error("private provider failure");
+			return completionOutput;
+		};
+
+		const failed = await generate(created.id, {});
+		const failedError = ErrorResponseSchema.parse(await failed.json());
+		const afterFailure = await restore(created.id);
+		const retried = await generate(created.id, {});
+		const recovered = CookingSessionResponseSchema.parse(await retried.json());
+
+		expect(failed.status).toBe(502);
+		expect(failedError.error.code).toBe("COMPLETION_GENERATION_FAILED");
+		expect(failedError.error.message).not.toContain("private provider failure");
+		expect(afterFailure.completionSnapshot).toBeNull();
+		expect(retried.status).toBe(200);
+		expect(recovered.completionSnapshot).toEqual(completionOutput);
+		expect(calls).toBe(2);
+	});
+
+	test("rejects non-completed sessions without invoking the agent", async () => {
+		const active = await createSession();
+		const paused = await createSession();
+		const abandoned = await createSession();
+		await updateProgress(paused.id, {
+			...completionReadySession,
+			status: "paused",
+			pauseReason: "user-request",
+		});
+		await updateProgress(abandoned.id, {
+			...completionReadySession,
+			status: "abandoned",
+		});
+		let calls = 0;
+		runner = async () => {
+			calls += 1;
+			return completionOutput;
+		};
+
+		for (const sessionId of [active.id, paused.id, abandoned.id]) {
+			const response = await generate(sessionId, {});
+			const error = ErrorResponseSchema.parse(await response.json());
+			expect(response.status).toBe(409);
+			expect(error.error.code).toBe("INVALID_SESSION_STATE");
+		}
+		expect(calls).toBe(0);
+	});
+
+	test("refuses to persist completion before the final step is complete", async () => {
 		const created = await createSession({
 			...completionReadySession,
 			completedStepIds: ["prepare-aromatics", "saute-aromatics"],
 		});
-		const before = await restore(created.id);
-		let called = false;
-		runner = async () => {
-			called = true;
-			return completionOutput;
-		};
-
-		const response = await generate(created.id, {});
-		const error = ErrorResponseSchema.parse(await response.json());
-		const after = await restore(created.id);
-
-		expect(response.status).toBe(409);
-		expect(error.error.code).toBe("SESSION_NOT_READY_FOR_COMPLETION");
-		expect(called).toBe(false);
-		expect(after).toEqual(before);
-	});
-
-	test("rejects a session that has not reached the final step", async () => {
-		const created = await createSession({
+		const response = await updateProgress(created.id, {
 			...completionReadySession,
-			currentStageId: "cook-aromatics",
-			currentStepId: "saute-aromatics",
-			completedStepIds: ["prepare-aromatics"],
+			status: "completed",
+			completedStepIds: ["prepare-aromatics", "saute-aromatics"],
 		});
-		let called = false;
-		runner = async () => {
-			called = true;
-			return completionOutput;
-		};
-
-		const response = await generate(created.id, {});
 		const error = ErrorResponseSchema.parse(await response.json());
+		const restored = await restore(created.id);
 
 		expect(response.status).toBe(409);
 		expect(error.error.code).toBe("SESSION_NOT_READY_FOR_COMPLETION");
-		expect(called).toBe(false);
+		expect(restored.session.status).toBe("active");
+		expect(restored.phase).toBe("active_cooking");
 	});
 
-	test("rejects a paused session without invoking the agent", async () => {
+	test("maps corrupt persisted completed state to a controlled error", async () => {
 		const created = await createSession();
-		const pauseResponse = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
-			{
-				method: "PATCH",
-				headers: headers(ownerUserId),
-				body: JSON.stringify({
-					session: {
-						...completionReadySession,
-						status: "paused",
-						pauseReason: "user-request",
-					},
-				}),
-			},
-		);
-		expect(pauseResponse.status).toBe(200);
-
-		let called = false;
-		runner = async () => {
-			called = true;
-			return completionOutput;
-		};
-		const response = await generate(created.id, {});
-		const error = ErrorResponseSchema.parse(await response.json());
-
-		expect(response.status).toBe(409);
-		expect(error.error.code).toBe("INVALID_SESSION_STATE");
-		expect(called).toBe(false);
-	});
-
-	test("rejects an already completed session without regenerating", async () => {
-		const created = await createSession();
-		const completionResponse = await app.request(
-			`/cooking-sessions/${created.id}/complete`,
-			{
-				method: "POST",
-				headers: headers(ownerUserId),
-				body: JSON.stringify({ completionSnapshot: completionOutput }),
-			},
-		);
-		expect(completionResponse.status).toBe(200);
-
-		let called = false;
-		runner = async () => {
-			called = true;
-			return completionOutput;
-		};
-		const response = await generate(created.id, {});
-		const error = ErrorResponseSchema.parse(await response.json());
-
-		expect(response.status).toBe(409);
-		expect(error.error.code).toBe("INVALID_SESSION_STATE");
-		expect(called).toBe(false);
-	});
-
-	test("rejects an abandoned session without invoking the agent", async () => {
-		const created = await createSession();
+		await completeSession(created.id);
 		await db
 			.update(cookingSessions)
-			.set({ status: "abandoned" })
+			.set({ preCookingPlanSnapshot: { invalid: true } })
 			.where(eq(cookingSessions.id, created.id));
-
 		let called = false;
 		runner = async () => {
 			called = true;
 			return completionOutput;
 		};
+
 		const response = await generate(created.id, {});
 		const error = ErrorResponseSchema.parse(await response.json());
 
-		expect(response.status).toBe(409);
-		expect(error.error.code).toBe("INVALID_SESSION_STATE");
-		expect(called).toBe(false);
+		expect(response.status).toBe(500);
+		expect(error.error.code).toBe("INVALID_PERSISTED_SNAPSHOT");
+		expect(called).toBeFalse();
 	});
 
-	test("validates the strict optional-message request", async () => {
+	test("validates request, authentication, ownership, and missing sessions", async () => {
 		const created = await createSession();
+		await completeSession(created.id);
 		runner = async () => completionOutput;
-
-		const blankResponse = await generate(created.id, { message: "   " });
-		const longResponse = await generate(created.id, {
-			message: "a".repeat(2_001),
-		});
-		const clientStateResponse = await generate(created.id, {
-			cookingPlan,
-		});
-
-		expect(blankResponse.status).toBe(400);
-		expect(longResponse.status).toBe(400);
-		expect(clientStateResponse.status).toBe(400);
-	});
-
-	test("enforces authentication, ownership, and missing-session behavior", async () => {
-		const created = await createSession();
-		runner = async () => completionOutput;
-		const unauthenticatedResponse = await app.request(
+		const blank = await generate(created.id, { message: "   " });
+		const clientState = await generate(created.id, { cookingPlan });
+		const unauthenticated = await app.request(
 			`/cooking-sessions/${created.id}/completion`,
 			{
 				method: "POST",
@@ -357,53 +379,42 @@ describe("Completion AI API integration", () => {
 				body: JSON.stringify({}),
 			},
 		);
-		const forbiddenResponse = await generate(created.id, {}, otherUserId);
-		const missingResponse = await generate(crypto.randomUUID(), {});
+		const forbidden = await generate(created.id, {}, otherUserId);
+		const missing = await generate(crypto.randomUUID(), {});
 
-		expect(unauthenticatedResponse.status).toBe(401);
-		expect(forbiddenResponse.status).toBe(403);
-		expect(missingResponse.status).toBe(404);
+		expect(blank.status).toBe(400);
+		expect(clientState.status).toBe(400);
+		expect(unauthenticated.status).toBe(401);
+		expect(forbidden.status).toBe(403);
+		expect(missing.status).toBe(404);
 	});
 
-	test("maps Agent failures and invalid output to controlled errors", async () => {
-		const created = await createSession();
-		runner = async () => {
-			throw new Error("private provider failure");
-		};
-		const failedResponse = await generate(created.id, {});
-		const failedError = ErrorResponseSchema.parse(await failedResponse.json());
-
+	test("maps invalid output and missing provider configuration", async () => {
+		const invalidSession = await createSession();
+		await completeSession(invalidSession.id);
 		runner = async () => ({ reply: "", summary: {}, notes: [] });
-		const invalidResponse = await generate(created.id, {});
-		const invalidError = ErrorResponseSchema.parse(
-			await invalidResponse.json(),
-		);
+		const invalid = await generate(invalidSession.id, {});
+		const invalidError = ErrorResponseSchema.parse(await invalid.json());
 
-		expect(failedResponse.status).toBe(502);
-		expect(failedError.error.code).toBe("COMPLETION_GENERATION_FAILED");
-		expect(failedError.error.message).not.toContain("private provider failure");
-		expect(invalidResponse.status).toBe(502);
-		expect(invalidError.error.code).toBe("INVALID_AGENT_OUTPUT");
-	});
-
-	test("reports missing provider configuration", async () => {
-		const created = await createSession();
-		const unconfiguredApp = createApp({
-			authFoundation,
-			db,
-		});
-		const response = await unconfiguredApp.request(
-			`/cooking-sessions/${created.id}/completion`,
+		const unconfiguredSession = await createSession();
+		await completeSession(unconfiguredSession.id);
+		const unconfiguredApp = createApp({ authFoundation, db });
+		const unconfigured = await unconfiguredApp.request(
+			`/cooking-sessions/${unconfiguredSession.id}/completion`,
 			{
 				method: "POST",
 				headers: headers(ownerUserId),
 				body: JSON.stringify({}),
 			},
 		);
-		const error = ErrorResponseSchema.parse(await response.json());
+		const unconfiguredError = ErrorResponseSchema.parse(
+			await unconfigured.json(),
+		);
 
-		expect(response.status).toBe(503);
-		expect(error.error.code).toBe("AGENT_NOT_CONFIGURED");
+		expect(invalid.status).toBe(502);
+		expect(invalidError.error.code).toBe("INVALID_AGENT_OUTPUT");
+		expect(unconfigured.status).toBe(503);
+		expect(unconfiguredError.error.code).toBe("AGENT_NOT_CONFIGURED");
 	});
 
 	test("publishes the authenticated Completion endpoint in OpenAPI", async () => {

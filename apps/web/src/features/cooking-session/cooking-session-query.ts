@@ -1,5 +1,6 @@
 import type { CookingRecommendationOutput } from "@flemme/agent/cooking-recommendation-output";
 import {
+	type CookingSessionResponse,
 	CookingSessionResponseSchema,
 	type CreateCookingSessionRequest,
 	CreateCookingSessionRequestSchema,
@@ -49,6 +50,12 @@ const cookingSessionCreationMutationKey = [
 
 export function cookingSessionQueryKey(sessionId: string) {
 	return ["cooking", "sessions", sessionId] as const;
+}
+
+export function getCookingSessionDisplayName(
+	session: CookingSessionResponse,
+): string {
+	return session.customName?.trim() || session.selectedRecipeSnapshot.name;
 }
 
 export const cookingSessionCreationQueryOptions = queryOptions({

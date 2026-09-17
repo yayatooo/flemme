@@ -12,6 +12,7 @@ export const recommendationSnapshot = {
 
 export const cookingSessionFixture = {
 	id: cookingSessionId,
+	customName: null,
 	phase: "active_cooking",
 	session: {
 		status: "active",

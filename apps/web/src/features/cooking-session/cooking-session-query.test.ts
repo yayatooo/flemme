@@ -17,6 +17,7 @@ import {
 	cookingSessionQueryOptions,
 	cookingSessionReadErrorMessage,
 	executeCookingSessionCreation,
+	getCookingSessionDisplayName,
 	requestCookingSessionCreation,
 } from "./cooking-session-query";
 import {
@@ -156,11 +157,15 @@ test("creation failure preserves handoff and retry succeeds", async () => {
 	expect(creationState(queryClient)?.status).toBe("success");
 });
 
-test("refresh-safe session query restores by ID without transient flow state", async () => {
+test("refresh-safe session query restores a custom name by ID without transient flow state", async () => {
 	let requestedUrl = "";
+	const renamedSession = {
+		...cookingSessionFixture,
+		customName: "Refresh-safe dish",
+	};
 	globalThis.fetch = (async (input) => {
 		requestedUrl = String(input);
-		return Response.json(cookingSessionFixture);
+		return Response.json(renamedSession);
 	}) as typeof fetch;
 	const queryClient = new QueryClient();
 	const restored = await queryClient.fetchQuery(
@@ -170,11 +175,18 @@ test("refresh-safe session query restores by ID without transient flow state", a
 	expect(requestedUrl).toBe(
 		`http://localhost:3000/cooking-sessions/${cookingSessionId}`,
 	);
-	expect(restored).toEqual(cookingSessionFixture);
+	expect(restored).toEqual(renamedSession);
+	expect(getCookingSessionDisplayName(restored)).toBe("Refresh-safe dish");
 	expect(
 		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
-	).toEqual(cookingSessionFixture);
+	).toEqual(renamedSession);
 	expect(queryClient.getQueryData(preCookingHandoffQueryKey)).toBeUndefined();
+});
+
+test("session display name falls back to the immutable recipe name", () => {
+	expect(getCookingSessionDisplayName(cookingSessionFixture)).toBe(
+		cookingSessionFixture.selectedRecipeSnapshot.name,
+	);
 });
 
 test("invalid, missing, forbidden, and corrupt sessions use controlled messages", () => {

@@ -11,6 +11,7 @@ import {
 	buildCookingSessionProgress,
 	executeCookingAssistantRequest,
 	executeCookingProgressCommand,
+	executeCookingSessionRename,
 	prepareAssistantActions,
 } from "./active-cooking-mutations";
 
@@ -69,7 +70,7 @@ test("previous moves by stable IDs without undoing completed steps", () => {
 	).toThrow("first cooking step");
 });
 
-test("the final step is recorded without requesting Completion output", () => {
+test("the final step persists completed status without generating downstream output", () => {
 	const final = sessionAt("cook-chicken", "coat-chicken", [
 		"toast-garlic",
 		"brown-chicken",
@@ -78,7 +79,7 @@ test("the final step is recorded without requesting Completion output", () => {
 		type: "advance",
 	});
 
-	expect(completedSteps.status).toBe("active");
+	expect(completedSteps.status).toBe("completed");
 	expect(completedSteps.currentStepId).toBe("coat-chicken");
 	expect(completedSteps.completedStepIds).toContain("coat-chicken");
 	expect(final.completionSnapshot).toBeNull();
@@ -248,6 +249,83 @@ test("double Next sends exactly one progress mutation and caches its response", 
 	expect(requests.some(({ path }) => path.includes("inventory"))).toBe(false);
 });
 
+test("rename sends one metadata mutation, shares the session lock, and caches the server snapshot", async () => {
+	const queryClient = new QueryClient();
+	queryClient.setQueryData(
+		cookingSessionQueryKey(cookingSessionId),
+		cookingSessionFixture,
+	);
+	const requests: Array<{ path: string; method: string; body: unknown }> = [];
+	let resolveRequest: ((response: Response) => void) | undefined;
+	const pendingResponse = new Promise<Response>((resolve) => {
+		resolveRequest = resolve;
+	});
+	globalThis.fetch = (async (input, init) => {
+		requests.push({
+			path: new URL(String(input)).pathname,
+			method: String(init?.method),
+			body: JSON.parse(String(init?.body)),
+		});
+		return pendingResponse;
+	}) as typeof fetch;
+
+	const first = executeCookingSessionRename(queryClient, cookingSessionId, {
+		customName: "  Weeknight chicken  ",
+	});
+	const duplicate = await executeCookingSessionRename(
+		queryClient,
+		cookingSessionId,
+		{ customName: "Another name" },
+	);
+	const persisted = {
+		...cookingSessionFixture,
+		customName: "Weeknight chicken",
+		updatedAt: "2026-09-17T10:00:00.000Z",
+	};
+	resolveRequest?.(jsonResponse(persisted));
+	await first;
+
+	expect(duplicate).toBeNull();
+	expect(requests).toEqual([
+		{
+			path: `/cooking-sessions/${cookingSessionId}`,
+			method: "PATCH",
+			body: { customName: "Weeknight chicken" },
+		},
+	]);
+	expect(
+		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
+	).toEqual(persisted);
+	expect(persisted.selectedRecipeSnapshot).toBe(
+		cookingSessionFixture.selectedRecipeSnapshot,
+	);
+	expect(persisted.cookingPlan).toBe(cookingSessionFixture.cookingPlan);
+	expect(persisted.session).toBe(cookingSessionFixture.session);
+});
+
+test("clearing a rename sends null without an agent or progress request", async () => {
+	const queryClient = new QueryClient();
+	const renamed = { ...cookingSessionFixture, customName: "Weeknight chicken" };
+	queryClient.setQueryData(cookingSessionQueryKey(cookingSessionId), renamed);
+	const paths: string[] = [];
+	globalThis.fetch = (async (input, init) => {
+		paths.push(new URL(String(input)).pathname);
+		expect(JSON.parse(String(init?.body))).toEqual({ customName: null });
+		return jsonResponse(cookingSessionFixture);
+	}) as typeof fetch;
+
+	await executeCookingSessionRename(queryClient, cookingSessionId, {
+		customName: null,
+	});
+
+	expect(paths).toEqual([`/cooking-sessions/${cookingSessionId}`]);
+	expect(
+		queryClient.getQueryData<CookingSessionResponse>(
+			cookingSessionQueryKey(cookingSessionId),
+		)?.customName,
+	).toBeNull();
+});
+
 test("assistant guidance without actions performs no progress request", async () => {
 	const queryClient = new QueryClient();
 	queryClient.setQueryData(
@@ -270,6 +348,39 @@ test("assistant guidance without actions performs no progress request", async ()
 	);
 
 	expect(result?.output.reply).toContain("Lower the heat");
+	expect(paths).toEqual([
+		`/cooking-sessions/${cookingSessionId}/active-cooking`,
+	]);
+	expect(
+		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
+	).toBe(cookingSessionFixture);
+});
+
+test("off-topic redirect renders normally without any product mutation request", async () => {
+	const queryClient = new QueryClient();
+	queryClient.setQueryData(
+		cookingSessionQueryKey(cookingSessionId),
+		cookingSessionFixture,
+	);
+	const paths: string[] = [];
+	globalThis.fetch = (async (input) => {
+		paths.push(new URL(String(input)).pathname);
+		return jsonResponse({
+			reply:
+				"I'm here to help with this cooking session. Ask me about the current step, ingredients, equipment, substitutions, cooking cues, or what to do next.",
+			actions: [],
+		});
+	}) as typeof fetch;
+
+	const result = await executeCookingAssistantRequest(
+		queryClient,
+		cookingSessionId,
+		"What is HTML?",
+	);
+
+	expect(result?.output.actions).toEqual([]);
+	expect(result?.output.reply).toContain("this cooking session");
+	expect(result?.output.reply.toLowerCase()).not.toContain("html");
 	expect(paths).toEqual([
 		`/cooking-sessions/${cookingSessionId}/active-cooking`,
 	]);

@@ -1,4 +1,4 @@
-import type { PreCookingOutput } from "@flemme/agent";
+import type { ActiveCookingChange, PreCookingOutput } from "@flemme/agent";
 import { productionIngredientCatalog } from "@flemme/ingredients";
 import {
 	calculateRecipeNutrition,
@@ -14,6 +14,7 @@ import {
 interface CalculateCookingSessionNutritionInput {
 	cookingPlan: PreCookingOutput;
 	servings: number;
+	changes: ActiveCookingChange[];
 }
 
 /**
@@ -24,6 +25,7 @@ interface CalculateCookingSessionNutritionInput {
 export function calculateCookingSessionNutrition({
 	cookingPlan,
 	servings,
+	changes,
 }: CalculateCookingSessionNutritionInput): RecipeNutritionResult {
 	const normalizedIngredients: NutritionIngredientAmount[] = [];
 	const issues: NutritionCoverageIssue[] = [];
@@ -87,6 +89,14 @@ export function calculateCookingSessionNutrition({
 		}
 
 		normalizedIngredients.push(normalization.ingredient);
+	}
+
+	for (const change of changes) {
+		if (change.kind !== "ingredient" && change.kind !== "servings") continue;
+		issues.push({
+			reason: "unquantified-change",
+			changeDescription: change.description,
+		});
 	}
 
 	return calculateRecipeNutrition({

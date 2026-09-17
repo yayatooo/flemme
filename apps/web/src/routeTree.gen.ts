@@ -26,6 +26,8 @@ import { Route as OnboardingInventoryRouteImport } from './routes/onboarding/inv
 import { Route as OnboardingKitchenRouteImport } from './routes/onboarding/kitchen'
 import { Route as OnboardingProfileRouteImport } from './routes/onboarding/profile'
 import { Route as AppCookingSessionIdRouteImport } from './routes/app/cooking/$sessionId'
+import { Route as AppCookingSessionIdCompletionRouteImport } from './routes/app/cooking/$sessionId_.completion'
+import { Route as AppCookingSessionIdNutritionRouteImport } from './routes/app/cooking/$sessionId_.nutrition'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +114,18 @@ const AppCookingSessionIdRoute = AppCookingSessionIdRouteImport.update({
   path: '/cooking/$sessionId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCookingSessionIdCompletionRoute =
+  AppCookingSessionIdCompletionRouteImport.update({
+    id: '/cooking/$sessionId_/completion',
+    path: '/cooking/$sessionId/completion',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppCookingSessionIdNutritionRoute =
+  AppCookingSessionIdNutritionRouteImport.update({
+    id: '/cooking/$sessionId_/nutrition',
+    path: '/cooking/$sessionId/nutrition',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +145,8 @@ export interface FileRoutesByFullPath {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/app/': typeof AppIndexRoute
   '/app/cooking/$sessionId': typeof AppCookingSessionIdRoute
+  '/app/cooking/$sessionId/completion': typeof AppCookingSessionIdCompletionRoute
+  '/app/cooking/$sessionId/nutrition': typeof AppCookingSessionIdNutritionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,6 +165,8 @@ export interface FileRoutesByTo {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/app': typeof AppIndexRoute
   '/app/cooking/$sessionId': typeof AppCookingSessionIdRoute
+  '/app/cooking/$sessionId/completion': typeof AppCookingSessionIdCompletionRoute
+  '/app/cooking/$sessionId/nutrition': typeof AppCookingSessionIdNutritionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,6 +187,8 @@ export interface FileRoutesById {
   '/onboarding/profile': typeof OnboardingProfileRoute
   '/app/': typeof AppIndexRoute
   '/app/cooking/$sessionId': typeof AppCookingSessionIdRoute
+  '/app/cooking/$sessionId_/completion': typeof AppCookingSessionIdCompletionRoute
+  '/app/cooking/$sessionId_/nutrition': typeof AppCookingSessionIdNutritionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -190,6 +210,8 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/app/'
     | '/app/cooking/$sessionId'
+    | '/app/cooking/$sessionId/completion'
+    | '/app/cooking/$sessionId/nutrition'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -208,6 +230,8 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/app'
     | '/app/cooking/$sessionId'
+    | '/app/cooking/$sessionId/completion'
+    | '/app/cooking/$sessionId/nutrition'
   id:
     | '__root__'
     | '/'
@@ -227,6 +251,8 @@ export interface FileRouteTypes {
     | '/onboarding/profile'
     | '/app/'
     | '/app/cooking/$sessionId'
+    | '/app/cooking/$sessionId_/completion'
+    | '/app/cooking/$sessionId_/nutrition'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -358,6 +384,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCookingSessionIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/cooking/$sessionId_/completion': {
+      id: '/app/cooking/$sessionId_/completion'
+      path: '/cooking/$sessionId/completion'
+      fullPath: '/app/cooking/$sessionId/completion'
+      preLoaderRoute: typeof AppCookingSessionIdCompletionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/cooking/$sessionId_/nutrition': {
+      id: '/app/cooking/$sessionId_/nutrition'
+      path: '/cooking/$sessionId/nutrition'
+      fullPath: '/app/cooking/$sessionId/nutrition'
+      preLoaderRoute: typeof AppCookingSessionIdNutritionRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -369,6 +409,8 @@ interface AppRouteChildren {
   AppRecommendationRoute: typeof AppRecommendationRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCookingSessionIdRoute: typeof AppCookingSessionIdRoute
+  AppCookingSessionIdCompletionRoute: typeof AppCookingSessionIdCompletionRoute
+  AppCookingSessionIdNutritionRoute: typeof AppCookingSessionIdNutritionRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -379,6 +421,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppRecommendationRoute: AppRecommendationRoute,
   AppIndexRoute: AppIndexRoute,
   AppCookingSessionIdRoute: AppCookingSessionIdRoute,
+  AppCookingSessionIdCompletionRoute: AppCookingSessionIdCompletionRoute,
+  AppCookingSessionIdNutritionRoute: AppCookingSessionIdNutritionRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

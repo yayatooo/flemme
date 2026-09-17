@@ -3,6 +3,9 @@ import {
 	ActiveCookingInputSchema,
 	type ActiveCookingOutput,
 	ActiveCookingOutputSchema,
+	createActiveCookingScopeResponse,
+	enforceActiveCookingScopeActions,
+	resolveActiveCookingScope,
 } from "@flemme/agent";
 import type { FlemmeDatabase } from "@flemme/db";
 import { ZodError } from "zod";
@@ -44,6 +47,23 @@ export function createActiveCookingService({
 				);
 			}
 
+			const input = ActiveCookingInputSchema.parse({
+				cookingPlan: restored.cookingPlan,
+				session: restored.session,
+				message: request.message,
+			});
+			const scopeDecision = resolveActiveCookingScope(input);
+			const scopedResponse = createActiveCookingScopeResponse(
+				scopeDecision,
+				input,
+			);
+			if (scopedResponse) {
+				return enforceActiveCookingScopeActions(
+					scopeDecision.scope,
+					scopedResponse,
+				);
+			}
+
 			if (!activeCookingRunner) {
 				throw new ApiError(
 					503,
@@ -52,13 +72,7 @@ export function createActiveCookingService({
 				);
 			}
 
-			const input = ActiveCookingInputSchema.parse({
-				cookingPlan: restored.cookingPlan,
-				session: restored.session,
-				message: request.message,
-			});
 			let generated: unknown;
-
 			try {
 				generated = await activeCookingRunner(input);
 			} catch {
@@ -70,7 +84,8 @@ export function createActiveCookingService({
 			}
 
 			try {
-				return ActiveCookingOutputSchema.parse(generated);
+				const output = ActiveCookingOutputSchema.parse(generated);
+				return enforceActiveCookingScopeActions(scopeDecision.scope, output);
 			} catch (error) {
 				if (error instanceof ZodError) {
 					throw new ApiError(

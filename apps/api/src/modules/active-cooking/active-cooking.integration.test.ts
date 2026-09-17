@@ -178,6 +178,105 @@ describe("Active Cooking API integration", () => {
 		expect(after).toEqual(before);
 	});
 
+	test("blocks the HTML regression before agent generation and preserves persisted progress", async () => {
+		const sessionId = await createSession();
+		const before = await restore(sessionId);
+		let called = false;
+		runner = async () => {
+			called = true;
+			return {
+				reply: "HTML is HyperText Markup Language.",
+				actions: [{ type: "advance" }],
+			};
+		};
+
+		const response = await ask(sessionId, { message: "What is HTML?" });
+		const output = ActiveCookingResponseSchema.parse(await response.json());
+		const after = await restore(sessionId);
+
+		expect(response.status).toBe(200);
+		expect(called).toBeFalse();
+		expect(output.actions).toEqual([]);
+		expect(output.reply).toContain("this cooking session");
+		expect(output.reply.toLowerCase()).not.toContain("html");
+		expect(output.reply.toLowerCase()).not.toContain("markup");
+		expect(after).toEqual(before);
+	});
+
+	test("keeps cooking and kitchen safety requests on the normal agent path", async () => {
+		const sessionId = await createSession();
+
+		for (const message of [
+			"Is this cooked enough?",
+			"The onions are burning.",
+			"My gas ran out.",
+			"Can I use a wok instead?",
+			"The oil is smoking, what should I do?",
+			"The pan caught fire.",
+		]) {
+			let capturedMessage: string | undefined;
+			runner = async (input) => {
+				capturedMessage = input.message;
+				return { reply: "Safety guidance for the current step.", actions: [] };
+			};
+
+			const response = await ask(sessionId, { message });
+			const output = ActiveCookingResponseSchema.parse(await response.json());
+
+			expect(response.status).toBe(200);
+			expect(capturedMessage).toBe(message);
+			expect(output.actions).toEqual([]);
+		}
+	});
+
+	test("redirects out-of-phase requests without agent calls or session mutation", async () => {
+		const sessionId = await createSession();
+		const before = await restore(sessionId);
+		let calls = 0;
+		runner = async () => {
+			calls += 1;
+			return {
+				reply: "This response must never be used.",
+				actions: [{ type: "pause", reason: "user-request" }],
+			};
+		};
+
+		for (const [message, fragment] of [
+			["How many calories is this?", "after cooking is complete"],
+			["Save this to favorites.", "save this meal"],
+			["Show my cooking history.", "outside this active session"],
+		] as const) {
+			const response = await ask(sessionId, { message });
+			const output = ActiveCookingResponseSchema.parse(await response.json());
+
+			expect(response.status).toBe(200);
+			expect(output.actions).toEqual([]);
+			expect(output.reply.toLowerCase()).toContain(fragment);
+		}
+
+		expect(calls).toBe(0);
+		expect(await restore(sessionId)).toEqual(before);
+	});
+
+	test("clarifies scope-ambiguous input from the current step without generation", async () => {
+		const sessionId = await createSession();
+		const before = await restore(sessionId);
+		let called = false;
+		runner = async () => {
+			called = true;
+			return { reply: "unexpected", actions: [{ type: "advance" }] };
+		};
+
+		const response = await ask(sessionId, { message: "Is this okay?" });
+		const output = ActiveCookingResponseSchema.parse(await response.json());
+
+		expect(response.status).toBe(200);
+		expect(called).toBeFalse();
+		expect(output.actions).toEqual([]);
+		expect(output.reply).toContain("Tumis bawang sampai harum.");
+		expect(await restore(sessionId)).toEqual(before);
+	});
+
 	test("returns an advance proposal without applying it", async () => {
 		const sessionId = await createSession();
 		const before = await restore(sessionId);

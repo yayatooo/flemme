@@ -124,10 +124,12 @@ cannot reactivate. Recorded changes retain shared contract kinds and optional
 stable step references without rewriting the plan or Inventory.
 
 `Finish cooking` records the final cooking step through the progress boundary
-and stops at the saved completion-ready boundary while the session remains
-active. Phase 5B does not call Completion AI, persist Completion output, or
-calculate final Nutrition. Existing completed sessions and abandoned sessions
-render as closed states without Active Cooking controls.
+and, after server validation of that final persisted position, atomically moves
+the Cooking Session to `phase = completion`, `status = completed`, and a
+non-null `completedAt`. Completion and Nutrition snapshots remain nullable at
+this boundary. Only the confirmed completed response navigates into the
+Completion review. Existing completed sessions and abandoned sessions render as
+closed states without Active Cooking controls.
 
 The compact Cooking Assistant posts only the latest message to the existing
 Active Cooking API. Replies are displayed independently from structured
@@ -135,6 +137,104 @@ actions. Reply-only and clarification output perform no write; accepted
 advance, previous, pause, resume, record-change, and final-step actions produce
 at most one explicit progress mutation. Agent-proposed abandonment always
 requires user confirmation before persistence.
+
+Active Cooking scope is enforced before normal reply generation by the
+Agent-owned `ActiveCookingScope` resolver. The resolver combines explicit
+off-topic and phase-owned request rules with cooking-domain, lifecycle, and
+quantity/substitution signals plus terms derived from the persisted cooking
+plan and session changes. It classifies `in_scope`, `out_of_phase`,
+`off_topic`, and `ambiguous` without another model call. Relevant cooking and
+kitchen-safety requests continue to the existing Active Cooking model path.
+
+Off-topic, out-of-phase, and scope-ambiguous messages bypass that path and
+receive deterministic cooking-specific responses with `actions: []`. The API
+applies the same shared resolver before checking model availability or invoking
+its injected runner, so the HTTP boundary cannot be bypassed by a noncompliant
+runner. `runActiveCooking` applies the guard independently for direct runtime
+use, and a post-output invariant strips lifecycle actions from every
+non-`in_scope` result. The public `ActiveCookingOutput` transport remains only
+`reply` plus `actions`; scope internals do not enter the web contract.
+
+The shared and task-specific prompts repeat the scope and phase rules only as
+defense in depth. The existing Ask Flemme UI renders deterministic redirects as
+normal replies. Since their action list is empty, it sends no progress,
+Completion, Nutrition, Inventory, Favorite, profile, or history mutation and
+leaves the canonical Cooking Session unchanged.
+
+Cooking Session naming is mutable display metadata owned by the application,
+not a recipe or Active Cooking mutation. The optional nullable `customName`
+lives on the persisted Cooking Session and is updated through authenticated
+`PATCH /cooking-sessions/:id` for owned sessions in any lifecycle state. The
+boundary trims and validates the name, returns the latest complete validated
+session, and never rewrites `selectedRecipeSnapshot`, the approved cooking plan,
+progress, `changes`, Inventory, or Agent output. Active Cooking resolves the
+header from `customName` before the immutable recipe name and writes the server
+response into the existing session-ID query cache under the shared per-session
+mutation lock. Clearing stores `null`, restoring the original recipe name.
+
+The Phase 6 Completion experience lives under `src/features/completion`.
+`/app/cooking/$sessionId/completion` is a persisted, refresh-safe route that
+loads only the owned Cooking Session. Active and paused sessions return to
+Active Cooking; abandoned sessions receive a separate closed response. A
+completed session renders `customName` before the immutable recipe name and
+uses the existing browser-safe Completion output contract. The focused route
+retains the compact canvas and hides AppHeader and BottomNavigation.
+
+The Completion TanStack Query has a session-scoped key separate from the
+canonical Cooking Session query. A restored `completionSnapshot` renders
+directly without an Agent request. When the completed session has no snapshot,
+the browser sends only `POST /cooking-sessions/:id/completion`; the API loads the
+owned persisted plan and completed session, constructs the existing
+`CompletionInput`, and invokes the existing Agent runtime.
+
+Completion generation runs inside a per-session database row lock. The first
+successful request validates and stores `completion_snapshot`; concurrent or
+later retries return that same canonical snapshot without invoking the Agent
+again. The response is the complete restored Cooking Session and replaces the
+canonical browser cache. Generation does not change progress, `customName`, the
+approved plan, Inventory, Favorites, history, or Nutrition. The review renders
+the Agent reply, generated summary, persisted session changes, and optional
+notes. Its Continue to Nutrition control navigates to the Phase 7 route;
+Completion itself still performs no Nutrition work.
+
+The Phase 7 Nutrition experience lives under `src/features/nutrition`.
+`/app/cooking/$sessionId/nutrition` restores only the canonical owned Cooking
+Session, requires completed status plus persisted Completion output, and keeps
+the focused compact canvas without AppHeader or BottomNavigation. Active and
+paused sessions return to Active Cooking, abandoned sessions remain closed, and
+a completed session without Completion output returns to that prerequisite.
+`customName` retains priority over the immutable selected-recipe name.
+
+The browser restores an existing `nutritionSnapshot` directly. When it is
+absent, the session-scoped Nutrition query sends one
+`POST /cooking-sessions/:id/nutrition`, validates the complete returned Cooking
+Session, and replaces the canonical session cache. Generation runs in a
+transaction-scoped row lock. Only an owned completed session with Completion
+output is eligible; the first request stores `nutrition_snapshot`, while
+concurrent and later requests return the same historical snapshot without
+recalculation.
+
+The API projects only the persisted `cookingPlan.ingredients`, selected
+servings, and structured `session.changes` into the existing deterministic
+Nutrition foundation. Ingredient names resolve through the production canonical
+catalog; quantities use only supported units and committed source-backed gram
+conversions; macro calculation uses the committed Nutrition references. No
+Agent or runtime reference fetch participates. Current change records contain
+descriptions rather than structured quantities, so ingredient and serving
+changes are not parsed or guessed: they add an `unquantified-change` coverage
+limitation and make otherwise calculable output partial.
+
+The browser-safe `RecipeNutritionResult` remains the persisted snapshot
+contract. Phase 7 snapshots include the exact normalized ingredients that
+contributed to calculation, while that field remains optional when restoring
+pre-Phase 7 snapshots. Complete, partial, and unavailable variants preserve
+serving basis, known totals, and explicit coverage issues. The review emphasizes
+per-serving calories and primary macros, uses approximate markers for partial
+totals, discloses included and excluded ingredients in one Collapsible, and
+shows no macro zeroes when calculation is unavailable. The visible Save to
+Favorites action is disabled as the Phase 8 boundary. Nutrition generation does
+not mutate Completion output, plan, progress, `customName`, Inventory, or
+Favorites.
 
 Active-session and recent-history sections accept persisted summary data and
 never synthesize progress or cooked meals. The current Auth identity exposes
@@ -287,12 +387,15 @@ the snapshot before returning or using them.
 
 Cooking Session nutrition is orchestrated in `apps/api` from the persisted
 Pre-Cooking plan and selected recipe serving count. The read-only preview and
-completion persistence paths share one deterministic mapper that resolves only
-the production ingredient catalog, exact supported unit aliases, verified
-portion conversions, and committed USDA references. Preview performs no write;
-completion calculates before one update persists lifecycle state, Completion
+the existing explicit `POST /cooking-sessions/:id/complete` persistence path
+share one deterministic mapper that resolves only the production ingredient
+catalog, exact supported unit aliases, verified portion conversions, and
+committed USDA references. Preview performs no write; the explicit combined
+path calculates before one update persists lifecycle state, supplied Completion
 output, and the server-owned nutrition snapshot together. Neither path invokes
-an Agent or accesses USDA over the network.
+an Agent or accesses USDA over the network. The Phase 6 web flow does not call
+this combined path: its `/completion` Agent boundary stores only
+`completion_snapshot` and leaves Nutrition unchanged for Phase 7.
 
 Product-domain APIs use the same authenticated `currentUserId` boundary as the
 Cooking Engine. Profile v0.1 exposes the existing optional one-to-one

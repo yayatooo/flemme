@@ -11,6 +11,8 @@ import {
 import {
 	type CookingSessionResponse,
 	CookingSessionResponseSchema,
+	type UpdateCookingSessionRequest,
+	UpdateCookingSessionRequestSchema,
 } from "@flemme/contracts/cooking-session";
 import {
 	type QueryClient,
@@ -39,6 +41,7 @@ export interface PreparedAssistantActions {
 export interface CookingAssistantResult {
 	output: ActiveCookingOutput;
 	requiresAbandonConfirmation: boolean;
+	session?: CookingSessionResponse;
 	actionError?: string;
 }
 
@@ -132,7 +135,7 @@ export function buildCookingSessionProgress(
 		: [...session.completedStepIds, resolved.position.step.id];
 
 	return {
-		status: "active",
+		status: resolved.position.isFinalStep ? "completed" : "active",
 		...mutableProgressOf(session),
 		currentStageId: resolved.position.next?.stageId ?? session.currentStageId,
 		currentStepId: resolved.position.next?.stepId ?? session.currentStepId,
@@ -291,6 +294,43 @@ export async function executeCookingProgressCommand(
 	return persistCookingSessionUpdate(queryClient, sessionId, nextSession);
 }
 
+export async function requestCookingSessionRename(
+	queryClient: QueryClient,
+	sessionId: string,
+	input: UpdateCookingSessionRequest,
+) {
+	const request = UpdateCookingSessionRequestSchema.parse(input);
+	const payload: unknown = await requestApi<unknown>(
+		`/cooking-sessions/${encodeURIComponent(sessionId)}`,
+		{
+			method: "PATCH",
+			body: JSON.stringify(request),
+		},
+		() => handleUnauthorized(queryClient),
+	);
+	return CookingSessionResponseSchema.parse(payload);
+}
+
+export async function executeCookingSessionRename(
+	queryClient: QueryClient,
+	sessionId: string,
+	input: UpdateCookingSessionRequest,
+) {
+	const lockKey = cookingSessionMutationLockKey(sessionId);
+	if (!beginCookingSessionMutation(queryClient, lockKey)) return null;
+	try {
+		const updated = await requestCookingSessionRename(
+			queryClient,
+			sessionId,
+			input,
+		);
+		queryClient.setQueryData(cookingSessionQueryKey(sessionId), updated);
+		return updated;
+	} finally {
+		releaseCookingSessionMutation(queryClient, lockKey);
+	}
+}
+
 export async function requestCookingAssistant(
 	queryClient: QueryClient,
 	sessionId: string,
@@ -363,7 +403,11 @@ export async function executeCookingAssistantRequest(
 						"Flemme replied, but another cooking update is still being saved.",
 				};
 			}
-			return { output, requiresAbandonConfirmation: false };
+			return {
+				output,
+				requiresAbandonConfirmation: false,
+				session: updated,
+			};
 		} catch {
 			return {
 				output,
@@ -397,24 +441,34 @@ export function activeCookingAssistantErrorMessage(error: unknown) {
 	return "Flemme couldn't answer right now. Your cooking progress is unchanged.";
 }
 
+export function cookingSessionRenameErrorMessage(error: unknown) {
+	if (error instanceof FlemmeApiError && error.status === 0) {
+		return "Unable to reach Flemme. Your dish name is unchanged.";
+	}
+	return "Flemme couldn't save that dish name. Try again.";
+}
 export function useCookingProgressMutation(sessionId: string) {
 	const queryClient = useQueryClient();
+
 	const mutation = useMutation({
 		mutationKey: ["cooking", "sessions", sessionId, "progress"],
 		mutationFn: (command: CookingProgressCommand) =>
 			executeCookingProgressCommand(queryClient, sessionId, command),
 	});
 
-	async function submit(command: CookingProgressCommand) {
+	async function submitForResult(command: CookingProgressCommand) {
 		try {
-			const updated = await mutation.mutateAsync(command);
-			return updated !== null;
+			return await mutation.mutateAsync(command);
 		} catch {
-			return false;
+			return null;
 		}
 	}
 
-	return { ...mutation, submit };
+	async function submit(command: CookingProgressCommand) {
+		return (await submitForResult(command)) !== null;
+	}
+
+	return { ...mutation, submit, submitForResult };
 }
 
 export function useCookingAssistantMutation(sessionId: string) {
@@ -434,4 +488,24 @@ export function useCookingAssistantMutation(sessionId: string) {
 	}
 
 	return { ...mutation, ask };
+}
+
+export function useRenameCookingSessionMutation(sessionId: string) {
+	const queryClient = useQueryClient();
+	const mutation = useMutation({
+		mutationKey: ["cooking", "sessions", sessionId, "rename"],
+		mutationFn: (input: UpdateCookingSessionRequest) =>
+			executeCookingSessionRename(queryClient, sessionId, input),
+	});
+
+	async function submit(customName: string | null) {
+		try {
+			const updated = await mutation.mutateAsync({ customName });
+			return updated !== null;
+		} catch {
+			return false;
+		}
+	}
+
+	return { ...mutation, submit };
 }

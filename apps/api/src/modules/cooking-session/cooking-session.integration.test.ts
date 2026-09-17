@@ -4,6 +4,7 @@ import type {
 	CookingRecommendationOutput,
 	PreCookingOutput,
 } from "@flemme/agent";
+import { COOKING_SESSION_CUSTOM_NAME_MAX_LENGTH } from "@flemme/contracts/cooking-session";
 import { cookingSessions, createDatabase, users } from "@flemme/db";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -299,6 +300,124 @@ describe("cooking-session API integration", () => {
 		expect(completedRestore.nutritionSnapshot).toEqual(
 			completed.nutritionSnapshot,
 		);
+
+		const completedRenameResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName: "Finished API Test Dish" }),
+			},
+		);
+		const completedRename = CookingSessionResponseSchema.parse(
+			await completedRenameResponse.json(),
+		);
+
+		expect(completedRenameResponse.status).toBe(200);
+		expect(completedRename.customName).toBe("Finished API Test Dish");
+		expect(completedRename.session.status).toBe("completed");
+		expect(completedRename.cookingPlan).toEqual(cookingPlan);
+	});
+
+	test("renames and clears owned session metadata without changing recipe, plan, or progress", async () => {
+		const created = await createSession(ownerUserId);
+		const originalRecipe = created.selectedRecipeSnapshot;
+		const originalPlan = created.cookingPlan;
+		const originalProgress = created.session;
+
+		const renamedResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName: "  Weeknight API Dish  " }),
+			},
+		);
+		const renamed = CookingSessionResponseSchema.parse(
+			await renamedResponse.json(),
+		);
+
+		expect(renamedResponse.status).toBe(200);
+		expect(renamed.customName).toBe("Weeknight API Dish");
+		expect(renamed.selectedRecipeSnapshot).toEqual(originalRecipe);
+		expect(renamed.cookingPlan).toEqual(originalPlan);
+		expect(renamed.session).toEqual(originalProgress);
+
+		const pausedResponse = await app.request(
+			`/cooking-sessions/${created.id}/progress`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({
+					session: {
+						...renamed.session,
+						status: "paused",
+						pauseReason: "user-request",
+					},
+				}),
+			},
+		);
+		const paused = CookingSessionResponseSchema.parse(
+			await pausedResponse.json(),
+		);
+		const pausedRenameResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName: "Paused API Dish" }),
+			},
+		);
+		const pausedRename = CookingSessionResponseSchema.parse(
+			await pausedRenameResponse.json(),
+		);
+
+		expect(pausedRenameResponse.status).toBe(200);
+		expect(pausedRename.customName).toBe("Paused API Dish");
+		expect(pausedRename.session).toEqual(paused.session);
+
+		const clearedResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName: null }),
+			},
+		);
+		const cleared = CookingSessionResponseSchema.parse(
+			await clearedResponse.json(),
+		);
+
+		expect(clearedResponse.status).toBe(200);
+		expect(cleared.customName).toBeNull();
+		expect(cleared.selectedRecipeSnapshot.name).toBe(selectedRecipe.name);
+		expect(cleared.cookingPlan).toEqual(originalPlan);
+		expect(cleared.session).toEqual(paused.session);
+
+		const restoredResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{ headers: authenticatedHeaders(ownerUserId) },
+		);
+		const restored = CookingSessionResponseSchema.parse(
+			await restoredResponse.json(),
+		);
+		expect(restored.customName).toBeNull();
+	});
+
+	test("rejects invalid custom names", async () => {
+		const created = await createSession(ownerUserId);
+
+		for (const customName of [
+			"   ",
+			"x".repeat(COOKING_SESSION_CUSTOM_NAME_MAX_LENGTH + 1),
+		]) {
+			const response = await app.request(`/cooking-sessions/${created.id}`, {
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName }),
+			});
+			expect(response.status).toBe(400);
+		}
 	});
 
 	test("returns not found for a missing session", async () => {
@@ -312,10 +431,38 @@ describe("cooking-session API integration", () => {
 		expect(error.error.code).toBe("COOKING_SESSION_NOT_FOUND");
 	});
 
+	test("returns not found when renaming a missing session", async () => {
+		const response = await app.request(
+			`/cooking-sessions/${crypto.randomUUID()}`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName: "Missing dish" }),
+			},
+		);
+		const error = ErrorResponseSchema.parse(await response.json());
+
+		expect(response.status).toBe(404);
+		expect(error.error.code).toBe("COOKING_SESSION_NOT_FOUND");
+	});
+
 	test("rejects access by another user", async () => {
 		const created = await createSession(ownerUserId);
 		const response = await app.request(`/cooking-sessions/${created.id}`, {
 			headers: authenticatedHeaders(otherUserId),
+		});
+		const error = ErrorResponseSchema.parse(await response.json());
+
+		expect(response.status).toBe(403);
+		expect(error.error.code).toBe("COOKING_SESSION_FORBIDDEN");
+	});
+
+	test("rejects cross-user session rename", async () => {
+		const created = await createSession(ownerUserId);
+		const response = await app.request(`/cooking-sessions/${created.id}`, {
+			method: "PATCH",
+			headers: authenticatedHeaders(otherUserId),
+			body: JSON.stringify({ customName: "Not my dish" }),
 		});
 		const error = ErrorResponseSchema.parse(await response.json());
 
@@ -369,6 +516,21 @@ describe("cooking-session API integration", () => {
 		expect(abandonedResponse.status).toBe(200);
 		expect(abandoned.session.status).toBe("abandoned");
 		expect(abandoned.cookingPlan).toEqual(cookingPlan);
+
+		const abandonedRenameResponse = await app.request(
+			`/cooking-sessions/${created.id}`,
+			{
+				method: "PATCH",
+				headers: authenticatedHeaders(ownerUserId),
+				body: JSON.stringify({ customName: "Abandoned API Dish" }),
+			},
+		);
+		const abandonedRename = CookingSessionResponseSchema.parse(
+			await abandonedRenameResponse.json(),
+		);
+		expect(abandonedRenameResponse.status).toBe(200);
+		expect(abandonedRename.customName).toBe("Abandoned API Dish");
+		expect(abandonedRename.session.status).toBe("abandoned");
 
 		const reactivateResponse = await app.request(
 			`/cooking-sessions/${created.id}/progress`,

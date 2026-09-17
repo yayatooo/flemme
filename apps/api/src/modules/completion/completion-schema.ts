@@ -1,4 +1,4 @@
-import { CompletionOutputSchema } from "@flemme/agent";
+import { CookingSessionResponseSchema } from "@flemme/contracts/cooking-session";
 import { z } from "@hono/zod-openapi";
 
 const MAX_COMPLETION_MESSAGE_LENGTH = 2_000;
@@ -20,6 +20,6 @@ export const CompletionRequestSchema = z
 
 export type CompletionRequest = z.infer<typeof CompletionRequestSchema>;
 
-export const CompletionResponseSchema = CompletionOutputSchema;
+export const CompletionResponseSchema = CookingSessionResponseSchema;
 
 export type CompletionResponse = z.infer<typeof CompletionResponseSchema>;

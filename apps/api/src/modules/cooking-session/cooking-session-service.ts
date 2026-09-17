@@ -18,6 +18,7 @@ import {
 	CookingSessionResponseSchema,
 	type CreateCookingSessionRequest,
 	type UpdateCookingProgressRequest,
+	type UpdateCookingSessionRequest,
 } from "./cooking-session-schema";
 
 type CookingSessionRow = typeof cookingSessions.$inferSelect;
@@ -83,12 +84,9 @@ export function restoreCookingSession(
 			? RecipeNutritionResultSchema.parse(row.nutritionSnapshot)
 			: null;
 
-		if (row.status === "completed" && !completionSnapshot) {
-			throw new Error("Completed session is missing its completion snapshot");
-		}
-
 		return CookingSessionResponseSchema.parse({
 			id: row.id,
+			customName: row.customName,
 			phase: row.phase,
 			session,
 			recommendationSnapshot,
@@ -110,20 +108,9 @@ export function restoreCookingSession(
 	}
 }
 
-export function assertCookingSessionCompletionReady(
-	session: CookingSessionResponse,
+function assertFinalCookingStepCompleted(
+	session: Pick<CookingSessionResponse, "cookingPlan" | "session">,
 ) {
-	if (
-		session.phase !== "active_cooking" ||
-		session.session.status !== "active"
-	) {
-		throw new ApiError(
-			409,
-			"INVALID_SESSION_STATE",
-			"Only an active cooking session can be completed",
-		);
-	}
-
 	const finalStage = session.cookingPlan.cookingStages.at(-1);
 	const finalStep = finalStage?.steps.at(-1);
 
@@ -140,6 +127,22 @@ export function assertCookingSessionCompletionReady(
 			"The final cooking step must be completed first",
 		);
 	}
+}
+
+export function assertCookingSessionCompletionReady(
+	session: CookingSessionResponse,
+) {
+	if (
+		session.phase !== "active_cooking" ||
+		session.session.status !== "active"
+	) {
+		throw new ApiError(
+			409,
+			"INVALID_SESSION_STATE",
+			"Only an active cooking session can be completed",
+		);
+	}
+	assertFinalCookingStepCompleted(session);
 }
 
 export function createCookingSessionService(db: FlemmeDatabase) {
@@ -183,6 +186,37 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 			return restoreCookingSession(session);
 		},
 
+		async update(
+			userId: string,
+			sessionId: string,
+			input: UpdateCookingSessionRequest,
+		): Promise<CookingSessionResponse> {
+			const row = await findOwnedCookingSession(db, userId, sessionId);
+			const [updated] = await db
+				.update(cookingSessions)
+				.set({
+					customName: input.customName,
+					updatedAt: new Date(),
+				})
+				.where(
+					and(
+						eq(cookingSessions.id, row.id),
+						eq(cookingSessions.userId, userId),
+					),
+				)
+				.returning();
+
+			if (!updated) {
+				throw new ApiError(
+					500,
+					"COOKING_SESSION_UPDATE_FAILED",
+					"Cooking session could not be renamed",
+				);
+			}
+
+			return restoreCookingSession(updated);
+		},
+
 		async updateProgress(
 			userId: string,
 			sessionId: string,
@@ -204,23 +238,33 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 			if (
 				input.session.status !== "active" &&
 				input.session.status !== "paused" &&
+				input.session.status !== "completed" &&
 				input.session.status !== "abandoned"
 			) {
 				throw new ApiError(
 					422,
 					"INVALID_PROGRESS_TRANSITION",
-					"Progress updates may only activate, pause, or abandon a cooking session",
+					"Progress updates may only activate, pause, complete, or abandon a cooking session",
 				);
 			}
 
+			if (input.session.status === "completed" && row.status !== "active") {
+				throw new ApiError(
+					409,
+					"INVALID_SESSION_STATE",
+					"Only active cooking can be completed",
+				);
+			}
+
+			let validatedPlan: CookingSessionResponse["cookingPlan"];
 			let validatedProgress: UpdateCookingProgressRequest["session"];
 
 			try {
-				const cookingPlan = PreCookingOutputSchema.parse(
+				validatedPlan = PreCookingOutputSchema.parse(
 					row.preCookingPlanSnapshot,
 				);
 				validatedProgress = ActiveCookingPlanSessionSchema.parse({
-					cookingPlan,
+					cookingPlan: validatedPlan,
 					session: input.session,
 				}).session;
 			} catch {
@@ -231,9 +275,19 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 				);
 			}
 
+			const isCompleting = validatedProgress.status === "completed";
+			if (isCompleting) {
+				assertFinalCookingStepCompleted({
+					cookingPlan: validatedPlan,
+					session: validatedProgress,
+				});
+			}
+
+			const updatedAt = new Date();
 			const [updated] = await db
 				.update(cookingSessions)
 				.set({
+					phase: isCompleting ? "completion" : row.phase,
 					status: validatedProgress.status,
 					pauseReason:
 						validatedProgress.status === "paused"
@@ -243,7 +297,8 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 					currentStepId: validatedProgress.currentStepId,
 					completedStepIds: validatedProgress.completedStepIds,
 					changes: validatedProgress.changes,
-					updatedAt: new Date(),
+					completedAt: isCompleting ? updatedAt : row.completedAt,
+					updatedAt,
 				})
 				.where(
 					and(
@@ -288,6 +343,7 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 			const nutritionSnapshot = calculateCookingSessionNutrition({
 				cookingPlan: restored.cookingPlan,
 				servings: restored.selectedRecipeSnapshot.servings,
+				changes: restored.session.changes,
 			});
 
 			const completedAt = new Date();
