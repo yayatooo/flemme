@@ -12,6 +12,24 @@ import { z } from "zod";
 
 export const CookingSessionIdSchema = z.string().uuid();
 
+export const COOKING_SESSION_CUSTOM_NAME_MAX_LENGTH = 100;
+
+export const CookingSessionCustomNameSchema = z
+	.string()
+	.trim()
+	.min(1)
+	.max(COOKING_SESSION_CUSTOM_NAME_MAX_LENGTH);
+
+export const UpdateCookingSessionRequestSchema = z
+	.object({
+		customName: CookingSessionCustomNameSchema.nullable(),
+	})
+	.strict();
+
+export type UpdateCookingSessionRequest = z.infer<
+	typeof UpdateCookingSessionRequestSchema
+>;
+
 export const CreateCookingSessionRequestSchema =
 	ActiveCookingPlanSessionSchema.safeExtend({
 		recommendationSnapshot: CookingRecommendationOutputSchema,
@@ -34,6 +52,7 @@ export type CreateCookingSessionRequest = z.infer<
 
 export const CookingSessionResponseSchema = z.object({
 	id: CookingSessionIdSchema,
+	customName: CookingSessionCustomNameSchema.nullable().optional(),
 	phase: z.enum([
 		"recommendation",
 		"pre_cooking",

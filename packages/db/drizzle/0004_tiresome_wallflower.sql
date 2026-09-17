@@ -1,0 +1,1 @@
+ALTER TABLE "cooking_sessions" ADD COLUMN "custom_name" text;

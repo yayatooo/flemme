@@ -41,6 +41,13 @@ describe("calculateRecipeNutrition", () => {
 			status: "complete",
 			estimated: true,
 			servings: 1,
+			includedIngredients: [
+				{
+					ingredientKey: "synthetic-primary",
+					name: "Synthetic primary ingredient",
+					grams: 150,
+				},
+			],
 			total: { caloriesKcal: 300, proteinG: 30, carbsG: 15, fatG: 12 },
 			perServing: {
 				caloriesKcal: 300,
@@ -200,6 +207,13 @@ describe("calculateRecipeNutrition", () => {
 			status: "partial",
 			estimated: true,
 			servings: 2,
+			includedIngredients: [
+				{
+					ingredientKey: "synthetic-primary",
+					name: "Primary",
+					grams: 100,
+				},
+			],
 			knownNutrition: {
 				total: { caloriesKcal: 200, proteinG: 20, carbsG: 10, fatG: 8 },
 				perServing: {
@@ -273,6 +287,7 @@ describe("calculateRecipeNutrition", () => {
 			status: "unavailable",
 			estimated: true,
 			servings: 2,
+			includedIngredients: [],
 			issues: [
 				{
 					reason: "ingredient-unresolved",

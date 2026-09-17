@@ -51,6 +51,7 @@ export function calculateRecipeNutrition(
 	>();
 	const total = { ...EMPTY_NUTRITION };
 	let contributingIngredientCount = 0;
+	const includedIngredients: typeof recipe.ingredients = [];
 
 	for (const ingredient of recipe.ingredients) {
 		const reference = referenceByIngredientKey.get(ingredient.ingredientKey);
@@ -73,6 +74,7 @@ export function calculateRecipeNutrition(
 		total.proteinG += reference.nutrition.proteinG * scale;
 		total.carbsG += reference.nutrition.carbsG * scale;
 		total.fatG += reference.nutrition.fatG * scale;
+		includedIngredients.push(ingredient);
 	}
 
 	const perServing = divideNutrition(total, recipe.servings);
@@ -84,6 +86,7 @@ export function calculateRecipeNutrition(
 			status: "unavailable",
 			estimated: true,
 			servings: recipe.servings,
+			includedIngredients,
 			issues,
 		});
 	}
@@ -93,6 +96,7 @@ export function calculateRecipeNutrition(
 			status: "partial",
 			estimated: true,
 			servings: recipe.servings,
+			includedIngredients,
 			knownNutrition: { total, perServing },
 			missingIngredientKeys: missingKeys,
 			issues,
@@ -102,6 +106,7 @@ export function calculateRecipeNutrition(
 	return RecipeNutritionResultSchema.parse({
 		status: "complete",
 		estimated: true,
+		includedIngredients,
 		servings: recipe.servings,
 		total,
 		perServing,

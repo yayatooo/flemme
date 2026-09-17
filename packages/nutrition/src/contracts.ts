@@ -57,7 +57,7 @@ const NutritionReferenceCollectionSchema = z
 		}
 	});
 
-export const NutritionCoverageIssueReasonSchema = z.enum([
+const IngredientNutritionCoverageIssueReasonSchema = z.enum([
 	"ingredient-unresolved",
 	"reference-missing",
 	"quantity-missing",
@@ -65,16 +65,31 @@ export const NutritionCoverageIssueReasonSchema = z.enum([
 	"portion-unavailable",
 ]);
 
+export const NutritionCoverageIssueReasonSchema = z.enum([
+	...IngredientNutritionCoverageIssueReasonSchema.options,
+	"unquantified-change",
+]);
+
 export type NutritionCoverageIssueReason = z.infer<
 	typeof NutritionCoverageIssueReasonSchema
 >;
 
-export const NutritionCoverageIssueSchema = z.object({
-	reason: NutritionCoverageIssueReasonSchema,
+const IngredientNutritionCoverageIssueSchema = z.object({
+	reason: IngredientNutritionCoverageIssueReasonSchema,
 	ingredientName: NonEmptyStringSchema,
 	ingredientKey: NonEmptyStringSchema.optional(),
 	unit: NonEmptyStringSchema.optional(),
 });
+
+const UnquantifiedNutritionChangeIssueSchema = z.object({
+	reason: z.literal("unquantified-change"),
+	changeDescription: NonEmptyStringSchema,
+});
+
+export const NutritionCoverageIssueSchema = z.discriminatedUnion("reason", [
+	IngredientNutritionCoverageIssueSchema,
+	UnquantifiedNutritionChangeIssueSchema,
+]);
 
 export type NutritionCoverageIssue = z.infer<
 	typeof NutritionCoverageIssueSchema
@@ -106,6 +121,8 @@ export type CalculateRecipeNutritionInput = z.input<
 const RecipeNutritionResultBaseSchema = z.object({
 	estimated: z.literal(true),
 	servings: z.number().finite().int().positive(),
+	// Optional only so persisted pre-Phase 7 snapshots remain readable.
+	includedIngredients: z.array(NutritionIngredientAmountSchema).optional(),
 });
 
 export const CompleteRecipeNutritionResultSchema =

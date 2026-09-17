@@ -1,4 +1,10 @@
 export { runActiveCooking } from "./src/intents/active-cooking";
+export {
+	type ActiveCookingScopeDecision,
+	createActiveCookingScopeResponse,
+	enforceActiveCookingScopeActions,
+	resolveActiveCookingScope,
+} from "./src/intents/active-cooking-scope";
 export { runCompletion } from "./src/intents/completion";
 export { runPreCooking } from "./src/intents/pre-cooking";
 export {
@@ -43,6 +49,12 @@ export {
 	type ResumeAction,
 	ResumeActionSchema,
 } from "./src/schemas/active-cooking-output";
+export {
+	type ActiveCookingOutOfPhaseTopic,
+	ActiveCookingOutOfPhaseTopicSchema,
+	type ActiveCookingScope,
+	ActiveCookingScopeSchema,
+} from "./src/schemas/active-cooking-scope";
 export {
 	type CompletionInput,
 	CompletionInputSchema,

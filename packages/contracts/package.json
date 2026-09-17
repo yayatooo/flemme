@@ -8,6 +8,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
+		"test": "bun test cooking-session.test.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {

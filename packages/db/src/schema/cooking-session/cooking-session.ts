@@ -53,6 +53,7 @@ export const cookingSessions = pgTable(
 		userId: uuid("user_id")
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
+		customName: text("custom_name"),
 		phase: cookingSessionPhaseEnum("phase").notNull().default("recommendation"),
 		status: cookingSessionStatusEnum("status").notNull().default("active"),
 		pauseReason: cookingSessionPauseReasonEnum("pause_reason"),

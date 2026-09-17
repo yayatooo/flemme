@@ -10,6 +10,11 @@ import {
 	type ActiveCookingOutput,
 	ActiveCookingOutputSchema,
 } from "../schemas/active-cooking-output";
+import {
+	createActiveCookingScopeResponse,
+	enforceActiveCookingScopeActions,
+	resolveActiveCookingScope,
+} from "./active-cooking-scope";
 
 type CookingModel = ReturnType<typeof createOpenAIModel>;
 
@@ -24,6 +29,17 @@ export async function runActiveCooking({
 	input,
 }: RunActiveCookingOptions): Promise<ActiveCookingOutput> {
 	const validatedInput = ActiveCookingInputSchema.parse(input);
+	const scopeDecision = resolveActiveCookingScope(validatedInput);
+	const scopedResponse = createActiveCookingScopeResponse(
+		scopeDecision,
+		validatedInput,
+	);
+	if (scopedResponse) {
+		return enforceActiveCookingScopeActions(
+			scopeDecision.scope,
+			scopedResponse,
+		);
+	}
 	const activeCookingPrompt = createActiveCookingPrompt(validatedInput);
 
 	const prompt = `
@@ -38,5 +54,5 @@ ${activeCookingPrompt}
 		outputSchema: ActiveCookingOutputSchema,
 	});
 
-	return result.output;
+	return enforceActiveCookingScopeActions(scopeDecision.scope, result.output);
 }

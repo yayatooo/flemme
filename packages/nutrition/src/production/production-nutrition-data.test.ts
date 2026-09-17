@@ -93,6 +93,9 @@ describe("production USDA nutrition data", () => {
 			status: "complete",
 			estimated: true,
 			servings: 2,
+			includedIngredients: [
+				{ ingredientKey: "egg", name: "Telur", grams: 100 },
+			],
 			total: {
 				caloriesKcal: 143,
 				proteinG: 12.6,
