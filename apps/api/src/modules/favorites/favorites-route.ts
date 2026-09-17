@@ -5,6 +5,7 @@ import { ApiErrorResponseSchema } from "../../api-error";
 
 import {
 	CreateFavoriteSchema,
+	FavoriteListQuerySchema,
 	FavoriteParamsSchema,
 	FavoriteResponseSchema,
 	FavoritesResponseSchema,
@@ -52,12 +53,17 @@ export function createFavoritesRoute(db: FlemmeDatabase) {
 			method: "get",
 			path: "/",
 			summary: "List historical favorites",
+			request: { query: FavoriteListQuerySchema },
 			responses: {
 				200: response(FavoritesResponseSchema, "Favorites newest first"),
 				...errors,
 			},
 		}),
-		async (c) => c.json(await service.list(c.get("currentUserId")), 200),
+		async (c) =>
+			c.json(
+				await service.list(c.get("currentUserId"), c.req.valid("query")),
+				200,
+			),
 	);
 	route.openapi(
 		createRoute({

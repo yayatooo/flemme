@@ -5,9 +5,12 @@ import { ApiErrorResponseSchema } from "../../api-error";
 
 import {
 	CompleteCookingSessionRequestSchema,
+	CookingHistoryPageSchema,
+	CookingHistoryQuerySchema,
 	CookingSessionParamsSchema,
 	CookingSessionResponseSchema,
 	CreateCookingSessionRequestSchema,
+	ResumableCookingSessionResponseSchema,
 	UpdateCookingProgressRequestSchema,
 	UpdateCookingSessionRequestSchema,
 } from "./cooking-session-schema";
@@ -54,6 +57,43 @@ const createCookingSessionRouteDefinition = createRoute({
 		400: errorResponse("Invalid request"),
 		401: errorResponse("Authentication is required"),
 		500: errorResponse("Cooking session could not be created"),
+	},
+});
+
+const getResumableCookingSessionRouteDefinition = createRoute({
+	method: "get",
+	path: "/resumable",
+	tags: ["Cooking Sessions"],
+	summary: "Restore the current resumable cooking session",
+	description:
+		"Returns the most recently updated owned active or paused Cooking Session, or null when none is resumable. Does not mutate lifecycle state or invoke AI.",
+	security: [{ CurrentUser: [] }],
+	responses: {
+		200: jsonResponse(
+			ResumableCookingSessionResponseSchema,
+			"Current resumable Cooking Session",
+		),
+		401: errorResponse("Authentication is required"),
+		500: errorResponse("Persisted cooking session is invalid"),
+	},
+});
+
+const getCookingHistoryRouteDefinition = createRoute({
+	method: "get",
+	path: "/history",
+	tags: ["Cooking Sessions"],
+	summary: "List completed Cooking Sessions",
+	description:
+		"Returns a bounded, deterministic projection of the authenticated user's completed Cooking Sessions. Does not regenerate snapshots or mutate application state.",
+	security: [{ CurrentUser: [] }],
+	request: {
+		query: CookingHistoryQuerySchema,
+	},
+	responses: {
+		200: jsonResponse(CookingHistoryPageSchema, "Cooking History page"),
+		400: errorResponse("Invalid pagination parameters"),
+		401: errorResponse("Authentication is required"),
+		500: errorResponse("Persisted Cooking History is invalid"),
 	},
 });
 
@@ -174,6 +214,19 @@ export function createCookingSessionRoute(db: FlemmeDatabase) {
 			context.req.valid("json"),
 		);
 		return context.json(session, 201);
+	});
+
+	route.openapi(getResumableCookingSessionRouteDefinition, async (context) => {
+		const session = await service.getResumable(context.get("currentUserId"));
+		return context.json(session, 200);
+	});
+
+	route.openapi(getCookingHistoryRouteDefinition, async (context) => {
+		const history = await service.getHistory(
+			context.get("currentUserId"),
+			context.req.valid("query"),
+		);
+		return context.json(history, 200);
 	});
 
 	route.openapi(getCookingSessionRouteDefinition, async (context) => {

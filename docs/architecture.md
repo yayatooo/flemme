@@ -47,6 +47,89 @@ then posts only that request to `POST /cooking/recommendations`; persistent
 Profile, Household, Kitchen, Inventory, and preference context remains resolved
 by the API.
 
+Phase 9A makes Home session continuity server-authoritative.
+`GET /cooking-sessions/resumable` returns the most recently updated owned
+Cooking Session whose persisted status is `active` or `paused`, or `null` when
+none exists. The API owns deterministic selection because the current database
+model permits multiple resumable rows; ordering is `updatedAt`, `createdAt`, and
+ID descending. Completed and abandoned sessions are excluded before snapshot
+restoration, and corrupt persisted snapshots remain controlled server errors.
+
+The browser uses one stable resumable-session TanStack Query key, refetches when
+Home mounts, and seeds the existing session-ID cache from the validated shared
+response. Home keeps its prompt and other sections interactive while the
+resumable query independently loads or fails. The existing ActiveSessionCard
+renders only valid active/paused state, resolves stage and step through the
+persisted stable IDs, uses the shared Cooking Session display-name helper, and
+navigates by session ID without a lifecycle mutation. Active Cooking progress
+and rename mutations synchronize resumable cache state; completion and
+abandonment clear the current card and invalidate the server query. The focused
+Cooking route remains the only owner of explicit paused-to-active Resume.
+
+Phase 9B models Cooking History as a read projection of persisted Cooking
+Sessions rather than a second lifecycle or storage system.
+`GET /cooking-sessions/history` selects only the authenticated user's
+`completed` rows, orders by `completedAt`, `createdAt`, and ID descending, and
+uses bounded offset pages with a default size of 10 and maximum size of 20. A
+left join to the canonical Favorite relation supplies read-only saved state.
+The browser-safe projection contains only session identity, display name,
+completion time, persisted Completion summary, compact per-serving Nutrition
+summary, and Favorite presence; it never sends full cooking plans or
+regenerates persisted outputs.
+
+`src/features/history` owns the `/app/history` page, one canonical TanStack
+infinite-query key, card-shaped loading, retryable error, empty, list, card,
+and explicit Load more states. Cards format `completedAt` in the user's locale,
+keep long names and summaries bounded, distinguish complete, partial,
+unavailable, and absent Nutrition, and route by session ID to the existing
+Completion review. Completion, rename, Completion-generation,
+Nutrition-generation, and Favorite-creation paths invalidate the History key,
+so the server projection remains authoritative without requiring an app
+restart. History remains inside the global compact AppShell with
+BottomNavigation visible.
+
+Phase 9C keeps Favorites as the canonical relation over completed Cooking
+Sessions and exposes it as a saved-meal library. `GET /favorites` remains
+owner-filtered, orders by Favorite `createdAt` and ID descending, and now uses
+bounded offset pages with a default size of 10 and maximum size of 20. An
+optional `cookingSessionId` filter supports the Nutrition saved-state lookup
+without downloading every page. The historical projection preserves the
+original recipe fields while adding `customName ?? selectedRecipe.name`,
+source-session `completedAt`, persisted Completion summary, and the same compact
+complete, partial, or unavailable Nutrition summary used by History.
+
+`src/features/favorites` owns the `/app/favorites` infinite query, page states,
+list, cards, and create/delete mutations. Cards render only persisted
+historical data, route by session ID to the existing Completion review, and
+keep removal secondary. A successful delete clears the session-scoped Favorite
+cache, removes the item from loaded Favorite pages, and invalidates both the
+canonical Favorites list and History projection. It never deletes or mutates
+the Cooking Session, Completion, Nutrition, Inventory, or cooking progress.
+Missing-on-delete converges to the canonical not-saved state; other failures
+keep the card stable and retryable.
+
+Phase 9D makes `/app/inventory` the normal post-onboarding editor for the same
+persisted Inventory aggregate used by cooking context. `src/features/inventory`
+owns one canonical TanStack Query cache and the add, edit, and delete mutations.
+The page uses the compact AppShell, single-column item rows, explicit loading,
+empty, and retryable error states, and mobile-safe Dialog forms. Quantity and
+unit remain an optional pair; unknown quantity stays `null`.
+
+Inventory create and update requests accept a user-facing name. The API trims
+and normalizes it, resolves bilingual names and aliases through
+`@flemme/ingredients`, stores the canonical key when known, and otherwise
+persists the normalized display name with a `null` canonical key. Renaming
+always reruns resolution. The existing per-inventory normalized identity
+constraint prevents canonical and conservative free-text duplicates; controlled
+409 responses preserve the current list and form input.
+
+Mutations update the canonical Inventory cache and refetch the owner-filtered
+server aggregate. They do not regenerate Recommendation, Pre-Cooking,
+Completion, or Nutrition and do not change Inventory automatically when cooking
+finishes. Cooking-context construction continues reading the database for every
+new Recommendation, so later requests observe additions, edits, and removals
+without altering any already-created Cooking Session plan.
+
 The Recommendation flow lives under `src/features/recommendation` and uses a
 TanStack Query mutation plus query-cache state to preserve the current request,
 the validated Agent-owned output, and the exact selected recommendation across
@@ -231,10 +314,24 @@ pre-Phase 7 snapshots. Complete, partial, and unavailable variants preserve
 serving basis, known totals, and explicit coverage issues. The review emphasizes
 per-serving calories and primary macros, uses approximate markers for partial
 totals, discloses included and excluded ingredients in one Collapsible, and
-shows no macro zeroes when calculation is unavailable. The visible Save to
-Favorites action is disabled as the Phase 8 boundary. Nutrition generation does
-not mutate Completion output, plan, progress, `customName`, Inventory, or
-Favorites.
+shows no macro zeroes when calculation is unavailable.
+
+Phase 8 extends the focused Nutrition review with the feature-owned Favorite
+action under `src/features/favorites`. Stable list and session-scoped TanStack
+Query keys restore persisted saved state through the existing authenticated
+Favorites list API. The create mutation posts only the completed Cooking
+Session ID, validates the canonical Favorite response through the shared
+`@flemme/contracts/favorite` contract, synchronously shares concurrent attempts,
+and updates the session cache plus any existing list cache.
+
+Successful creation stays on Nutrition and renders a compact saved state.
+`FAVORITE_ALREADY_EXISTS` triggers one server-state reconciliation and becomes
+saved only when the canonical Favorite is found. Real failures preserve the
+completed session and Nutrition review with controlled retry copy. Favorite
+creation does not regenerate Completion or Nutrition and does not mutate the
+recipe snapshot, cooking progress, Inventory, or history. Direct access and
+refresh derive saved state from the server; the focused route continues to hide
+AppHeader and BottomNavigation.
 
 Active-session and recent-history sections accept persisted summary data and
 never synthesize progress or cooked meals. The current Auth identity exposes
@@ -425,16 +522,15 @@ Creation uses an ownership/status-filtered insert and the existing composite
 session/user FK and unique constraint. Removing a favorite preserves history.
 No AI, current cooking context, copied snapshot or new history table is involved.
 Inventory API writes the existing inventory parent and item rows. Regular
-Inventory Management creation remains canonical-key based and validates
-identity through `@flemme/ingredients`. Initial onboarding uses the same domain
-through an atomic full replacement by names: known bilingual names and aliases
-resolve to canonical keys, while unresolved names remain valid user-owned
-inventory entries. Each row stores a normalized identity key for duplicate
-prevention, an optional canonical ingredient key, and the submitted display
-name. Existing quantity, ownership, update, and deletion rules remain
-unchanged. Cooking context projects canonical keys when available and stored
-names otherwise; request-level inventory overrides remain authoritative without
-silently mutating persistence.
+Inventory Management and initial onboarding use the same domain and
+deterministic `@flemme/ingredients` resolver. Known bilingual names and aliases
+store canonical keys; unresolved names remain valid user-owned entries. Each
+row stores a normalized identity key for duplicate prevention, an optional
+canonical ingredient key, and the submitted normalized display name. Create
+and rename both resolve names server-side. Existing quantity, ownership, and
+deletion rules remain unchanged. Cooking context projects canonical keys when
+available and stored names otherwise; request-level inventory overrides remain
+authoritative without silently mutating persistence.
 
 Kitchen API uses the existing user-owned kitchen parent and equipment child
 rows. Equipment identity is a canonical key from the controlled v0.1 catalog in

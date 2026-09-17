@@ -3,10 +3,18 @@ import {
 	CompletionOutputSchema,
 } from "@flemme/agent";
 import {
+	COOKING_HISTORY_MAX_PAGE_SIZE,
+	COOKING_HISTORY_PAGE_SIZE,
+	type CookingHistoryPage,
+	CookingHistoryPageSchema,
+} from "@flemme/contracts/cooking-history";
+import {
 	type CookingSessionResponse,
 	CookingSessionResponseSchema,
 	type CreateCookingSessionRequest,
 	CreateCookingSessionRequestSchema,
+	type ResumableCookingSessionResponse,
+	ResumableCookingSessionResponseSchema,
 	CookingSessionIdSchema as SharedCookingSessionIdSchema,
 	type UpdateCookingSessionRequest,
 	UpdateCookingSessionRequestSchema,
@@ -27,14 +35,30 @@ export const CookingSessionParamsSchema = z.object({
 		}),
 });
 
+export const CookingHistoryQuerySchema = z.object({
+	limit: z.coerce
+		.number()
+		.int()
+		.min(1)
+		.max(COOKING_HISTORY_MAX_PAGE_SIZE)
+		.default(COOKING_HISTORY_PAGE_SIZE),
+	offset: z.coerce.number().int().nonnegative().default(0),
+});
+
+export type CookingHistoryQuery = z.infer<typeof CookingHistoryQuerySchema>;
+
 export type {
+	CookingHistoryPage,
 	CookingSessionResponse,
 	CreateCookingSessionRequest,
+	ResumableCookingSessionResponse,
 	UpdateCookingSessionRequest,
 };
 export {
+	CookingHistoryPageSchema,
 	CookingSessionResponseSchema,
 	CreateCookingSessionRequestSchema,
+	ResumableCookingSessionResponseSchema,
 	UpdateCookingSessionRequestSchema,
 };
 export const UpdateCookingProgressRequestSchema = z.object({

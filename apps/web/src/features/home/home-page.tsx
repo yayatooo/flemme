@@ -7,7 +7,7 @@ import {
 	useRecommendationFlow,
 	useRecommendationMutation,
 } from "@/features/recommendation";
-import { ActiveSessionCard } from "./active-session-card";
+import { HomeActiveSession } from "./active-session-card";
 import { CookingPrompt } from "./cooking-prompt";
 import { HomeGreeting } from "./home-greeting";
 import { KitchenShortcut } from "./kitchen-shortcut";
@@ -40,7 +40,7 @@ export function HomePage() {
 					isSubmitting={recommendation.isPending}
 				/>
 				<QuickStart selectedRequest={request} onSelect={setRequest} />
-				<ActiveSessionCard session={null} />
+				<HomeActiveSession />
 				<KitchenShortcut />
 				<RecentCooking items={[]} />
 			</div>

@@ -74,3 +74,13 @@ export const CookingSessionResponseSchema = z.object({
 export type CookingSessionResponse = z.infer<
 	typeof CookingSessionResponseSchema
 >;
+
+export const ResumableCookingSessionResponseSchema = z
+	.object({
+		session: CookingSessionResponseSchema.nullable(),
+	})
+	.strict();
+
+export type ResumableCookingSessionResponse = z.infer<
+	typeof ResumableCookingSessionResponseSchema
+>;

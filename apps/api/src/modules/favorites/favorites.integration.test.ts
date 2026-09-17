@@ -1,5 +1,7 @@
 import { afterAll, expect, test } from "bun:test";
+import { CookingHistoryPageSchema } from "@flemme/contracts/cooking-history";
 import { cookingSessions, createDatabase, favorites, users } from "@flemme/db";
+import type { RecipeNutritionResult } from "@flemme/nutrition";
 import { eq, inArray, sql } from "drizzle-orm";
 import { createApp } from "../../app";
 import { createSessionAuth } from "../../test-utils/session-auth";
@@ -19,15 +21,45 @@ const {
 const app = createApp({ authFoundation, db });
 const sessionService = createCookingSessionService(db);
 const ids: string[] = [];
+
+const completeNutrition: RecipeNutritionResult = {
+	status: "complete",
+	estimated: true,
+	servings: 1,
+	includedIngredients: [],
+	total: { caloriesKcal: 420, proteinG: 18, carbsG: 40, fatG: 14 },
+	perServing: { caloriesKcal: 420, proteinG: 18, carbsG: 40, fatG: 14 },
+};
+const partialNutrition: RecipeNutritionResult = {
+	status: "partial",
+	estimated: true,
+	servings: 1,
+	includedIngredients: [],
+	knownNutrition: {
+		total: { caloriesKcal: 300, proteinG: 12, carbsG: 30, fatG: 10 },
+		perServing: { caloriesKcal: 300, proteinG: 12, carbsG: 30, fatG: 10 },
+	},
+	missingIngredientKeys: ["mystery"],
+};
+const unavailableNutrition: RecipeNutritionResult = {
+	status: "unavailable",
+	estimated: true,
+	servings: 1,
+	includedIngredients: [],
+	issues: [{ reason: "ingredient-unresolved", ingredientName: "Mystery" }],
+};
+
 async function user() {
 	const userId = await createAuthenticatedUser();
 	ids.push(userId);
 	return userId;
 }
+
 afterAll(async () => {
 	if (ids.length) await db.delete(users).where(inArray(users.id, ids));
 	await client.end();
 });
+
 function request(
 	uid: string,
 	method = "GET",
@@ -40,6 +72,7 @@ function request(
 		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 	});
 }
+
 async function session(uid: string, complete = true) {
 	const recipe = {
 		name: "Historical dish",
@@ -86,11 +119,15 @@ async function session(uid: string, complete = true) {
 	return sessionService.complete(uid, created.id, {
 		completionSnapshot: {
 			reply: "Done",
-			summary: { title: "Historical dish", description: "Done" },
+			summary: {
+				title: "Historical dish",
+				description: "Warm and ready to serve.",
+			},
 			notes: [],
 		},
 	});
 }
+
 async function favorite(uid: string, cookingSessionId: string) {
 	const response = await request(uid, "POST", "/favorites", {
 		cookingSessionId,
@@ -98,42 +135,137 @@ async function favorite(uid: string, cookingSessionId: string) {
 	expect(response.status).toBe(201);
 	return FavoriteResponseSchema.parse(await response.json());
 }
-test("empty, create, projection, duplicate, delete and preserved completed history", async () => {
+
+async function list(uid: string, query = "") {
+	const response = await request(uid, "GET", `/favorites${query}`);
+	return {
+		response,
+		payload:
+			response.status === 200
+				? FavoritesResponseSchema.parse(await response.json())
+				: null,
+	};
+}
+
+test("empty, create, rich projection, delete, and preserved completed History", async () => {
 	const uid = await user();
-	expect(await (await request(uid)).json()).toEqual({ items: [] });
+	expect((await list(uid)).payload).toEqual({ items: [], nextOffset: null });
 	const cooked = await session(uid);
+	await db
+		.update(cookingSessions)
+		.set({
+			customName: "My saved dinner",
+			nutritionSnapshot: completeNutrition,
+		})
+		.where(eq(cookingSessions.id, cooked.id));
+
 	const item = await favorite(uid, cooked.id);
-	expect(item.cookingSessionId).toBe(cooked.id);
-	expect(item.recipe).toEqual({
-		name: "Historical dish",
-		description: "Historical description",
-		servings: 1,
-		estimatedDuration: { minMinutes: 1, maxMinutes: 2 },
+	expect(item).toMatchObject({
+		cookingSessionId: cooked.id,
+		displayName: "My saved dinner",
+		completedAt: cooked.completedAt,
+		completionSummary: {
+			title: "Historical dish",
+			description: "Warm and ready to serve.",
+		},
+		nutrition: {
+			status: "complete",
+			estimated: true,
+			caloriesKcal: 420,
+			proteinG: 18,
+		},
+		recipe: {
+			name: "Historical dish",
+			description: "Historical description",
+			servings: 1,
+			estimatedDuration: { minMinutes: 1, maxMinutes: 2 },
+		},
 	});
-	expect(
-		FavoritesResponseSchema.parse(await (await request(uid)).json()).items,
-	).toEqual([item]);
+	expect((await list(uid)).payload?.items).toEqual([item]);
 	expect(
 		(await request(uid, "POST", "/favorites", { cookingSessionId: cooked.id }))
 			.status,
 	).toBe(409);
-	expect(
-		await db.select().from(favorites).where(eq(favorites.userId, uid)),
-	).toHaveLength(1);
+
+	const historyBefore = CookingHistoryPageSchema.parse(
+		await (
+			await app.request("/cooking-sessions/history", {
+				headers: headers(uid),
+			})
+		).json(),
+	);
+	expect(historyBefore.items[0]).toMatchObject({
+		sessionId: cooked.id,
+		isFavorite: true,
+	});
+
 	expect((await request(uid, "DELETE", `/favorites/${item.id}`)).status).toBe(
 		204,
 	);
 	const restored = await sessionService.get(uid, cooked.id);
-	expect(restored).toEqual(cooked);
-	expect(
-		(
-			await app.request(`/cooking-sessions/${cooked.id}`, {
+	expect(restored.session.status).toBe("completed");
+	expect(restored.completionSnapshot).toEqual(cooked.completionSnapshot);
+	expect(restored.nutritionSnapshot).toEqual(completeNutrition);
+	expect((await list(uid)).payload).toEqual({ items: [], nextOffset: null });
+	const historyAfter = CookingHistoryPageSchema.parse(
+		await (
+			await app.request("/cooking-sessions/history", {
 				headers: headers(uid),
 			})
-		).status,
-	).toBe(200);
-	expect(await (await request(uid)).json()).toEqual({ items: [] });
+		).json(),
+	);
+	expect(historyAfter.items[0]).toMatchObject({
+		sessionId: cooked.id,
+		isFavorite: false,
+	});
 });
+
+test("Favorite projection preserves original recipe while following display name and persisted Nutrition", async () => {
+	const uid = await user();
+	const complete = await session(uid);
+	const partial = await session(uid);
+	const unavailable = await session(uid);
+	await db
+		.update(cookingSessions)
+		.set({
+			customName: "My renamed meal",
+			nutritionSnapshot: completeNutrition,
+		})
+		.where(eq(cookingSessions.id, complete.id));
+	await db
+		.update(cookingSessions)
+		.set({ nutritionSnapshot: partialNutrition })
+		.where(eq(cookingSessions.id, partial.id));
+	await db
+		.update(cookingSessions)
+		.set({ nutritionSnapshot: unavailableNutrition })
+		.where(eq(cookingSessions.id, unavailable.id));
+	await favorite(uid, complete.id);
+	await favorite(uid, partial.id);
+	await favorite(uid, unavailable.id);
+
+	const items = (await list(uid)).payload?.items ?? [];
+	const bySession = new Map(items.map((item) => [item.cookingSessionId, item]));
+	expect(bySession.get(complete.id)).toMatchObject({
+		displayName: "My renamed meal",
+		recipe: { name: "Historical dish" },
+		nutrition: {
+			status: "complete",
+			caloriesKcal: 420,
+			proteinG: 18,
+		},
+	});
+	expect(bySession.get(partial.id)?.nutrition).toEqual({
+		status: "partial",
+		estimated: true,
+		caloriesKcal: 300,
+		proteinG: 12,
+	});
+	expect(bySession.get(unavailable.id)?.nutrition).toEqual({
+		status: "unavailable",
+	});
+});
+
 test("active, paused, abandoned and corrupt completed sessions are ineligible", async () => {
 	const uid = await user();
 	for (const status of ["active", "paused", "abandoned"] as const) {
@@ -160,9 +292,10 @@ test("active, paused, abandoned and corrupt completed sessions are ineligible", 
 		await db.select().from(favorites).where(eq(favorites.userId, uid)),
 	).toHaveLength(0);
 });
+
 test("ownership, missing resources, session auth and strict payloads", async () => {
-	const uid = await user(),
-		other = await user();
+	const uid = await user();
+	const other = await user();
 	const cooked = await session(uid);
 	expect(
 		(
@@ -172,7 +305,7 @@ test("ownership, missing resources, session auth and strict payloads", async () 
 		).status,
 	).toBe(403);
 	const item = await favorite(uid, cooked.id);
-	expect(await (await request(other)).json()).toEqual({ items: [] });
+	expect((await list(other)).payload).toEqual({ items: [], nextOffset: null });
 	expect((await request(other, "DELETE", `/favorites/${item.id}`)).status).toBe(
 		403,
 	);
@@ -195,38 +328,57 @@ test("ownership, missing resources, session auth and strict payloads", async () 
 		{ cookingSessionId: "bad" },
 		{ cookingSessionId: cooked.id, userId: other },
 		{ cookingSessionId: cooked.id, recipe: {} },
-	])
+	]) {
 		expect((await request(uid, "POST", "/favorites", body)).status).toBe(400);
+	}
 });
-test("deterministic newest-first ordering, tie break and session cascade", async () => {
+
+test("deterministic saved-at ordering, filtering, and bounded pagination", async () => {
 	const uid = await user();
-	const first = await session(uid),
-		second = await session(uid);
-	const a = await favorite(uid, first.id),
-		b = await favorite(uid, second.id);
+	const first = await session(uid);
+	const second = await session(uid);
+	const third = await session(uid);
+	const a = await favorite(uid, first.id);
+	const b = await favorite(uid, second.id);
+	const c = await favorite(uid, third.id);
 	await db
 		.update(favorites)
 		.set({ createdAt: new Date("2020-01-01") })
-		.where(eq(favorites.id, a.id));
-	expect(
-		FavoritesResponseSchema.parse(await (await request(uid)).json()).items.map(
-			(x) => x.id,
-		),
-	).toEqual([b.id, a.id]);
+		.where(inArray(favorites.id, [a.id, b.id]));
 	await db
 		.update(favorites)
-		.set({ createdAt: new Date("2020-01-01") })
-		.where(eq(favorites.id, b.id));
-	expect(
-		FavoritesResponseSchema.parse(await (await request(uid)).json()).items.map(
-			(x) => x.id,
-		),
-	).toEqual([a.id, b.id].sort().reverse());
+		.set({ createdAt: new Date("2021-01-01") })
+		.where(eq(favorites.id, c.id));
+	const tiedIds = [a.id, b.id].sort().reverse();
+
+	const firstPage = await list(uid, "?limit=2&offset=0");
+	const secondPage = await list(uid, "?limit=2&offset=2");
+	expect(firstPage.payload?.items.map((item) => item.id)).toEqual([
+		c.id,
+		tiedIds[0],
+	]);
+	expect(firstPage.payload?.nextOffset).toBe(2);
+	expect(secondPage.payload?.items.map((item) => item.id)).toEqual([
+		tiedIds[1],
+	]);
+	expect(secondPage.payload?.nextOffset).toBeNull();
+
+	const filtered = await list(
+		uid,
+		`?limit=1&offset=0&cookingSessionId=${second.id}`,
+	);
+	expect(filtered.payload?.items.map((item) => item.cookingSessionId)).toEqual([
+		second.id,
+	]);
+	expect(filtered.payload?.nextOffset).toBeNull();
+	expect((await list(uid, "?limit=21")).response.status).toBe(400);
+
 	await db.delete(cookingSessions).where(eq(cookingSessions.id, first.id));
 	expect(
 		await db.select().from(favorites).where(eq(favorites.id, a.id)),
 	).toHaveLength(0);
 });
+
 test("OpenAPI includes authenticated Favorites operations", async () => {
 	const doc = (await (await app.request("/openapi.json")).json()) as {
 		paths: Record<string, Record<string, { security: unknown }>>;
@@ -235,6 +387,7 @@ test("OpenAPI includes authenticated Favorites operations", async () => {
 		["/favorites", "get"],
 		["/favorites", "post"],
 		["/favorites/{id}", "delete"],
-	] as const)
+	] as const) {
 		expect(doc.paths[path]?.[method]?.security).toEqual([{ CurrentUser: [] }]);
+	}
 });

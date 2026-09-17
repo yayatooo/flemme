@@ -159,6 +159,8 @@ const protectedRoutes = [
 	["POST", "/cooking/recommendations"],
 	["POST", "/cooking/pre-cooking"],
 	["POST", "/cooking-sessions"],
+	["GET", "/cooking-sessions/resumable"],
+	["GET", "/cooking-sessions/history"],
 	["GET", `/cooking-sessions/${resourceId}`],
 	["PATCH", `/cooking-sessions/${resourceId}/progress`],
 	["POST", `/cooking-sessions/${resourceId}/complete`],
@@ -291,7 +293,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		"/inventory/items",
 		"POST",
 		{
-			ingredientKey: "egg",
+			name: "Egg",
 			quantity: 2,
 			unit: "pcs",
 			isApproximate: false,
@@ -307,6 +309,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 				`/inventory/items/${inventoryItem.id}`,
 				"PUT",
 				{
+					name: "Egg",
 					quantity: null,
 					unit: null,
 					isApproximate: false,

@@ -11,6 +11,7 @@ import {
 import { FlemmeApiError, requestApi } from "@/api/api-client";
 import { handleUnauthorized } from "@/auth/auth-actions";
 import { cookingSessionQueryKey } from "@/features/cooking-session/cooking-session-query";
+import { invalidateCookingHistory } from "@/features/history/cooking-history-query";
 
 export function nutritionQueryKey(sessionId: string) {
 	return ["cooking", "sessions", sessionId, "nutrition"] as const;
@@ -30,6 +31,7 @@ export async function requestNutrition(
 		throw new Error("Nutrition response is missing its canonical snapshot");
 	}
 	queryClient.setQueryData(cookingSessionQueryKey(sessionId), session);
+	void invalidateCookingHistory(queryClient);
 	return session.nutritionSnapshot;
 }
 

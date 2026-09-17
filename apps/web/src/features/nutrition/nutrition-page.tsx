@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Heart } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -7,6 +7,7 @@ import {
 	getCookingSessionDisplayName,
 	useCookingSession,
 } from "@/features/cooking-session/cooking-session-query";
+import { FavoriteAction } from "@/features/favorites";
 import { NutritionCoverage } from "./nutrition-coverage";
 import { NutritionError } from "./nutrition-error";
 import { NutritionLoading } from "./nutrition-loading";
@@ -160,47 +161,19 @@ export function NutritionPage({ sessionId }: NutritionPageProps) {
 				plannedIngredients={session.cookingPlan.ingredients}
 			/>
 
-			<section
-				className="space-y-3 border-t-2 pt-6"
-				aria-labelledby="favorite-boundary-title"
+			<FavoriteAction sessionId={sessionId} />
+			<Button
+				variant="outline"
+				className="w-full"
+				render={
+					<Link
+						to="/app/cooking/$sessionId/completion"
+						params={{ sessionId }}
+					/>
+				}
 			>
-				<div className="flex items-start gap-3">
-					<Heart className="mt-0.5 size-6 shrink-0" aria-hidden="true" />
-					<div>
-						<h2 id="favorite-boundary-title" className="font-heading text-xl">
-							Ready for Favorite
-						</h2>
-						<p
-							id="favorite-boundary-description"
-							className="text-sm leading-relaxed text-muted-foreground"
-						>
-							Saving this completed meal is the next cooking phase.
-						</p>
-					</div>
-				</div>
-				<Button
-					type="button"
-					size="lg"
-					className="w-full"
-					disabled
-					aria-describedby="favorite-boundary-description"
-				>
-					Save to favorites
-					<ArrowRight aria-hidden="true" />
-				</Button>
-				<Button
-					variant="outline"
-					className="w-full"
-					render={
-						<Link
-							to="/app/cooking/$sessionId/completion"
-							params={{ sessionId }}
-						/>
-					}
-				>
-					Back to Completion
-				</Button>
-			</section>
+				Back to Completion
+			</Button>
 		</main>
 	);
 }

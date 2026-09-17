@@ -11,6 +11,7 @@ import {
 import { FlemmeApiError, requestApi } from "@/api/api-client";
 import { handleUnauthorized } from "@/auth/auth-actions";
 import { cookingSessionQueryKey } from "@/features/cooking-session/cooking-session-query";
+import { invalidateCookingHistory } from "@/features/history/cooking-history-query";
 
 export function completionQueryKey(sessionId: string) {
 	return ["cooking", "sessions", sessionId, "completion"] as const;
@@ -33,6 +34,7 @@ export async function requestCompletion(
 		throw new Error("Completion response is missing canonical output");
 	}
 	queryClient.setQueryData(cookingSessionQueryKey(sessionId), session);
+	void invalidateCookingHistory(queryClient);
 	return session.completionSnapshot;
 }
 

@@ -1,23 +1,20 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-
-export interface ActiveSessionSummary {
-	id: string;
-	recipeName: string;
-	progressLabel: string;
-}
+import { Skeleton } from "@/components/ui/skeleton";
+import { useResumableCookingSession } from "@/features/cooking-session/resumable-cooking-session-query";
+import {
+	type ActiveSessionSummary,
+	createActiveSessionSummary,
+} from "./active-session-summary";
 
 interface ActiveSessionCardProps {
 	session: ActiveSessionSummary | null;
-	onContinue?: (sessionId: string) => void;
 }
 
-export function ActiveSessionCard({
-	session,
-	onContinue,
-}: ActiveSessionCardProps) {
+export function ActiveSessionCard({ session }: ActiveSessionCardProps) {
 	if (!session) return null;
 
 	return (
@@ -26,24 +23,74 @@ export function ActiveSessionCard({
 				Continue Cooking
 			</h2>
 			<Card className="bg-mustard shadow-none">
-				<CardHeader>
-					<Badge variant="outline">In progress</Badge>
-					<h3 className="font-heading text-2xl leading-tight">
-						{session.recipeName}
+				<CardHeader className="min-w-0">
+					<Badge
+						variant={session.status === "paused" ? "secondary" : "outline"}
+					>
+						{session.status === "paused" ? "Paused" : "In progress"}
+					</Badge>
+					<h3 className="line-clamp-2 break-words font-heading text-2xl leading-tight">
+						{session.displayName}
 					</h3>
-					<p className="text-sm font-bold text-muted-foreground">
-						{session.progressLabel}
-					</p>
 				</CardHeader>
-				{onContinue ? (
-					<CardContent className="flex justify-end">
-						<Button type="button" onClick={() => onContinue(session.id)}>
-							Continue
-							<ArrowRight aria-hidden="true" />
-						</Button>
-					</CardContent>
-				) : null}
+				<CardContent className="space-y-4">
+					<div className="space-y-1">
+						<p className="text-sm font-extrabold">{session.stageLabel}</p>
+						<p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+							{session.stepLabel}
+						</p>
+					</div>
+					<Button
+						className="w-full sm:w-auto"
+						render={
+							<Link
+								to="/app/cooking/$sessionId"
+								params={{ sessionId: session.id }}
+							/>
+						}
+					>
+						Continue cooking
+						<ArrowRight aria-hidden="true" />
+					</Button>
+				</CardContent>
 			</Card>
 		</section>
+	);
+}
+
+export function ActiveSessionCardLoading() {
+	return (
+		<section className="space-y-3" aria-label="Checking saved cooking session">
+			<Skeleton className="h-8 w-48 rounded-xl" />
+			<Card className="space-y-4 bg-card/60 p-5 shadow-none">
+				<Skeleton className="h-7 w-24 rounded-full" />
+				<Skeleton className="h-8 w-4/5 rounded-xl" />
+				<Skeleton className="h-5 w-3/5 rounded-lg" />
+				<Skeleton className="h-12 w-full rounded-full sm:w-44" />
+			</Card>
+		</section>
+	);
+}
+
+export function ActiveSessionError() {
+	return (
+		<p className="text-sm text-muted-foreground" role="status">
+			Flemme couldn't check your saved cooking session. You can still start
+			something new.
+		</p>
+	);
+}
+
+export function HomeActiveSession() {
+	const resumableQuery = useResumableCookingSession();
+	if (resumableQuery.isPending) return <ActiveSessionCardLoading />;
+	if (resumableQuery.isError) return <ActiveSessionError />;
+	if (!resumableQuery.data.session) return null;
+
+	const summary = createActiveSessionSummary(resumableQuery.data.session);
+	return summary ? (
+		<ActiveSessionCard session={summary} />
+	) : (
+		<ActiveSessionError />
 	);
 }

@@ -3,7 +3,11 @@
 	"module": "index.ts",
 	"exports": {
 		".": "./index.ts",
-		"./cooking-session": "./cooking-session.ts"
+		"./cooking-history": "./cooking-history.ts",
+		"./cooking-session": "./cooking-session.ts",
+		"./favorite": "./favorite.ts",
+		"./inventory": "./inventory.ts",
+		"./meal-projection": "./meal-projection.ts"
 	},
 	"type": "module",
 	"private": true,

@@ -4,16 +4,266 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Phase 7: Nutrition & Nutrition Review v0.1
+Flemme Web — Phase 9D: Inventory Management v0.1
 
 ## Current Goal
 
-Phase 7 now derives one deterministic, historical Nutrition snapshot from the
-persisted completed Cooking Session and presents complete, partial, or
-unavailable coverage honestly. The mobile-first review is refresh-safe and ends
-at the non-mutating Favorite boundary.
+Phase 9D now exposes the persisted Inventory aggregate as the normal
+post-onboarding management surface. Users can add, edit, resolve, and remove
+ingredients while future Recommendations read the latest server context and
+existing Cooking Session plans remain immutable.
 
 ## Completed
+
+### Flemme Web — Phase 9D: Inventory Management v0.1
+
+- Reused the existing `inventories` and `inventory_items` persistence,
+  onboarding replacement, ownership boundary, and cooking-context loader. No
+  second Inventory store, table, or migration was introduced.
+- Added a shared browser-safe Inventory contract for user-facing names, optional
+  quantity/unit pairs, condition, canonical identity, and list responses.
+  Quantity remains positive when known and stays `null` rather than becoming
+  zero when unknown.
+- Changed regular create and update inputs from internal canonical keys to
+  user-facing names. The API trims display text, resolves names and bilingual
+  aliases through `@flemme/ingredients`, preserves unresolved items with a
+  `null` key, and reruns deterministic resolution after every rename.
+- Preserved the normalized per-inventory identity constraint. Canonical aliases
+  and conservatively normalized unresolved duplicates return a controlled 409;
+  cross-user update/delete remains 403 and missing rows remain 404.
+- Replaced `/app/inventory` with a thin route and dedicated feature page using
+  the canonical Inventory query, compact list rows, mobile Dialog forms,
+  card-shaped loading, shared empty/error states, and active global navigation.
+- Added name-only and optional quantity/unit creation, edit with re-resolution,
+  explicit unresolved status, secondary edit/remove actions, duplicate request
+  suppression, stable pending rows, controlled mutation errors, and retries
+  that preserve form input and cached items.
+- Inventory mutations synchronize the canonical cache and refetch the server
+  aggregate. The Home shortcut continues to open `/app/inventory`; no separate
+  Home count query was added because the count is optional and would add an
+  otherwise unnecessary request.
+- Integration coverage proves that the next Recommendation observes additions
+  and removals directly from persisted cooking context. Separate coverage proves
+  Inventory edit/delete cannot rewrite an already-created Cooking Session plan.
+  No automatic stock deduction or generation side effect was added.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and
+  1920px with no horizontal overflow, a 524px compact desktop canvas, contained
+  long names, readable quantity/unit rows, clear unresolved status, 16px mobile
+  form inputs, visible BottomNavigation, and active Inventory state.
+- The real page restored onboarding's saved Egg through one Inventory GET. A
+  failed add preserved name, quantity, and unit; one real retry created Rice.
+  A separate unresolved add issued one POST, rename/re-resolution issued one
+  PUT, removal issued one DELETE, and each successful mutation performed only
+  the expected Inventory refetch. Refresh restored canonical state with one GET,
+  and the Home shortcut still reached the page. No Recommendation, Pre-Cooking,
+  Cooking Session, progress, Completion, Nutrition, Favorite, History, or Agent
+  request occurred during Inventory editing.
+- Validation: 19 Ingredient tests / 28 expectations, 167 web tests / 570
+  expectations, and 160 API tests / 1,400 expectations pass. Focused Phase 9D
+  coverage passes 14 web tests / 58 expectations and 22 API tests / 120
+  expectations. Shared-contract and web typechecks, web production build, API
+  build, scoped Biome, and Oxlint pass. Oxlint reports only 21 established Fast
+  Refresh warnings. Standalone API typecheck remains blocked separately by the
+  unchanged malformed OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Phase 9C: Favorites UI v0.1
+
+- Extended the canonical authenticated Favorites list instead of adding a new
+  store or table. The owner-filtered query orders by Favorite `createdAt` and ID
+  descending, defaults to 10 items, caps pages at 20, fetches one lookahead row,
+  and returns `nextOffset`.
+- Added an optional `cookingSessionId` list filter so Nutrition restores one
+  saved-state relation without downloading every Favorites page.
+- Enriched the historical Favorite projection with
+  `customName ?? selectedRecipe.name`, source-session `completedAt`, persisted
+  Completion summary, and compact complete, partial, or unavailable Nutrition.
+  The original recipe name and snapshot fields remain unchanged.
+- Replaced the `/app/favorites` placeholder with a thin route and dedicated
+  feature page, infinite query, single-column cards, card-shaped loading,
+  controlled retry, empty state, and explicit Load more action.
+- Cards use shadcn Card, local-locale completion dates, bounded long titles and
+  summaries, explicit unavailable Nutrition, a filled saved indicator, the
+  existing Completion route, and a secondary overflow removal action.
+- Added one canonical delete mutation with synchronous per-Favorite in-flight
+  request sharing. Pending removal keeps the card stable and disables
+  duplicates; real failures keep the card with controlled retry copy; a 404
+  converges to already removed.
+- Successful removal clears the session-scoped Favorite cache, removes the card
+  from loaded pages, refetches the bounded list, and invalidates History.
+  Cooking Session, Completion, Nutrition, Inventory, and progress state remain
+  untouched. Nutrition returns to Save to favorites and History retains the
+  completed meal with `isFavorite: false`.
+- API coverage proves ownership, completed-session eligibility, deterministic
+  ordering and pagination, rich historical projection, all Nutrition variants,
+  optional session filtering, delete authorization, missing behavior, and
+  preservation of Cooking Session and History. Web coverage proves canonical
+  requests and cache synchronization, display-name variants, page states,
+  Nutrition variants, canonical links, navigation state, and removal
+  pending/success/error behavior.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and
+  1920px with no horizontal overflow, contained long titles, a 524px compact
+  desktop card canvas, visible BottomNavigation, and active Favorites state.
+  An unavailable Nutrition card rendered intentional explicit copy.
+- Initial refresh issued one 10-item Favorites GET after auth/onboarding. Load
+  more issued one offset-10 GET and appended the unique eleventh item. View meal
+  issued only the canonical Cooking Session GET. Removal issued exactly one
+  DELETE, removed the card, survived refresh, preserved History, and restored
+  Nutrition's Save action. Forced list failure hid backend detail and a real
+  retry restored the list.
+- Validation: 159 web tests / 531 expectations and 157 API tests / 1,384
+  expectations pass. Focused Phase 9C coverage passes 17 web tests / 69
+  expectations and 7 API tests / 58 expectations. Shared-contract and web
+  typechecks, web production build, API build, scoped Biome, and Oxlint pass.
+  Oxlint reports only 22 established Fast Refresh warnings. Standalone API
+  typecheck remains blocked separately by the unchanged malformed OpenAI
+  declaration parser issue in `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Phase 9B: Cooking History v0.1
+
+- Added authenticated `GET /cooking-sessions/history` as a read projection over
+  persisted Cooking Sessions. No History table, duplicate snapshot, lifecycle
+  record, or migration was introduced.
+- Enforced ownership and `status = completed` in the database query. Active,
+  paused, abandoned, and cross-user sessions are excluded server-side.
+- Added deterministic ordering by `completedAt`, `createdAt`, and session ID
+  descending. Offset pages default to 10 items, are capped at 20, fetch one
+  lookahead row, and return an explicit `nextOffset`.
+- Added a browser-safe shared History contract containing only session ID,
+  resolved display name, completed timestamp, persisted Completion summary,
+  compact per-serving Nutrition summary, and canonical Favorite presence. Full
+  cooking plans, progress, changes, and coverage detail stay out of list
+  payloads.
+- Projected `customName ?? selectedRecipe.name`, complete and partial
+  per-serving calories/protein, intentional unavailable/absent Nutrition, and
+  read-only Favorite state. No zero-value Nutrition fallback or History-local
+  Favorite state exists.
+- Replaced the `/app/history` placeholder with a thin route and dedicated
+  `features/history` page, infinite query, single-column list, cards, and
+  explicit card-shaped loading, retryable error, empty, and Load more states.
+- Cards use local-locale `completedAt` formatting, clamp long names and
+  Completion descriptions, retain a 48px mobile View meal target, and route
+  only the session ID to the canonical Completion review. History performs no
+  Completion, Nutrition, Recommendation, Pre-Cooking, Inventory, Favorite, or
+  progress mutation.
+- Completion status changes, rename, persisted Completion generation,
+  Nutrition generation, and Favorite creation now invalidate the canonical
+  History query so subsequent reads converge without restarting the app.
+- API coverage proves empty, ownership/status filtering, original and custom
+  naming, Completion projection, complete/partial/unavailable/absent
+  Nutrition, Favorite projection, deterministic tie-breaking, page boundaries,
+  and invalid limits. Web coverage proves bounded requests, cache invalidation,
+  card variants, canonical links, loading/error/empty states, and active global
+  History navigation.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and
+  1920px. The page had no horizontal overflow, preserved the 572px desktop
+  canvas, readable dates and compact summaries, a contained long custom name,
+  an uncrowded Favorite indicator, full-width mobile CTAs, visible
+  BottomNavigation, and active History state. Initial refresh issued only auth,
+  onboarding, and one 10-item History GET. Load more issued one offset-10 GET,
+  appended the unique eleventh item, and disappeared.
+- Opening View meal navigated to the exact existing Completion route and issued
+  only the canonical Cooking Session GET. A forced History failure kept
+  BottomNavigation usable, hid raw backend detail, exposed Try again, and one
+  real retry restored the list.
+- Validation: 151 web tests / 492 expectations and 157 API tests / 1,373
+  expectations pass. Focused Phase 9B coverage passes 6 web tests / 25
+  expectations and 4 API integration tests / 27 expectations. Shared-contract
+  and web typechecks, web production build, API build, scoped Biome, and
+  Oxlint pass. Oxlint reports only 23 established Fast Refresh warnings.
+  Standalone API typecheck remains blocked separately by the unchanged
+  malformed OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Phase 9A: Resume Active Session v0.1
+
+- Added authenticated `GET /cooking-sessions/resumable` with a browser-safe
+  shared response contract. It returns only the current user's active or paused
+  Cooking Session, or `null`; completed, abandoned, and cross-user rows are
+  excluded.
+- Confirmed the current schema does not enforce one resumable row per user.
+  The API therefore owns deterministic current-session selection using
+  `updatedAt`, `createdAt`, and ID descending instead of letting the browser
+  silently choose.
+- Added a stable resumable-session TanStack Query that refetches when Home
+  mounts, validates server data, and seeds the existing session-ID cache.
+  Refresh requires no Recommendation or Pre-Cooking memory.
+- Connected the existing Home `ActiveSessionCard` to persisted data. The card
+  omits itself for `null`, renders a nonblocking Skeleton while loading, and
+  keeps Home's prompt, Quick Start, Inventory shortcut, and Recent Cooking
+  usable when the query fails.
+- Added explicit active and paused presentation, shared `customName` fallback,
+  stable-ID stage and step resolution, compact long-title clamping, and a
+  full-width mobile Continue action. Corrupt progress produces no misleading
+  card or fallback to the first plan step.
+- Continue uses TanStack Router with only the session ID. Paused navigation
+  remains paused and restores the exact persisted Stage 2 / current step until
+  the existing Active Cooking Resume action is explicitly used.
+- Active Cooking pause, resume, advance, rename, completion, and abandonment
+  now synchronize the resumable cache. Terminal transitions clear the current
+  Home card immediately and invalidate server state for the next Home mount.
+- API coverage proves null, active, paused, ownership, custom naming,
+  terminal-state exclusion, exact display/progress data, and deterministic
+  multiple-row selection. Web coverage proves omission, loading, controlled
+  failure, active/paused content, name fallback, custom name, stable positions,
+  route identity, corrupt-state suppression, refresh restoration, and terminal
+  cache removal.
+- Browser/network acceptance passed at 320px, 390px, 768px, 1440px, and
+  1920px. Home had zero horizontal overflow, retained BottomNavigation, and
+  preserved the 572px desktop canvas. Refresh restored the paused long-name
+  card through only auth, onboarding, and one resumable GET. Continue issued
+  only the canonical Cooking Session GET after its cache became stale, hid
+  BottomNavigation, and restored the exact paused Stage 2 step with no implicit
+  Resume.
+- Validation: 144 web tests / 462 expectations and 153 API tests / 1,332
+  expectations pass. Focused Phase 9A coverage passes 9 web tests / 29
+  expectations and 5 new API tests / 24 expectations; combined Cooking Session
+  integration passes 18 tests / 102 expectations. Shared-contract and web
+  typechecks, web production build, API build, scoped Biome, and Oxlint pass.
+  Oxlint reports only the 24 established Fast Refresh warnings. Standalone API
+  typecheck remains blocked separately by the unchanged malformed OpenAI
+  declaration parser issue in `node_modules/openai/internal/types.d.mts`.
+
+### Flemme Web — Phase 8: Favorite Persistence & Review v0.1
+
+- Added a browser-safe shared Favorite contract and reused it from the existing
+  API schema and the web boundary. The canonical create payload remains only the
+  completed Cooking Session ID; the persisted response retains the historical
+  recipe projection.
+- Added `features/favorites` with stable list and session-scoped query keys.
+  Direct Nutrition visits query persisted Favorites, seed canonical cache state,
+  and restore an already-saved action after a full refresh.
+- Added one dedicated create mutation with a synchronous per-session in-flight
+  request share. Successful creation seeds the session Favorite cache and
+  updates an existing list cache or invalidates its canonical key.
+- Treated only `409 FAVORITE_ALREADY_EXISTS` as recoverable saved state. The
+  mutation reloads persisted Favorites and converges only when the matching
+  canonical resource exists; other eligibility, ownership, missing-resource,
+  network, and server errors stay controlled and retryable.
+- Replaced the Phase 7 placeholder with a mobile-first Favorite action while
+  keeping Nutrition visible. Checking and saving states disable the CTA, saved
+  state uses a filled Heart plus compact badge, and failures show safe copy with
+  an accessible retry rather than backend detail.
+- Preserved Favorite eligibility independence from Nutrition coverage.
+  Integration coverage proves an unavailable Nutrition snapshot and a custom
+  session name do not block persistence or rewrite the historical recipe name.
+- Verified first save produced exactly one Favorite create request. It produced
+  no Recommendation, Pre-Cooking, Cooking Session creation, progress,
+  Completion, Nutrition, or Inventory mutation. Full refresh restored saved
+  state with one Cooking Session read and one Favorites read, with no create or
+  generation request.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px: no
+  horizontal overflow, clear pending/saved/retry states, long custom-name
+  wrapping, hidden BottomNavigation, and the existing 572px compact desktop
+  canvas. A forced network failure preserved Nutrition, hid raw detail, exposed
+  retry, and the next real request saved successfully.
+- Validation: 135 web tests / 433 expectations, 148 API tests / 1,294
+  expectations, and focused Favorites coverage of 9 web tests / 29 expectations
+  plus 6 API integration tests / 40 expectations pass. Shared-contract and web
+  typechecks, web production build, API build, scoped Biome, and Oxlint pass.
+  Oxlint reports only the 24 established Fast Refresh warnings. Standalone API
+  typecheck remains blocked separately by the unchanged malformed OpenAI
+  declaration parser issue in `node_modules/openai/internal/types.d.mts`.
 
 ### Flemme Web — Phase 7: Nutrition & Nutrition Review v0.1
 
@@ -1651,16 +1901,14 @@ Remaining sequence:
 
 ## Next Up
 
-Complete the dedicated A4 real Google runtime acceptance gate when credentials
-are configured. Next implementation: Auth v1 A5 — Better Auth Session →
-currentUserId Middleware. Do not begin it until selected explicitly.
+The current v0.1 Core User Flow is complete end to end through Inventory
+Management. No additional mandatory core-flow stage is selected. Next work
+should be chosen explicitly from refinement, hardening, UX polish, data coverage
+improvements, or additional product features.
 
-Full context APIs, favorite endpoints, production authentication,
-natural-language quantity parsing, TKPI evaluation, and nutrition UI display
-remain deferred.
-
-The general intent router remains implementation-light until another supported
-intent or a concrete routing requirement is defined.
+The dedicated A4 real Google runtime acceptance gate remains pending external
+credentials. Natural-language quantity parsing and TKPI evaluation remain
+deferred.
 
 ## Open Questions
 

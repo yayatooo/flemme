@@ -14,7 +14,7 @@ import {
 	userProfiles,
 	users,
 } from "@flemme/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { createApp } from "../../app";
@@ -175,6 +175,59 @@ describe("cooking recommendation API integration", () => {
 			.from(cookingSessions)
 			.where(eq(cookingSessions.userId, userId));
 		expect(persistedSessions).toHaveLength(0);
+	});
+
+	test("Inventory mutations are reflected in the next Recommendation context", async () => {
+		runner = async (context) => {
+			capturedContext = context;
+			return recommendationOutput;
+		};
+		const added = await app.request("/inventory/items", {
+			method: "POST",
+			headers: headers(userId),
+			body: JSON.stringify({ name: "Beras" }),
+		});
+		expect(added.status).toBe(201);
+
+		const afterAdd = await requestRecommendation(userId, {
+			session: { request: "Use what I have now." },
+		});
+		expect(afterAdd.status).toBe(200);
+		expect(capturedContext?.inventory).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: "salt" }),
+				expect.objectContaining({ name: "raw-white-rice" }),
+			]),
+		);
+
+		const [ownedInventory] = await db
+			.select({ id: inventories.id })
+			.from(inventories)
+			.where(eq(inventories.userId, userId));
+		if (!ownedInventory) throw new Error("Missing seeded inventory");
+		const [salt] = await db
+			.select({ id: inventoryItems.id })
+			.from(inventoryItems)
+			.where(
+				and(
+					eq(inventoryItems.inventoryId, ownedInventory.id),
+					eq(inventoryItems.ingredientKey, "salt"),
+				),
+			);
+		if (!salt) throw new Error("Missing seeded salt");
+		const removed = await app.request(`/inventory/items/${salt.id}`, {
+			method: "DELETE",
+			headers: headers(userId),
+		});
+		expect(removed.status).toBe(204);
+
+		const afterRemove = await requestRecommendation(userId, {
+			session: { request: "Use the updated pantry." },
+		});
+		expect(afterRemove.status).toBe(200);
+		expect(capturedContext?.inventory).toEqual([
+			expect.objectContaining({ name: "raw-white-rice" }),
+		]);
 	});
 
 	test("request context replaces overlapping persistent values", async () => {

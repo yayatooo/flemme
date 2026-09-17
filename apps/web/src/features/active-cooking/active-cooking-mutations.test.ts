@@ -7,6 +7,7 @@ import {
 	cookingSessionFixture,
 	cookingSessionId,
 } from "@/features/cooking-session/cooking-session-test-fixture";
+import { cookingHistoryQueryKey } from "@/features/history/cooking-history-query";
 import {
 	buildCookingSessionProgress,
 	executeCookingAssistantRequest,
@@ -249,12 +250,44 @@ test("double Next sends exactly one progress mutation and caches its response", 
 	expect(requests.some(({ path }) => path.includes("inventory"))).toBe(false);
 });
 
+test("final progress completion invalidates canonical Cooking History", async () => {
+	const queryClient = new QueryClient();
+	const final = sessionAt("cook-chicken", "coat-chicken", [
+		"toast-garlic",
+		"brown-chicken",
+	]);
+	queryClient.setQueryData(cookingSessionQueryKey(cookingSessionId), final);
+	queryClient.setQueryData(cookingHistoryQueryKey(), {
+		pages: [],
+		pageParams: [],
+	});
+	const completed = {
+		...final,
+		phase: "completion" as const,
+		session: buildCookingSessionProgress(final, { type: "advance" }),
+		completedAt: "2026-09-17T10:00:00.000Z",
+	};
+	globalThis.fetch = (async () => jsonResponse(completed)) as typeof fetch;
+
+	await executeCookingProgressCommand(queryClient, cookingSessionId, {
+		type: "advance",
+	});
+
+	expect(
+		queryClient.getQueryState(cookingHistoryQueryKey())?.isInvalidated,
+	).toBe(true);
+});
+
 test("rename sends one metadata mutation, shares the session lock, and caches the server snapshot", async () => {
 	const queryClient = new QueryClient();
 	queryClient.setQueryData(
 		cookingSessionQueryKey(cookingSessionId),
 		cookingSessionFixture,
 	);
+	queryClient.setQueryData(cookingHistoryQueryKey(), {
+		pages: [],
+		pageParams: [],
+	});
 	const requests: Array<{ path: string; method: string; body: unknown }> = [];
 	let resolveRequest: ((response: Response) => void) | undefined;
 	const pendingResponse = new Promise<Response>((resolve) => {
@@ -301,6 +334,9 @@ test("rename sends one metadata mutation, shares the session lock, and caches th
 	);
 	expect(persisted.cookingPlan).toBe(cookingSessionFixture.cookingPlan);
 	expect(persisted.session).toBe(cookingSessionFixture.session);
+	expect(
+		queryClient.getQueryState(cookingHistoryQueryKey())?.isInvalidated,
+	).toBe(true);
 });
 
 test("clearing a rename sends null without an agent or progress request", async () => {

@@ -104,7 +104,7 @@ export function createInventoryRoute(db: FlemmeDatabase) {
 			...common,
 			method: "post",
 			path: "/items",
-			summary: "Add a canonical ingredient",
+			summary: "Add an inventory ingredient",
 			request: {
 				body: {
 					required: true,
@@ -129,7 +129,7 @@ export function createInventoryRoute(db: FlemmeDatabase) {
 			...common,
 			method: "put",
 			path: "/items/{id}",
-			summary: "Replace item quantity, unit, approximation and condition",
+			summary: "Replace inventory item name and quantity details",
 			request: {
 				params: InventoryItemParamsSchema,
 				body: {

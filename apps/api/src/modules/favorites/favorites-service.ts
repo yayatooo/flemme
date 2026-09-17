@@ -6,31 +6,46 @@ import {
 	createCookingSessionService,
 	restoreCookingSession,
 } from "../cooking-session/cooking-session-service";
-import { FavoriteResponseSchema } from "./favorites-schema";
+import { projectMealNutritionSummary } from "../cooking-session/persisted-meal-summary";
+import {
+	type FavoriteListQuery,
+	type FavoriteResponse,
+	FavoriteResponseSchema,
+	type FavoritesResponse,
+	FavoritesResponseSchema,
+} from "./favorites-schema";
 
 function project(
 	row: typeof favorites.$inferSelect,
 	session: CookingSessionResponse,
-) {
-	if (session.session.status !== "completed")
+): FavoriteResponse {
+	if (session.session.status !== "completed" || !session.completedAt) {
 		throw new ApiError(
 			500,
 			"INVALID_PERSISTED_FAVORITE",
-			"Favorite references an incomplete session",
+			"Favorite references an invalid completed session",
 		);
+	}
 	const { name, description, servings, estimatedDuration } =
 		session.selectedRecipeSnapshot;
 	return FavoriteResponseSchema.parse({
 		id: row.id,
 		cookingSessionId: row.cookingSessionId,
 		createdAt: row.createdAt.toISOString(),
+		displayName: session.customName ?? name,
+		completedAt: session.completedAt,
+		completionSummary: session.completionSnapshot?.summary ?? null,
+		nutrition: projectMealNutritionSummary(session.nutritionSnapshot),
 		recipe: { name, description, servings, estimatedDuration },
 	});
 }
 
 export function createFavoritesService(db: FlemmeDatabase) {
 	return {
-		async list(userId: string) {
+		async list(
+			userId: string,
+			{ limit, offset, cookingSessionId }: FavoriteListQuery,
+		): Promise<FavoritesResponse> {
 			const rows = await db
 				.select({ favorite: favorites, session: cookingSessions })
 				.from(favorites)
@@ -41,13 +56,26 @@ export function createFavoritesService(db: FlemmeDatabase) {
 						eq(favorites.userId, cookingSessions.userId),
 					),
 				)
-				.where(eq(favorites.userId, userId))
-				.orderBy(desc(favorites.createdAt), desc(favorites.id));
-			return {
-				items: rows.map(({ favorite, session }) =>
-					project(favorite, restoreCookingSession(session)),
-				),
-			};
+				.where(
+					and(
+						eq(favorites.userId, userId),
+						cookingSessionId
+							? eq(favorites.cookingSessionId, cookingSessionId)
+							: undefined,
+					),
+				)
+				.orderBy(desc(favorites.createdAt), desc(favorites.id))
+				.limit(limit + 1)
+				.offset(offset);
+			const hasMore = rows.length > limit;
+			return FavoritesResponseSchema.parse({
+				items: rows
+					.slice(0, limit)
+					.map(({ favorite, session }) =>
+						project(favorite, restoreCookingSession(session)),
+					),
+				nextOffset: hasMore ? offset + limit : null,
+			});
 		},
 		async create(userId: string, cookingSessionId: string) {
 			// Reuse the same ownership and persisted-snapshot validation as session GET.

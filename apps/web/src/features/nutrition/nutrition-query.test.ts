@@ -7,6 +7,7 @@ import {
 	cookingSessionFixture,
 	cookingSessionId,
 } from "@/features/cooking-session/cooking-session-test-fixture";
+import { cookingHistoryQueryKey } from "@/features/history/cooking-history-query";
 import { requestNutrition, restoreOrRequestNutrition } from "./nutrition-query";
 
 const nutritionSnapshot = {
@@ -57,6 +58,10 @@ test("generation sends one canonical Nutrition request and seeds the session cac
 		return Response.json(completedSession);
 	}) as typeof fetch;
 	const queryClient = new QueryClient();
+	queryClient.setQueryData(cookingHistoryQueryKey(), {
+		pages: [],
+		pageParams: [],
+	});
 
 	const output = await requestNutrition(queryClient, cookingSessionId);
 
@@ -70,6 +75,9 @@ test("generation sends one canonical Nutrition request and seeds the session cac
 	expect(
 		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
 	).toEqual(completedSession);
+	expect(
+		queryClient.getQueryState(cookingHistoryQueryKey())?.isInvalidated,
+	).toBe(true);
 	expect(requests.some(({ path }) => path.includes("completion"))).toBeFalse();
 	expect(requests.some(({ path }) => path.includes("inventory"))).toBeFalse();
 	expect(requests.some(({ path }) => path.includes("favorite"))).toBeFalse();

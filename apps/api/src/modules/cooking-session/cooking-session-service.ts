@@ -6,20 +6,26 @@ import {
 	CookingRecommendationSchema,
 	PreCookingOutputSchema,
 } from "@flemme/agent";
-import { cookingSessions, type FlemmeDatabase } from "@flemme/db";
+import { cookingSessions, type FlemmeDatabase, favorites } from "@flemme/db";
 import { RecipeNutritionResultSchema } from "@flemme/nutrition";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { ApiError } from "../../api-error";
 import { calculateCookingSessionNutrition } from "../nutrition/cooking-session-nutrition-service";
 import {
 	type CompleteCookingSessionRequest,
+	type CookingHistoryPage,
+	CookingHistoryPageSchema,
+	type CookingHistoryQuery,
 	type CookingSessionResponse,
 	CookingSessionResponseSchema,
 	type CreateCookingSessionRequest,
+	type ResumableCookingSessionResponse,
+	ResumableCookingSessionResponseSchema,
 	type UpdateCookingProgressRequest,
 	type UpdateCookingSessionRequest,
 } from "./cooking-session-schema";
+import { projectMealNutritionSummary } from "./persisted-meal-summary";
 
 type CookingSessionRow = typeof cookingSessions.$inferSelect;
 
@@ -108,6 +114,31 @@ export function restoreCookingSession(
 	}
 }
 
+function projectCookingHistoryItem(
+	row: CookingSessionRow,
+	isFavorite: boolean,
+) {
+	const session = restoreCookingSession(row);
+	if (session.session.status !== "completed" || !session.completedAt) {
+		throw new ApiError(
+			500,
+			"INVALID_PERSISTED_HISTORY",
+			"Cooking History contains an invalid completed session",
+		);
+	}
+
+	const nutrition = projectMealNutritionSummary(session.nutritionSnapshot);
+
+	return {
+		sessionId: session.id,
+		displayName: session.customName ?? session.selectedRecipeSnapshot.name,
+		completedAt: session.completedAt,
+		completionSummary: session.completionSnapshot?.summary ?? null,
+		nutrition,
+		isFavorite,
+	};
+}
+
 function assertFinalCookingStepCompleted(
 	session: Pick<CookingSessionResponse, "cookingPlan" | "session">,
 ) {
@@ -176,6 +207,72 @@ export function createCookingSessionService(db: FlemmeDatabase) {
 			}
 
 			return restoreCookingSession(created);
+		},
+
+		async getResumable(
+			userId: string,
+		): Promise<ResumableCookingSessionResponse> {
+			const [session] = await db
+				.select()
+				.from(cookingSessions)
+				.where(
+					and(
+						eq(cookingSessions.userId, userId),
+						inArray(cookingSessions.status, ["active", "paused"]),
+					),
+				)
+				.orderBy(
+					desc(cookingSessions.updatedAt),
+					desc(cookingSessions.createdAt),
+					desc(cookingSessions.id),
+				)
+				.limit(1);
+
+			return ResumableCookingSessionResponseSchema.parse({
+				session: session ? restoreCookingSession(session) : null,
+			});
+		},
+
+		async getHistory(
+			userId: string,
+			{ limit, offset }: CookingHistoryQuery,
+		): Promise<CookingHistoryPage> {
+			const rows = await db
+				.select({
+					session: cookingSessions,
+					favoriteId: favorites.id,
+				})
+				.from(cookingSessions)
+				.leftJoin(
+					favorites,
+					and(
+						eq(favorites.cookingSessionId, cookingSessions.id),
+						eq(favorites.userId, cookingSessions.userId),
+					),
+				)
+				.where(
+					and(
+						eq(cookingSessions.userId, userId),
+						eq(cookingSessions.status, "completed"),
+					),
+				)
+				.orderBy(
+					desc(cookingSessions.completedAt),
+					desc(cookingSessions.createdAt),
+					desc(cookingSessions.id),
+				)
+				.limit(limit + 1)
+				.offset(offset);
+			const hasMore = rows.length > limit;
+
+			return CookingHistoryPageSchema.parse({
+				items: rows
+					.slice(0, limit)
+					.map(({ session, favoriteId }) =>
+						projectCookingHistoryItem(session, favoriteId !== null),
+					),
+				nextOffset: hasMore ? offset + limit : null,
+			});
 		},
 
 		async get(

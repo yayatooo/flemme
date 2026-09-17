@@ -22,6 +22,8 @@ import {
 import { FlemmeApiError, requestApi } from "@/api/api-client";
 import { handleUnauthorized } from "@/auth/auth-actions";
 import { cookingSessionQueryKey } from "@/features/cooking-session/cooking-session-query";
+import { synchronizeResumableCookingSession } from "@/features/cooking-session/resumable-cooking-session-query";
+import { invalidateCookingHistory } from "@/features/history/cooking-history-query";
 import { resolveCookingPosition } from "./active-cooking-query";
 
 export type CookingProgressCommand =
@@ -275,6 +277,10 @@ async function persistCookingSessionUpdate(
 			session,
 		);
 		queryClient.setQueryData(cookingSessionQueryKey(sessionId), updated);
+		synchronizeResumableCookingSession(queryClient, updated);
+		if (updated.session.status === "completed") {
+			void invalidateCookingHistory(queryClient);
+		}
 		return updated;
 	} finally {
 		releaseCookingSessionMutation(queryClient, lockKey);
@@ -325,6 +331,8 @@ export async function executeCookingSessionRename(
 			input,
 		);
 		queryClient.setQueryData(cookingSessionQueryKey(sessionId), updated);
+		synchronizeResumableCookingSession(queryClient, updated);
+		void invalidateCookingHistory(queryClient);
 		return updated;
 	} finally {
 		releaseCookingSessionMutation(queryClient, lockKey);

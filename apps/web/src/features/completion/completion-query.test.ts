@@ -6,6 +6,7 @@ import {
 	cookingSessionFixture,
 	cookingSessionId,
 } from "@/features/cooking-session/cooking-session-test-fixture";
+import { cookingHistoryQueryKey } from "@/features/history/cooking-history-query";
 import {
 	requestCompletion,
 	restoreOrRequestCompletion,
@@ -55,6 +56,10 @@ test("generation sends one Completion request and seeds the canonical session ca
 		return Response.json(completedSession);
 	}) as typeof fetch;
 	const queryClient = new QueryClient();
+	queryClient.setQueryData(cookingHistoryQueryKey(), {
+		pages: [],
+		pageParams: [],
+	});
 
 	const output = await requestCompletion(queryClient, cookingSessionId);
 
@@ -69,6 +74,9 @@ test("generation sends one Completion request and seeds the canonical session ca
 	expect(
 		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
 	).toEqual(completedSession);
+	expect(
+		queryClient.getQueryState(cookingHistoryQueryKey())?.isInvalidated,
+	).toBe(true);
 	expect(requests.some(({ path }) => path.includes("nutrition"))).toBeFalse();
 	expect(requests.some(({ path }) => path.includes("inventory"))).toBeFalse();
 	expect(requests.some(({ path }) => path.includes("favorite"))).toBeFalse();

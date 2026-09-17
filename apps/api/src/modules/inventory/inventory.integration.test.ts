@@ -4,6 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { createApp } from "../../app";
 import { createSessionAuth } from "../../test-utils/session-auth";
 import { createCookingContextService } from "../cooking/cooking-context-service";
+import { createCookingSessionService } from "../cooking-session/cooking-session-service";
 import {
 	InventoryItemResponseSchema,
 	InventoryResponseSchema,
@@ -37,7 +38,7 @@ async function request(
 	});
 }
 const input = {
-	ingredientKey: "egg",
+	name: "Egg",
 	quantity: 6,
 	unit: "pcs",
 	isApproximate: false,
@@ -62,7 +63,7 @@ test("inventory lifecycle, missing versus empty and cooking context visibility",
 	const created = await request(uid, "/inventory/items", "POST", input);
 	expect(created.status).toBe(201);
 	const item = InventoryItemResponseSchema.parse(await created.json());
-	expect(item.name).toBe("Telur ayam");
+	expect(item.name).toBe("Egg");
 	expect((await context(uid)).inventory).toEqual([
 		{ name: "egg", quantity: "6 pcs", condition: "fresh" },
 	]);
@@ -71,6 +72,7 @@ test("inventory lifecycle, missing versus empty and cooking context visibility",
 		unit: " g ",
 		condition: "use_soon",
 		isApproximate: true,
+		name: item.name,
 	};
 	const updated = await request(
 		uid,
@@ -146,29 +148,106 @@ test("PUT /inventory initializes and returns existing inventory state", async ()
 	);
 });
 
-test("canonical-only input, duplicate conflict and unknown quantities", async () => {
+test("resolved, unresolved, name-only and duplicate inventory creation", async () => {
 	const uid = await user();
-	for (const ingredientKey of ["invented-food", "telur", "salt"]) {
-		const r = await request(uid, "/inventory/items", "POST", {
-			...input,
-			ingredientKey,
-		});
-		expect(r.status).toBe(422);
-	}
+	const resolved = await request(uid, "/inventory/items", "POST", {
+		name: "Telur",
+		quantity: null,
+		unit: null,
+	});
+	expect(resolved.status).toBe(201);
 	expect(
-		await db.select().from(inventories).where(eq(inventories.userId, uid)),
-	).toHaveLength(0);
-	const r = await request(uid, "/inventory/items", "POST", {
+		InventoryItemResponseSchema.parse(await resolved.json()),
+	).toMatchObject({
+		name: "Telur",
 		ingredientKey: "egg",
 		quantity: null,
 		unit: null,
 	});
-	expect(r.status).toBe(201);
-	const item = InventoryItemResponseSchema.parse(await r.json());
-	expect(item.condition).toBe("unknown");
-	expect(item.isApproximate).toBe(false);
-	expect((await request(uid, "/inventory/items", "POST", input)).status).toBe(
-		409,
+	expect(
+		(
+			await request(uid, "/inventory/items", "POST", {
+				name: "egg",
+			})
+		).status,
+	).toBe(409);
+
+	const unresolved = await request(uid, "/inventory/items", "POST", {
+		name: "  Daun   Gedi ",
+		quantity: 2,
+		unit: "bunches",
+	});
+	expect(unresolved.status).toBe(201);
+	expect(
+		InventoryItemResponseSchema.parse(await unresolved.json()),
+	).toMatchObject({
+		name: "Daun Gedi",
+		ingredientKey: null,
+		quantity: 2,
+		unit: "bunches",
+	});
+	expect(
+		(
+			await request(uid, "/inventory/items", "POST", {
+				name: "daun gedi",
+			})
+		).status,
+	).toBe(409);
+});
+test("editing names reruns resolution and controls duplicate identities", async () => {
+	const uid = await user();
+	const unresolved = InventoryItemResponseSchema.parse(
+		await (
+			await request(uid, "/inventory/items", "POST", {
+				name: "Daun gedi",
+				quantity: 2,
+				unit: "bunches",
+			})
+		).json(),
+	);
+	const renamed = await request(
+		uid,
+		`/inventory/items/${unresolved.id}`,
+		"PUT",
+		{
+			name: "Tomat",
+			quantity: null,
+			unit: null,
+			isApproximate: false,
+			condition: "fresh",
+		},
+	);
+	expect(renamed.status).toBe(200);
+	expect(InventoryItemResponseSchema.parse(await renamed.json())).toMatchObject(
+		{
+			name: "Tomat",
+			ingredientKey: "tomato",
+			quantity: null,
+			unit: null,
+		},
+	);
+
+	const garlic = InventoryItemResponseSchema.parse(
+		await (
+			await request(uid, "/inventory/items", "POST", { name: "Garlic" })
+		).json(),
+	);
+	expect(
+		(
+			await request(uid, `/inventory/items/${garlic.id}`, "PUT", {
+				name: "tomato",
+				quantity: null,
+				unit: null,
+				isApproximate: false,
+				condition: "unknown",
+			})
+		).status,
+	).toBe(409);
+	const current = InventoryResponseSchema.parse(
+		await (await request(uid)).json(),
+	);
+	expect(current.items.find(({ id }) => id === garlic.id)?.ingredientKey).toBe(
+		"garlic",
 	);
 });
 test("ownership, identity and malformed payload rejection", async () => {
@@ -186,6 +265,7 @@ test("ownership, identity and malformed payload rejection", async () => {
 					method,
 					method === "PUT"
 						? {
+								name: item.name,
 								quantity: null,
 								unit: null,
 								isApproximate: false,
@@ -220,7 +300,12 @@ test("ownership, identity and malformed payload rejection", async () => {
 		);
 	}
 	expect(
-		(await request(uid, `/inventory/items/${item.id}`, "PUT", input)).status,
+		(
+			await request(uid, `/inventory/items/${item.id}`, "PUT", {
+				...input,
+				ingredientKey: "egg",
+			})
+		).status,
 	).toBe(400);
 });
 test("multi-statement creation rolls back parent on item failure", async () => {
@@ -285,6 +370,7 @@ test("onboarding replacement resolves known names and preserves unknown names", 
 			}),
 		]),
 	);
+
 	expect((await context(uid)).inventory).toEqual(
 		expect.arrayContaining([
 			expect.objectContaining({ name: "egg" }),
@@ -299,6 +385,72 @@ test("onboarding replacement resolves known names and preserves unknown names", 
 		items: [],
 	});
 	expect((await context(uid)).inventory).toEqual([]);
+});
+test("Inventory mutations do not rewrite an existing Cooking Session plan", async () => {
+	const uid = await user();
+	const inventoryItem = InventoryItemResponseSchema.parse(
+		await (await request(uid, "/inventory/items", "POST", input)).json(),
+	);
+	const recipe = {
+		name: "Inventory isolation dish",
+		description: "A persisted plan that must not change",
+		reason: "Test",
+		estimatedDuration: { minMinutes: 10, maxMinutes: 15 },
+		servings: 1,
+		feasibility: "ready" as const,
+		ingredients: [],
+		equipment: [],
+		preferenceMatches: [],
+		requiredConfirmations: [],
+		optionalIngredients: [],
+		warnings: [],
+	};
+	const service = createCookingSessionService(db);
+	const session = await service.create(uid, {
+		recommendationSnapshot: {
+			type: "recommendations",
+			recommendations: [recipe],
+		},
+		selectedRecipeSnapshot: recipe,
+		cookingPlan: {
+			preparationSummary: { overview: "Use the saved egg." },
+			ingredients: [{ name: "egg", quantity: 1, unit: "pcs" }],
+			equipment: [],
+			preparationSteps: [],
+			cookingStages: [
+				{
+					id: "cook",
+					title: "Cook",
+					steps: [{ id: "finish", instruction: "Cook the egg." }],
+				},
+			],
+		},
+		session: {
+			status: "active",
+			currentStageId: "cook",
+			currentStepId: "finish",
+			completedStepIds: [],
+			changes: [],
+		},
+	});
+
+	expect(
+		(
+			await request(uid, `/inventory/items/${inventoryItem.id}`, "PUT", {
+				...input,
+				name: "Beras",
+			})
+		).status,
+	).toBe(200);
+	expect(
+		(await request(uid, `/inventory/items/${inventoryItem.id}`, "DELETE"))
+			.status,
+	).toBe(204);
+	const restored = await service.get(uid, session.id);
+	expect(restored.cookingPlan).toEqual(session.cookingPlan);
+	expect(restored.cookingPlan.ingredients).toEqual([
+		{ name: "egg", quantity: 1, unit: "pcs" },
+	]);
 });
 
 test("OpenAPI inventory operations", async () => {

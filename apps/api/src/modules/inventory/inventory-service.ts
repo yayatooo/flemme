@@ -3,7 +3,7 @@ import {
 	normalizeIngredientName,
 	productionIngredientCatalog,
 } from "@flemme/ingredients";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { ApiError } from "../../api-error";
 import {
 	type CreateInventoryItem,
@@ -13,7 +13,15 @@ import {
 } from "./inventory-schema";
 
 function restore(row: typeof inventoryItems.$inferSelect) {
-	const result = InventoryItemResponseSchema.safeParse(row);
+	const result = InventoryItemResponseSchema.safeParse({
+		id: row.id,
+		ingredientKey: row.ingredientKey,
+		name: row.name,
+		quantity: row.quantity,
+		unit: row.unit,
+		isApproximate: row.isApproximate,
+		condition: row.condition,
+	});
 	if (!result.success)
 		throw new ApiError(
 			500,
@@ -21,6 +29,28 @@ function restore(row: typeof inventoryItems.$inferSelect) {
 			"Inventory contains invalid persisted data",
 		);
 	return result.data;
+}
+
+function resolveIdentity(name: string) {
+	const ingredient = productionIngredientCatalog.resolveName(name);
+	return {
+		identityKey: ingredient?.key ?? normalizeIngredientName(name),
+		ingredientKey: ingredient?.key ?? null,
+		name,
+	};
+}
+
+function isUniqueViolation(error: unknown) {
+	if (!error || typeof error !== "object") return false;
+	if ("code" in error && error.code === "23505") return true;
+	if (!("cause" in error)) return false;
+	const { cause } = error;
+	return (
+		!!cause &&
+		typeof cause === "object" &&
+		"code" in cause &&
+		cause.code === "23505"
+	);
 }
 export function createInventoryService(db: FlemmeDatabase) {
 	const ownedInventories = (userId: string) =>
@@ -30,7 +60,10 @@ export function createInventoryService(db: FlemmeDatabase) {
 			.where(eq(inventories.userId, userId));
 	async function assertOwned(userId: string, id: string) {
 		const [row] = await db
-			.select({ userId: inventories.userId })
+			.select({
+				userId: inventories.userId,
+				inventoryId: inventoryItems.inventoryId,
+			})
 			.from(inventoryItems)
 			.innerJoin(inventories, eq(inventoryItems.inventoryId, inventories.id))
 			.where(eq(inventoryItems.id, id));
@@ -46,6 +79,7 @@ export function createInventoryService(db: FlemmeDatabase) {
 				"INVENTORY_ITEM_FORBIDDEN",
 				"Inventory item belongs to another user",
 			);
+		return row;
 	}
 	return {
 		async get(userId: string) {
@@ -84,12 +118,7 @@ export function createInventoryService(db: FlemmeDatabase) {
 		},
 
 		async create(userId: string, input: CreateInventoryItem) {
-			if (!productionIngredientCatalog.getByKey(input.ingredientKey))
-				throw new ApiError(
-					422,
-					"INGREDIENT_NOT_FOUND",
-					"Ingredient key is not in the production catalog",
-				);
+			const identity = resolveIdentity(input.name);
 			return db.transaction(async (tx) => {
 				const [inventory] = await tx
 					.insert(inventories)
@@ -100,17 +129,15 @@ export function createInventoryService(db: FlemmeDatabase) {
 					})
 					.returning();
 				if (!inventory) throw new Error("Inventory creation failed");
-				const ingredient = productionIngredientCatalog.getByKey(
-					input.ingredientKey,
-				);
-				if (!ingredient) throw new Error("Validated ingredient is missing");
 				const [item] = await tx
 					.insert(inventoryItems)
 					.values({
-						...input,
+						...identity,
+						quantity: input.quantity,
+						unit: input.unit,
+						isApproximate: input.isApproximate,
+						condition: input.condition,
 						inventoryId: inventory.id,
-						identityKey: input.ingredientKey,
-						name: ingredient.names.id,
 					})
 					.onConflictDoNothing({
 						target: [inventoryItems.inventoryId, inventoryItems.identityKey],
@@ -175,23 +202,52 @@ export function createInventoryService(db: FlemmeDatabase) {
 			});
 		},
 		async update(userId: string, id: string, input: UpdateInventoryItem) {
-			await assertOwned(userId, id);
-			const [item] = await db
-				.update(inventoryItems)
-				.set({
-					quantity: input.quantity,
-					unit: input.unit,
-					isApproximate: input.isApproximate,
-					condition: input.condition,
-					updatedAt: new Date(),
-				})
+			const owned = await assertOwned(userId, id);
+			const identity = resolveIdentity(input.name);
+			const [duplicate] = await db
+				.select({ id: inventoryItems.id })
+				.from(inventoryItems)
 				.where(
 					and(
-						eq(inventoryItems.id, id),
-						inArray(inventoryItems.inventoryId, ownedInventories(userId)),
+						eq(inventoryItems.inventoryId, owned.inventoryId),
+						eq(inventoryItems.identityKey, identity.identityKey),
+						ne(inventoryItems.id, id),
 					),
-				)
-				.returning();
+				);
+			if (duplicate)
+				throw new ApiError(
+					409,
+					"DUPLICATE_INVENTORY_ITEM",
+					"Ingredient already exists in inventory",
+				);
+			let item: typeof inventoryItems.$inferSelect | undefined;
+			try {
+				[item] = await db
+					.update(inventoryItems)
+					.set({
+						...identity,
+						quantity: input.quantity,
+						unit: input.unit,
+						isApproximate: input.isApproximate,
+						condition: input.condition,
+						updatedAt: new Date(),
+					})
+					.where(
+						and(
+							eq(inventoryItems.id, id),
+							inArray(inventoryItems.inventoryId, ownedInventories(userId)),
+						),
+					)
+					.returning();
+			} catch (error) {
+				if (isUniqueViolation(error))
+					throw new ApiError(
+						409,
+						"DUPLICATE_INVENTORY_ITEM",
+						"Ingredient already exists in inventory",
+					);
+				throw error;
+			}
 			if (!item)
 				throw new ApiError(
 					404,

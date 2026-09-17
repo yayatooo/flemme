@@ -1,37 +1,32 @@
+import type { InventoryResponse } from "@flemme/contracts/inventory";
+import { InventoryResponseSchema } from "@flemme/contracts/inventory";
 import {
 	normalizeIngredientName,
 	productionIngredientCatalog,
 } from "@flemme/ingredients";
-import { type QueryClient, queryOptions } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { FlemmeApiError, requestApi } from "../api/api-client";
 import { handleUnauthorized } from "../auth/auth-actions";
+import {
+	emptyInventory,
+	inventoryQueryKey,
+	inventoryQueryOptions,
+} from "../features/inventory/inventory-query";
 import {
 	onboardingQueryOptions,
 	resolveOnboardingRedirect,
 } from "./onboarding-query";
+export type InventoryState = InventoryResponse;
+export type InventoryItemState = InventoryResponse["items"][number];
 
-export interface InventoryItemState {
-	id: string;
-	ingredientKey: string | null;
-	name: string;
-	quantity: number | null;
-	unit: string | null;
-	isApproximate: boolean;
-	condition: "fresh" | "use_soon" | "unknown";
-}
-
-export interface InventoryState {
-	items: InventoryItemState[];
-}
+export { emptyInventory, inventoryQueryKey, inventoryQueryOptions };
 
 export interface PendingInventoryItem {
 	identity: string;
 	name: string;
 }
 
-export const inventoryQueryKey = ["inventory"] as const;
 export const onboardingDecisionQueryKey = ["onboarding", "decision"] as const;
-export const emptyInventory: InventoryState = { items: [] };
 
 export const ingredientSuggestions = [
 	"Egg",
@@ -41,16 +36,6 @@ export const ingredientSuggestions = [
 	"Tomato",
 	"Potato",
 ] as const;
-
-export function isMissingInventoryError(
-	error: unknown,
-): error is FlemmeApiError {
-	return (
-		error instanceof FlemmeApiError &&
-		error.status === 404 &&
-		error.code === "INVENTORY_NOT_FOUND"
-	);
-}
 
 export function pendingInventoryItem(
 	name: string,
@@ -91,27 +76,9 @@ export function inventoryErrorMessage(error: unknown): string {
 	return "Unexpected error while loading your inventory.";
 }
 
-export function inventoryQueryOptions(queryClient: QueryClient) {
-	return queryOptions({
-		queryKey: inventoryQueryKey,
-		queryFn: async (): Promise<InventoryState | null> => {
-			try {
-				return await requestApi<InventoryState>("/inventory", undefined, () =>
-					handleUnauthorized(queryClient),
-				);
-			} catch (error) {
-				if (isMissingInventoryError(error)) return null;
-				throw error;
-			}
-		},
-		retry: false,
-		staleTime: Number.POSITIVE_INFINITY,
-	});
-}
-
 async function completeInventoryOnboarding(
 	queryClient: QueryClient,
-	request: () => Promise<InventoryState>,
+	request: () => Promise<InventoryResponse>,
 ): Promise<string> {
 	const inventory = await request();
 	queryClient.setQueryData(inventoryQueryKey, inventory);
@@ -130,21 +97,21 @@ export function saveInitialInventory(
 	items: ReadonlyArray<PendingInventoryItem>,
 ): Promise<string> {
 	return completeInventoryOnboarding(queryClient, () =>
-		requestApi<InventoryState>(
+		requestApi<unknown>(
 			"/inventory/items",
 			{
 				method: "PUT",
 				body: JSON.stringify({ items: items.map(({ name }) => ({ name })) }),
 			},
 			() => handleUnauthorized(queryClient),
-		),
+		).then((payload) => InventoryResponseSchema.parse(payload)),
 	);
 }
 
 export function addInventoryLater(queryClient: QueryClient): Promise<string> {
 	return completeInventoryOnboarding(queryClient, () =>
-		requestApi<InventoryState>("/inventory", { method: "PUT" }, () =>
+		requestApi<unknown>("/inventory", { method: "PUT" }, () =>
 			handleUnauthorized(queryClient),
-		),
+		).then((payload) => InventoryResponseSchema.parse(payload)),
 	);
 }

@@ -151,6 +151,8 @@ describe("cooking-session API integration", () => {
 				"/cooking/recommendations",
 				"/cooking/pre-cooking",
 				"/cooking-sessions",
+				"/cooking-sessions/resumable",
+				"/cooking-sessions/history",
 				"/cooking-sessions/{id}",
 				"/cooking-sessions/{id}/progress",
 				"/cooking-sessions/{id}/nutrition",
