@@ -159,7 +159,7 @@ export function ActiveCookingPage({ sessionId }: ActiveCookingPageProps) {
 
 	return (
 		<div className="flex min-h-dvh flex-col">
-			<header className="sticky top-0 z-30 border-b border-border bg-background/95 py-3 backdrop-blur">
+			<header className="sticky top-0 z-30 rounded-b-3xl bg-card/95 px-3 pt-3 pb-4 shadow-card backdrop-blur">
 				<div className="mb-3 flex items-center gap-3">
 					<Button
 						variant="ghost"
@@ -214,7 +214,7 @@ export function ActiveCookingPage({ sessionId }: ActiveCookingPageProps) {
 				/>
 			) : null}
 
-			<main className="flex flex-1 flex-col gap-6 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+			<main className="flex flex-1 flex-col gap-5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:gap-6 sm:pt-6">
 				{closedState ? (
 					<ClosedSessionStatus state={closedState} />
 				) : (
@@ -261,7 +261,7 @@ export function ActiveCookingPage({ sessionId }: ActiveCookingPageProps) {
 						/>
 
 						<section
-							className="space-y-3 pb-2"
+							className="space-y-3 rounded-3xl bg-muted/45 p-4 shadow-card"
 							aria-labelledby="session-options-title"
 						>
 							<h2

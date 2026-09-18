@@ -1,6 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	AuthActionError,
 	signInWithEmail,
@@ -77,14 +79,27 @@ function LoginPage() {
 				</p>
 			}
 		>
-			<form className="auth-form" onSubmit={submit}>
-				<label>
+			<form className="space-y-4" onSubmit={submit}>
+				<label
+					className="grid gap-2 text-sm font-extrabold"
+					htmlFor="login-email"
+				>
 					Email
-					<input name="email" type="email" autoComplete="email" required />
+					<Input
+						id="login-email"
+						name="email"
+						type="email"
+						autoComplete="email"
+						required
+					/>
 				</label>
-				<label>
+				<label
+					className="grid gap-2 text-sm font-extrabold"
+					htmlFor="login-password"
+				>
 					Password
-					<input
+					<Input
+						id="login-password"
 						name="password"
 						type="password"
 						autoComplete="current-password"
@@ -94,25 +109,38 @@ function LoginPage() {
 					/>
 				</label>
 				{error ? (
-					<p className="form-error" role="alert">
+					<p
+						className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+						role="alert"
+					>
 						{error}
 					</p>
 				) : null}
-				<button className="primary-button" type="submit" disabled={submitting}>
+				<Button
+					className="w-full rounded-xl"
+					type="submit"
+					disabled={submitting}
+				>
 					{submitting ? "Signing in…" : "Sign in"}
-				</button>
-				<div className="form-divider">
+				</Button>
+				<div className="flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
 					<span>or</span>
 				</div>
-				<button
-					className="google-button"
+				<Button
+					variant="outline"
+					className="w-full rounded-xl border-transparent bg-muted shadow-none"
 					type="button"
 					disabled={submitting}
 					onClick={continueWithGoogle}
 				>
-					<span aria-hidden="true">G</span>
+					<span
+						className="grid size-6 place-items-center rounded-lg bg-lavender font-black"
+						aria-hidden="true"
+					>
+						G
+					</span>
 					Continue with Google
-				</button>
+				</Button>
 			</form>
 		</AuthShell>
 	);

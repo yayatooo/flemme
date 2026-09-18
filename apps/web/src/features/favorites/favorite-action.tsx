@@ -27,7 +27,7 @@ export function FavoriteActionView({ state }: FavoriteActionViewProps) {
 
 	return (
 		<section
-			className="space-y-3 border-t-2 pt-6"
+			className="space-y-3 rounded-3xl bg-soft-pink/35 p-5 shadow-card"
 			aria-labelledby="favorite-action-title"
 		>
 			<div className="flex items-start gap-3">

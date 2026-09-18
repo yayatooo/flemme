@@ -16,6 +16,8 @@ export function PreCookingError({
 	return (
 		<div className="space-y-3">
 			<ErrorState
+				className="border-destructive/40 bg-card shadow-card"
+				iconClassName="rounded-2xl border-transparent"
 				title="Couldn't prepare your cooking plan"
 				description={message}
 				onRetry={onRetry}

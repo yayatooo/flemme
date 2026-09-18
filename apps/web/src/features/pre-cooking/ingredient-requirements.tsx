@@ -8,7 +8,10 @@ export function IngredientRequirements({
 	ingredients,
 }: IngredientRequirementsProps) {
 	return (
-		<section className="space-y-4" aria-labelledby="ingredients-heading">
+		<section
+			className="space-y-4 rounded-3xl bg-card p-5 shadow-card"
+			aria-labelledby="ingredients-heading"
+		>
 			<header className="space-y-1">
 				<h2 id="ingredients-heading" className="font-heading text-2xl">
 					Ingredients
@@ -18,7 +21,7 @@ export function IngredientRequirements({
 				</p>
 			</header>
 			{ingredients.length > 0 ? (
-				<ul className="divide-y divide-border border-y border-border">
+				<ul className="divide-y divide-border">
 					{ingredients.map((ingredient) => {
 						const amount = [ingredient.quantity, ingredient.unit]
 							.filter((value) => value !== undefined)

@@ -7,7 +7,7 @@ interface CookingHistoryListProps {
 
 export function CookingHistoryList({ items }: CookingHistoryListProps) {
 	return (
-		<div className="space-y-4">
+		<div className="grid gap-3">
 			{items.map((item) => (
 				<CookingHistoryCard key={item.sessionId} item={item} />
 			))}

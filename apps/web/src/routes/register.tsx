@@ -1,6 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AuthActionError, registerWithEmail } from "../auth/auth-actions";
 import { redirectAuthenticatedUser } from "../auth/auth-guards";
 import { AuthShell } from "../auth/auth-shell";
@@ -53,18 +55,34 @@ function RegisterPage() {
 				</p>
 			}
 		>
-			<form className="auth-form" onSubmit={submit}>
-				<label>
+			<form className="space-y-4" onSubmit={submit}>
+				<label
+					className="grid gap-2 text-sm font-extrabold"
+					htmlFor="register-name"
+				>
 					Name
-					<input name="name" autoComplete="name" required />
+					<Input id="register-name" name="name" autoComplete="name" required />
 				</label>
-				<label>
+				<label
+					className="grid gap-2 text-sm font-extrabold"
+					htmlFor="register-email"
+				>
 					Email
-					<input name="email" type="email" autoComplete="email" required />
+					<Input
+						id="register-email"
+						name="email"
+						type="email"
+						autoComplete="email"
+						required
+					/>
 				</label>
-				<label>
+				<label
+					className="grid gap-2 text-sm font-extrabold"
+					htmlFor="register-password"
+				>
 					Password
-					<input
+					<Input
+						id="register-password"
 						name="password"
 						type="password"
 						autoComplete="new-password"
@@ -74,17 +92,24 @@ function RegisterPage() {
 						required
 					/>
 				</label>
-				<p id="password-help" className="field-help">
+				<p id="password-help" className="-mt-2 text-xs text-muted-foreground">
 					8–128 characters
 				</p>
 				{error ? (
-					<p className="form-error" role="alert">
+					<p
+						className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+						role="alert"
+					>
 						{error}
 					</p>
 				) : null}
-				<button className="primary-button" type="submit" disabled={submitting}>
+				<Button
+					className="w-full rounded-xl"
+					type="submit"
+					disabled={submitting}
+				>
 					{submitting ? "Creating account…" : "Create account"}
-				</button>
+				</Button>
 			</form>
 		</AuthShell>
 	);

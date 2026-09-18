@@ -19,7 +19,7 @@ export function RecommendationClarification({
 	const normalizedAnswer = answer.trim();
 
 	return (
-		<Card className="bg-lavender shadow-none">
+		<Card className="border-transparent bg-lavender shadow-card">
 			<CardHeader className="space-y-3">
 				<MessageCircleQuestion className="size-8" aria-hidden="true" />
 				<h2 className="font-heading text-3xl leading-tight">
@@ -47,7 +47,12 @@ export function RecommendationClarification({
 						onChange={(event) => setAnswer(event.currentTarget.value)}
 						placeholder="Add the detail Flemme needs"
 					/>
-					<Button type="submit" className="w-full" disabled={!normalizedAnswer}>
+					<Button
+						type="submit"
+						variant="outline"
+						className="w-full border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card!"
+						disabled={!normalizedAnswer}
+					>
 						Update recommendations
 						<ArrowRight aria-hidden="true" />
 					</Button>

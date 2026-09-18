@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { requireAuthenticatedUser } from "../../auth/auth-guards";
 import {
@@ -80,17 +82,21 @@ function OnboardingKitchenPage() {
 				title="What do you cook with?"
 				description="We could not load your existing kitchen equipment."
 			>
-				<p className="form-error" role="alert">
+				<p
+					className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+					role="alert"
+				>
 					{kitchenErrorMessage(kitchenQuery.error)}
 				</p>
-				<button
+				<Button
 					type="button"
-					className="secondary-button"
+					variant="outline"
+					className="rounded-xl"
 					onClick={() => void kitchenQuery.refetch()}
 					disabled={kitchenQuery.isRefetching}
 				>
 					Retry
-				</button>
+				</Button>
 			</OnboardingStepShell>
 		);
 	}
@@ -142,20 +148,29 @@ function KitchenEquipmentForm({
 	const invalid = equipment.length === 0;
 
 	return (
-		<div className="kitchen-form">
+		<div className="space-y-4">
 			{equipmentGroups.map((group) => (
-				<fieldset className="equipment-group" key={group.category}>
-					<legend>{group.label}</legend>
-					<div className="equipment-grid">
+				<fieldset
+					className="rounded-3xl bg-muted/45 p-5 shadow-control"
+					key={group.category}
+				>
+					<legend className="float-left mb-4 w-full font-heading text-lg leading-tight tracking-tight">
+						{group.label}
+					</legend>
+					<div className="clear-both grid grid-cols-2 gap-2">
 						{kitchenEquipmentCatalog
 							.filter((item) => item.category === group.category)
 							.map((item) => {
 								const selected = equipment.includes(item.key);
 								return (
-									<button
+									<Button
 										type="button"
 										key={item.key}
-										className={`equipment-card ${selected ? "is-selected" : ""}`}
+										variant="ghost"
+										className={cn(
+											"h-auto min-h-14 justify-between rounded-2xl border border-transparent bg-card px-3 py-2 text-left whitespace-normal shadow-none hover:border-transparent",
+											selected && "bg-secondary hover:bg-secondary/85",
+										)}
 										aria-pressed={selected}
 										disabled={disabled}
 										onClick={() =>
@@ -165,30 +180,42 @@ function KitchenEquipmentForm({
 										}
 									>
 										<span>{item.label}</span>
-										<span className="equipment-state" aria-hidden="true">
-											{selected ? <Check className="equipment-check" /> : null}
+										<span
+											className="grid size-6 shrink-0 place-items-center rounded-lg bg-background"
+											aria-hidden="true"
+										>
+											{selected ? <Check className="size-4" /> : null}
 										</span>
-									</button>
+									</Button>
 								);
 							})}
 					</div>
 				</fieldset>
 			))}
-			<p className="equipment-summary" aria-live="polite">
+			<p
+				className={cn(
+					"text-center text-sm font-bold",
+					invalid ? "text-destructive" : "text-muted-foreground",
+				)}
+				aria-live="polite"
+			>
 				{invalid
 					? "Select at least one equipment item."
 					: `${equipment.length} ${equipment.length === 1 ? "item" : "items"} selected`}
 			</p>
-			<button
+			<Button
 				type="button"
-				className="primary-button kitchen-continue"
+				className="w-full rounded-xl"
 				disabled={disabled || invalid}
 				onClick={() => onContinue({ equipment })}
 			>
 				{disabled ? "Saving…" : "Continue"}
-			</button>
+			</Button>
 			{errorMessage ? (
-				<p className="form-error" role="alert">
+				<p
+					className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+					role="alert"
+				>
 					{errorMessage}
 				</p>
 			) : null}

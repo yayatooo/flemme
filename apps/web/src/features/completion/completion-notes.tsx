@@ -10,7 +10,7 @@ export function CompletionNotes({ notes }: CompletionNotesProps) {
 
 	return (
 		<section aria-labelledby="completion-notes-title">
-			<Card className="bg-secondary/35 shadow-none">
+			<Card className="border-transparent bg-secondary/35 shadow-card">
 				<CardHeader className="gap-2">
 					<Lightbulb className="size-8" aria-hidden="true" />
 					<CardTitle id="completion-notes-title">Notes for next time</CardTitle>

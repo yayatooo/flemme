@@ -30,8 +30,8 @@ export function HomePage() {
 	}
 
 	return (
-		<PageContainer>
-			<div className="space-y-8">
+		<PageContainer className="pt-4 sm:pt-6">
+			<div className="space-y-5 sm:space-y-6">
 				<HomeGreeting displayName={displayName} />
 				<CookingPrompt
 					request={request}

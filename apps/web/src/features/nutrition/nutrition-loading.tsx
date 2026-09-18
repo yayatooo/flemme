@@ -6,8 +6,8 @@ interface NutritionLoadingProps {
 
 export function NutritionLoading({ displayName }: NutritionLoadingProps) {
 	return (
-		<main className="space-y-6 py-6 sm:py-8" aria-busy="true">
-			<header className="space-y-2">
+		<main className="space-y-5 py-4 sm:space-y-6 sm:py-6" aria-busy="true">
+			<header className="space-y-2 rounded-3xl bg-secondary p-5 shadow-card">
 				<p className="text-xs font-extrabold tracking-[0.18em] text-muted-foreground uppercase">
 					Nutrition
 				</p>

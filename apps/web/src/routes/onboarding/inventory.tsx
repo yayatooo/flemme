@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Plus, X } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import { requireAuthenticatedUser } from "../../auth/auth-guards";
 import {
@@ -74,17 +76,21 @@ function OnboardingInventoryPage() {
 				title="What's in your kitchen?"
 				description="We could not load your existing inventory."
 			>
-				<p className="form-error" role="alert">
+				<p
+					className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+					role="alert"
+				>
 					{inventoryErrorMessage(inventoryQuery.error)}
 				</p>
-				<button
+				<Button
 					type="button"
-					className="secondary-button"
+					variant="outline"
+					className="rounded-xl"
 					onClick={() => void inventoryQuery.refetch()}
 					disabled={inventoryQuery.isRefetching}
 				>
 					Retry
-				</button>
+				</Button>
 			</OnboardingStepShell>
 		);
 	}
@@ -163,11 +169,13 @@ function InitialInventoryForm({
 	};
 
 	return (
-		<div className="initial-inventory-form">
-			<form className="ingredient-entry" onSubmit={submitInput}>
-				<label htmlFor="ingredient-name">Search or add ingredient</label>
-				<div>
-					<input
+		<div className="space-y-5">
+			<form className="space-y-2" onSubmit={submitInput}>
+				<label className="text-sm font-extrabold" htmlFor="ingredient-name">
+					Search or add ingredient
+				</label>
+				<div className="grid grid-cols-[minmax(0,1fr)_3.5rem] gap-2">
+					<Input
 						id="ingredient-name"
 						value={input}
 						onChange={(event) => setInput(event.target.value)}
@@ -175,49 +183,65 @@ function InitialInventoryForm({
 						disabled={disabled}
 						autoComplete="off"
 					/>
-					<button
+					<Button
 						type="submit"
+						variant="secondary"
+						size="icon-lg"
+						className="rounded-xl shadow-none"
 						aria-label="Add ingredient"
 						disabled={disabled || input.trim().length === 0}
 					>
-						<Plus className="ingredient-add-icon" aria-hidden="true" />
-					</button>
+						<Plus aria-hidden="true" />
+					</Button>
 				</div>
 			</form>
 			{duplicateMessage ? (
-				<p className="field-feedback" role="status">
+				<p className="-mt-3 text-sm text-muted-foreground" role="status">
 					{duplicateMessage}
 				</p>
 			) : null}
-			<section className="ingredient-suggestions">
-				<h2>Suggestions</h2>
-				<div>
+			<section className="space-y-3 rounded-3xl bg-lavender/30 p-4 shadow-control">
+				<h2 className="font-heading text-lg">Suggestions</h2>
+				<div className="flex flex-wrap gap-2">
 					{ingredientSuggestions.map((suggestion) => (
-						<button
+						<Button
 							type="button"
+							variant="ghost"
+							size="sm"
+							className="h-auto min-h-10 rounded-xl border-transparent bg-card px-3 py-2 shadow-none hover:border-transparent"
 							key={suggestion}
 							disabled={disabled}
 							onClick={() => addItem(suggestion)}
 						>
 							{suggestion}
-						</button>
+						</Button>
 					))}
 				</div>
 			</section>
 			<section
-				className="selected-ingredients"
+				className="space-y-3 rounded-3xl bg-secondary/25 p-4 shadow-control"
 				aria-labelledby="selected-title"
 			>
-				<h2 id="selected-title">Your ingredients</h2>
+				<h2 id="selected-title" className="font-heading text-lg">
+					Your ingredients
+				</h2>
 				{items.length === 0 ? (
-					<p>No ingredients added yet. That's okay—you can add them later.</p>
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						No ingredients added yet. That's okay—you can add them later.
+					</p>
 				) : (
-					<div>
+					<div className="flex flex-wrap gap-2">
 						{items.map((item) => (
-							<span className="ingredient-chip" key={item.identity}>
+							<span
+								className="inline-flex min-h-10 items-center gap-1 rounded-xl bg-secondary py-1 pr-1 pl-3 text-sm font-extrabold"
+								key={item.identity}
+							>
 								{item.name}
-								<button
+								<Button
 									type="button"
+									variant="ghost"
+									size="icon-sm"
+									className="size-8 rounded-lg border-transparent bg-card/75 shadow-none hover:border-transparent hover:bg-card"
 									aria-label={`Remove ${item.name}`}
 									disabled={disabled}
 									onClick={() =>
@@ -228,38 +252,45 @@ function InitialInventoryForm({
 										)
 									}
 								>
-									<X className="ingredient-remove-icon" aria-hidden="true" />
-								</button>
+									<X className="size-4" aria-hidden="true" />
+								</Button>
 							</span>
 						))}
 					</div>
 				)}
 			</section>
-			<p className="inventory-summary" aria-live="polite">
+			<p
+				className="text-center text-sm font-bold text-muted-foreground"
+				aria-live="polite"
+			>
 				{items.length} {items.length === 1 ? "ingredient" : "ingredients"} added
 			</p>
-			<div className="inventory-actions">
+			<div className="grid gap-3 sm:grid-cols-2">
 				{items.length > 0 ? (
-					<button
+					<Button
 						type="button"
-						className="primary-button"
+						className="w-full rounded-xl"
 						disabled={disabled}
 						onClick={() => onFinish(items)}
 					>
 						{disabled ? "Saving…" : "Finish Setup"}
-					</button>
+					</Button>
 				) : null}
-				<button
+				<Button
 					type="button"
-					className={items.length === 0 ? "primary-button" : "secondary-button"}
+					variant={items.length === 0 ? "default" : "outline"}
+					className="w-full rounded-xl"
 					disabled={disabled}
 					onClick={() => onAddLater(items)}
 				>
 					{disabled ? "Finishing…" : "Add later"}
-				</button>
+				</Button>
 			</div>
 			{errorMessage ? (
-				<p className="form-error" role="alert">
+				<p
+					className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+					role="alert"
+				>
 					{errorMessage}
 				</p>
 			) : null}

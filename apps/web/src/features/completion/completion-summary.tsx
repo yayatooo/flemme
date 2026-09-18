@@ -9,7 +9,10 @@ interface CompletionSummaryProps {
 
 export function CompletionSummary({ completion }: CompletionSummaryProps) {
 	return (
-		<section className="space-y-4" aria-labelledby="completion-summary-title">
+		<section
+			className="space-y-4 rounded-3xl bg-card p-5 shadow-card"
+			aria-labelledby="completion-summary-title"
+		>
 			<div className="space-y-2">
 				<Badge variant="secondary">
 					<Sparkles aria-hidden="true" />
@@ -17,7 +20,7 @@ export function CompletionSummary({ completion }: CompletionSummaryProps) {
 				</Badge>
 				<p className="text-lg leading-relaxed font-bold">{completion.reply}</p>
 			</div>
-			<Card className="bg-primary/15 shadow-hard">
+			<Card className="border-transparent bg-primary/15 shadow-none">
 				<CardHeader>
 					<CardTitle id="completion-summary-title">
 						{completion.summary.title}

@@ -43,17 +43,23 @@ export function InventoryPage() {
 	}
 
 	return (
-		<PageContainer>
-			<div className="flex items-start justify-between gap-4">
+		<PageContainer className="space-y-5 pt-4 sm:space-y-6 sm:pt-6">
+			<div className="flex items-start justify-between gap-4 rounded-3xl bg-secondary p-5 shadow-card">
 				<header className="min-w-0 space-y-2">
-					<h1 className="font-heading text-4xl leading-none tracking-tight">
+					<h1 className="font-heading text-3xl leading-none tracking-tight sm:text-4xl">
 						Inventory
 					</h1>
 					<p className="leading-relaxed text-muted-foreground">
 						What do you have right now?
 					</p>
 				</header>
-				<Button type="button" size="sm" onClick={() => setAddOpen(true)}>
+				<Button
+					type="button"
+					size="sm"
+					variant="ghost"
+					className="border-transparent bg-card/75 shadow-none hover:border-transparent hover:bg-card"
+					onClick={() => setAddOpen(true)}
+				>
 					<Plus aria-hidden="true" />
 					<span className="hidden min-[360px]:inline">Add ingredient</span>
 					<span className="min-[360px]:hidden">Add</span>
@@ -70,23 +76,25 @@ export function InventoryPage() {
 			{items.length > 0 ? <InventoryList items={items} /> : null}
 
 			<Dialog open={addOpen} onOpenChange={changeAddOpen}>
-				<DialogContent>
-					<DialogHeader>
+				<DialogContent className="gap-0 overflow-hidden border-transparent p-0 shadow-card">
+					<DialogHeader className="m-4 mb-0 rounded-2xl bg-secondary p-5 pr-14">
 						<DialogTitle>Add ingredient</DialogTitle>
 						<DialogDescription>
 							Add what you have now. Quantity is optional.
 						</DialogDescription>
 					</DialogHeader>
-					<InventoryForm
-						key={String(addOpen)}
-						isPending={create.isPending}
-						errorMessage={
-							create.isError
-								? inventoryMutationErrorMessage(create.error)
-								: undefined
-						}
-						onSubmit={addItem}
-					/>
+					<div className="p-5">
+						<InventoryForm
+							key={String(addOpen)}
+							isPending={create.isPending}
+							errorMessage={
+								create.isError
+									? inventoryMutationErrorMessage(create.error)
+									: undefined
+							}
+							onSubmit={addItem}
+						/>
+					</div>
 				</DialogContent>
 			</Dialog>
 		</PageContainer>

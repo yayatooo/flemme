@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource/calistoga/400.css";
+@import "@fontsource-variable/lexend-deca";
 @import "@fontsource/shrikhand/400.css";
 @import "@fontsource-variable/plus-jakarta-sans";
 
@@ -118,7 +118,7 @@ input:focus-visible {
 
 .brand-mark {
 	color: var(--ink);
-	font-family: Calistoga, Georgia, serif;
+	font-family: "Lexend Deca Variable", system-ui, sans-serif;
 	font-size: 1.55rem;
 	line-height: 1;
 	letter-spacing: -0.035em;
@@ -224,7 +224,7 @@ button:disabled {
 .welcome-card h1 {
 	max-width: 12ch;
 	margin: 0.65rem 0 1rem;
-	font-family: Calistoga, Georgia, serif;
+	font-family: "Lexend Deca Variable", system-ui, sans-serif;
 	font-size: clamp(2.2rem, 10vw, 3.7rem);
 	font-weight: 400;
 	line-height: 0.94;
@@ -739,7 +739,7 @@ button:disabled {
 }
 
 @theme inline {
-	--font-heading: "Calistoga", Georgia, serif;
+	--font-heading: "Lexend Deca Variable", system-ui, sans-serif;
 	--font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);

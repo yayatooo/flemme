@@ -12,9 +12,9 @@ export function FavoritesPage() {
 		favoritesQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
 	return (
-		<PageContainer>
-			<header className="space-y-2">
-				<h1 className="font-heading text-4xl leading-none tracking-tight">
+		<PageContainer className="space-y-5 pt-4 sm:space-y-6 sm:pt-6">
+			<header className="space-y-2 rounded-3xl bg-soft-pink p-5 shadow-card">
+				<h1 className="font-heading text-3xl leading-none tracking-tight sm:text-4xl">
 					Favorites
 				</h1>
 				<p className="leading-relaxed text-muted-foreground">
@@ -41,6 +41,7 @@ export function FavoritesPage() {
 					<Button
 						type="button"
 						variant="outline"
+						className="w-full border-transparent bg-card shadow-card sm:w-auto"
 						disabled={favoritesQuery.isFetchingNextPage}
 						onClick={() => void favoritesQuery.fetchNextPage()}
 					>

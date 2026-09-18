@@ -7,7 +7,7 @@ interface InventoryListProps {
 
 export function InventoryList({ items }: InventoryListProps) {
 	return (
-		<ul className="space-y-3" aria-label="Inventory ingredients">
+		<ul className="grid gap-3" aria-label="Inventory ingredients">
 			{items.map((item) => (
 				<li key={item.id}>
 					<InventoryItem item={item} />

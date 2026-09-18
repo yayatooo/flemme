@@ -24,7 +24,7 @@ export function CookingHistoryCard({ item }: CookingHistoryCardProps) {
 	const nutritionLabel = completedMealNutritionLabel(item.nutrition);
 
 	return (
-		<Card>
+		<Card className="border-transparent shadow-card">
 			<CardHeader>
 				<CardTitle className="line-clamp-2 break-words pr-2 text-2xl">
 					{item.displayName}
@@ -34,7 +34,7 @@ export function CookingHistoryCard({ item }: CookingHistoryCardProps) {
 						<span
 							role="img"
 							aria-label="Saved favorite"
-							className="grid size-9 place-items-center rounded-full border-2 border-foreground bg-primary"
+							className="grid size-9 place-items-center rounded-xl bg-primary"
 						>
 							<Heart
 								className="size-5 fill-current"
@@ -73,9 +73,10 @@ export function CookingHistoryCard({ item }: CookingHistoryCardProps) {
 				</CardContent>
 			) : null}
 
-			<CardFooter className="justify-end">
+			<CardFooter className="justify-end bg-transparent pt-4">
 				<Button
-					className="w-full sm:w-auto"
+					variant="outline"
+					className="w-full border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card! sm:w-auto"
 					render={
 						<Link
 							to="/app/cooking/$sessionId/completion"

@@ -129,7 +129,7 @@ export function NutritionCoverage({
 	}[nutrition.status];
 
 	return (
-		<Card>
+		<Card className="border-transparent bg-lavender/25 shadow-card">
 			<CardHeader className="space-y-3">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<CardTitle>Calculation coverage</CardTitle>
@@ -160,7 +160,7 @@ export function NutritionCoverage({
 							aria-hidden="true"
 						/>
 					</CollapsibleTrigger>
-					<CollapsibleContent className="space-y-6 border-t-2 pt-5">
+					<CollapsibleContent className="space-y-6 border-t border-border pt-5">
 						{included.length > 0 ? (
 							<section className="space-y-3" aria-labelledby="included-title">
 								<h3 id="included-title" className="font-heading text-lg">

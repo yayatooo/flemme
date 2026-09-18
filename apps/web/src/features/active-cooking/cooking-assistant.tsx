@@ -33,7 +33,7 @@ export function CookingAssistant({
 	}
 
 	return (
-		<Card className="shadow-none">
+		<Card className="border-transparent bg-lavender/30 shadow-card">
 			<CardHeader className="gap-2">
 				<div className="flex items-center gap-2">
 					<Sparkles className="size-5 text-primary" aria-hidden="true" />
@@ -45,7 +45,7 @@ export function CookingAssistant({
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{result ? (
-					<div className="rounded-2xl border-2 border-foreground bg-secondary/55 p-4">
+					<div className="rounded-2xl bg-secondary/55 p-4">
 						<p className="font-bold leading-relaxed">{result.output.reply}</p>
 						{result.actionError ? (
 							<p

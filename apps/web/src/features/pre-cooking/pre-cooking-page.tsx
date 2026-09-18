@@ -33,8 +33,10 @@ export function PreCookingPage() {
 
 	if (!selection || !flow) {
 		return (
-			<PageContainer>
+			<PageContainer className="pt-4 sm:pt-6">
 				<EmptyState
+					className="border-transparent bg-card shadow-card"
+					iconClassName="rounded-2xl border-transparent"
 					title="No cooking plan to review"
 					description="Return to your recommendations and select a recipe."
 					action={
@@ -90,13 +92,14 @@ export function PreCookingPage() {
 	}
 
 	return (
-		<PageContainer>
-			<div className="space-y-8">
-				<header className="space-y-4">
+		<PageContainer className="pt-4 sm:pt-6">
+			<div className="space-y-5 sm:space-y-6">
+				<header className="space-y-4 rounded-3xl bg-mustard p-5 shadow-card">
 					<Button
 						type="button"
 						variant="ghost"
 						size="sm"
+						className="border-transparent bg-card/75 shadow-none hover:border-transparent hover:bg-card"
 						onClick={() => void navigate({ to: "/app/recommendation" })}
 					>
 						<ArrowLeft aria-hidden="true" />
@@ -104,7 +107,7 @@ export function PreCookingPage() {
 					</Button>
 					<div className="space-y-2">
 						<Badge variant="secondary">Pre-cooking</Badge>
-						<h1 className="font-heading text-4xl leading-none tracking-tight break-words">
+						<h1 className="font-heading text-3xl leading-none tracking-tight break-words sm:text-4xl">
 							{selection.selectedRecipe.name}
 						</h1>
 					</div>
@@ -129,7 +132,7 @@ export function PreCookingPage() {
 						<PreparationSteps steps={flow.plan.preparationSteps} />
 						<CookingStagesPreview stages={flow.plan.cookingStages} />
 
-						<section className="space-y-3 border-t-2 border-foreground pt-6">
+						<section className="space-y-3 rounded-3xl bg-primary/15 p-5 shadow-card">
 							<div className="space-y-1">
 								<h2 className="font-heading text-2xl">Ready to cook?</h2>
 								<p className="text-sm leading-relaxed text-muted-foreground">

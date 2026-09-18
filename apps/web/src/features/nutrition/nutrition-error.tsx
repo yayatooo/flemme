@@ -17,7 +17,7 @@ export function NutritionError({
 	onRetry,
 }: NutritionErrorProps) {
 	return (
-		<main className="space-y-6 py-6 sm:py-8">
+		<main className="space-y-5 py-4 sm:space-y-6 sm:py-6">
 			<Button
 				variant="ghost"
 				size="sm"
@@ -31,7 +31,7 @@ export function NutritionError({
 				<ArrowLeft aria-hidden="true" />
 				Completion
 			</Button>
-			<header className="space-y-2">
+			<header className="space-y-2 rounded-3xl bg-secondary p-5 shadow-card">
 				<p className="text-xs font-extrabold tracking-[0.18em] text-muted-foreground uppercase">
 					Nutrition
 				</p>
@@ -40,6 +40,8 @@ export function NutritionError({
 				</h1>
 			</header>
 			<ErrorState
+				className="border-destructive/40 bg-card shadow-card"
+				iconClassName="rounded-2xl border-transparent"
 				title="Couldn't prepare your Nutrition review"
 				description={message}
 				onRetry={onRetry}

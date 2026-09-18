@@ -87,7 +87,11 @@ export function HouseholdForm({
 					{errorMessage}
 				</p>
 			) : null}
-			<Button type="submit" disabled={disabled || invalid} className="w-full">
+			<Button
+				type="submit"
+				disabled={disabled || invalid}
+				className="w-full rounded-xl"
+			>
 				{disabled ? "Saving…" : submitLabel}
 			</Button>
 		</form>
@@ -113,7 +117,7 @@ function HouseholdStepper({
 }: HouseholdStepperProps) {
 	return (
 		<section
-			className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border-2 border-foreground bg-muted p-3"
+			className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl bg-muted/55 p-3 shadow-control"
 			aria-labelledby={`${category}-label`}
 		>
 			<div className="min-w-0">
@@ -129,6 +133,7 @@ function HouseholdStepper({
 					type="button"
 					variant="outline"
 					size="icon-sm"
+					className="rounded-xl"
 					aria-label={`Decrease ${category}`}
 					disabled={disabled || count === 0}
 					onClick={() => onChange(-1)}
@@ -145,6 +150,7 @@ function HouseholdStepper({
 					type="button"
 					variant="secondary"
 					size="icon-sm"
+					className="rounded-xl"
 					aria-label={`Increase ${category}`}
 					disabled={disabled || count === MAX_HOUSEHOLD_COUNT}
 					onClick={() => onChange(1)}

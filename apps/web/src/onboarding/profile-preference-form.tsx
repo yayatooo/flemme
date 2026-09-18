@@ -80,7 +80,7 @@ export function ProfilePreferenceForm({
 				</p>
 			) : null}
 			<div className="grid gap-3 sm:grid-cols-2">
-				<Button type="submit" disabled={disabled} className="w-full">
+				<Button type="submit" disabled={disabled} className="w-full rounded-xl">
 					{disabled ? "Saving…" : submitLabel}
 				</Button>
 				{onSkip ? (
@@ -89,7 +89,7 @@ export function ProfilePreferenceForm({
 						variant="outline"
 						disabled={disabled}
 						onClick={onSkip}
-						className="w-full"
+						className="w-full rounded-xl"
 					>
 						Skip for now
 					</Button>
@@ -115,9 +115,11 @@ function PreferenceGroup({
 	onToggle: (value: string) => void;
 }) {
 	return (
-		<fieldset className="space-y-3">
-			<legend className="text-base font-extrabold">{title}</legend>
-			<p className="text-sm leading-relaxed text-muted-foreground">
+		<fieldset className="rounded-3xl bg-muted/45 p-5 shadow-control">
+			<legend className="float-left mb-3 w-full font-heading text-lg leading-tight tracking-tight">
+				{title}
+			</legend>
+			<p className="clear-both mb-4 text-sm leading-relaxed text-muted-foreground">
 				{description}
 			</p>
 			<div className="flex flex-wrap gap-2">
@@ -132,7 +134,7 @@ function PreferenceGroup({
 							aria-pressed={selected}
 							disabled={disabled}
 							onClick={() => onToggle(option.value)}
-							className="max-w-full whitespace-normal"
+							className="max-w-full rounded-xl border-transparent whitespace-normal shadow-none"
 						>
 							{selected ? <Check aria-hidden="true" /> : null}
 							<span className="break-words">{option.label}</span>

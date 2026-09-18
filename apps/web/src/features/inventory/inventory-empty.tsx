@@ -9,6 +9,8 @@ interface InventoryEmptyProps {
 export function InventoryEmpty({ onAdd }: InventoryEmptyProps) {
 	return (
 		<EmptyState
+			className="border-transparent bg-card shadow-card"
+			iconClassName="rounded-2xl border-transparent bg-secondary"
 			title="Your inventory is empty"
 			description="Add the ingredients you have so Flemme can make better recommendations."
 			icon={<PackageOpen aria-hidden="true" />}

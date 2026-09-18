@@ -8,7 +8,7 @@ export function PreCookingLoading() {
 			aria-label="Preparing your cooking plan"
 		>
 			<p className="font-heading text-2xl">Preparing your cooking plan…</p>
-			<div className="space-y-4 rounded-3xl border-2 border-foreground bg-card p-5">
+			<div className="space-y-4 rounded-3xl border border-transparent bg-card p-5 shadow-card">
 				<Skeleton className="h-7 w-1/3" />
 				<Skeleton className="h-16 w-full" />
 				<div className="flex gap-3">

@@ -20,7 +20,7 @@ interface CompletionChangesProps {
 export function CompletionChanges({ changes }: CompletionChangesProps) {
 	return (
 		<section aria-labelledby="completion-changes-title">
-			<Card>
+			<Card className="border-transparent shadow-card">
 				<CardHeader className="gap-2">
 					<ListChecks className="size-8" aria-hidden="true" />
 					<CardTitle id="completion-changes-title">Changes you made</CardTitle>

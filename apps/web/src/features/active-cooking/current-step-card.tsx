@@ -17,13 +17,13 @@ export function CurrentStepCard({
 	totalSteps,
 }: CurrentStepCardProps) {
 	return (
-		<Card className="bg-card shadow-hard-lg">
+		<Card className="border-transparent bg-primary/15 shadow-card">
 			<CardHeader className="gap-4">
 				<div className="flex items-center justify-between gap-3">
 					<p className="text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
 						Current step · {stepNumber} of {totalSteps}
 					</p>
-					<div className="grid size-11 shrink-0 place-items-center rounded-full border-2 border-foreground bg-primary text-primary-foreground">
+					<div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
 						<Flame className="size-5" aria-hidden="true" />
 					</div>
 				</div>
@@ -32,7 +32,7 @@ export function CurrentStepCard({
 				</h1>
 			</CardHeader>
 			{step.timing ? (
-				<CardContent className="space-y-4 border-t-2 border-foreground pt-5">
+				<CardContent className="space-y-4 border-t border-border pt-5">
 					<TimingBadge level={step.timing.level} />
 					{step.timing.cue ? (
 						<div className="flex items-start gap-3 rounded-2xl bg-success/35 p-4">

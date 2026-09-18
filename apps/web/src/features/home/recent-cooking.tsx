@@ -30,7 +30,10 @@ export function RecentCooking({
 	return (
 		<section aria-labelledby="recent-cooking-heading" className="space-y-3">
 			<div className="flex items-center justify-between gap-3">
-				<h2 id="recent-cooking-heading" className="font-heading text-2xl">
+				<h2
+					id="recent-cooking-heading"
+					className="text-xs font-extrabold tracking-[0.14em] uppercase"
+				>
 					Recent Cooking
 				</h2>
 				<Button variant="ghost" size="sm" render={<Link to="/app/history" />}>
@@ -48,14 +51,18 @@ export function RecentCooking({
 				/>
 			) : null}
 			{!isLoading && !error && previewItems.length === 0 ? (
-				<p className="rounded-xl border-2 border-dashed border-foreground/40 px-4 py-5 text-sm leading-relaxed text-muted-foreground">
+				<p className="rounded-3xl border border-dashed border-border bg-card/55 px-5 py-6 text-sm leading-relaxed text-muted-foreground">
 					Meals you finish will appear here.
 				</p>
 			) : null}
 			{!isLoading && !error && previewItems.length > 0 ? (
 				<div className="space-y-3">
 					{previewItems.map((item) => (
-						<Card key={item.id} size="sm" className="shadow-none">
+						<Card
+							key={item.id}
+							size="sm"
+							className="border-transparent shadow-card"
+						>
 							<CardHeader className="grid grid-cols-[1fr_auto] items-start">
 								<h3 className="font-heading text-xl leading-tight">
 									{item.recipeName}

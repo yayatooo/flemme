@@ -19,10 +19,13 @@ export function ActiveSessionCard({ session }: ActiveSessionCardProps) {
 
 	return (
 		<section aria-labelledby="active-session-heading" className="space-y-3">
-			<h2 id="active-session-heading" className="font-heading text-2xl">
+			<h2
+				id="active-session-heading"
+				className="text-xs font-extrabold tracking-[0.14em] uppercase"
+			>
 				Continue Cooking
 			</h2>
-			<Card className="bg-mustard shadow-none">
+			<Card className="border-transparent bg-primary shadow-card">
 				<CardHeader className="min-w-0">
 					<Badge
 						variant={session.status === "paused" ? "secondary" : "outline"}
@@ -36,12 +39,13 @@ export function ActiveSessionCard({ session }: ActiveSessionCardProps) {
 				<CardContent className="space-y-4">
 					<div className="space-y-1">
 						<p className="text-sm font-extrabold">{session.stageLabel}</p>
-						<p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+						<p className="line-clamp-2 text-sm leading-relaxed text-foreground/70">
 							{session.stepLabel}
 						</p>
 					</div>
 					<Button
-						className="w-full sm:w-auto"
+						variant="outline"
+						className="w-full border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card! sm:w-auto"
 						render={
 							<Link
 								to="/app/cooking/$sessionId"

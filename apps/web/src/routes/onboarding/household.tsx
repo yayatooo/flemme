@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 import { requireAuthenticatedUser } from "../../auth/auth-guards";
 import { HouseholdForm } from "../../onboarding/household-form";
@@ -68,17 +69,21 @@ function OnboardingHouseholdPage() {
 				title="Who's eating with you?"
 				description="We could not load your existing household."
 			>
-				<p className="form-error" role="alert">
+				<p
+					className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+					role="alert"
+				>
 					{householdErrorMessage(householdQuery.error)}
 				</p>
-				<button
+				<Button
 					type="button"
-					className="secondary-button"
+					variant="outline"
+					className="rounded-xl"
 					onClick={() => void householdQuery.refetch()}
 					disabled={householdQuery.isRefetching}
 				>
 					Retry
-				</button>
+				</Button>
 			</OnboardingStepShell>
 		);
 	}

@@ -53,7 +53,7 @@ export function FavoriteCardView({
 	const isRemoving = removeState.status === "pending";
 
 	return (
-		<Card>
+		<Card className="border-transparent shadow-card">
 			<CardHeader>
 				<CardTitle className="line-clamp-2 break-words pr-2 text-2xl">
 					{favorite.displayName}
@@ -62,7 +62,7 @@ export function FavoriteCardView({
 					<span
 						role="img"
 						aria-label="Saved favorite"
-						className="grid size-9 place-items-center rounded-full border-2 border-foreground bg-primary"
+						className="grid size-9 place-items-center rounded-xl bg-primary"
 					>
 						<Heart
 							className="size-5 fill-current"
@@ -120,9 +120,10 @@ export function FavoriteCardView({
 				</CardContent>
 			) : null}
 
-			<CardFooter className="gap-2">
+			<CardFooter className="gap-2 bg-transparent pt-4">
 				<Button
-					className="min-w-0 flex-1"
+					variant="outline"
+					className="min-w-0 flex-1 border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card!"
 					render={
 						<Link
 							to="/app/cooking/$sessionId/completion"

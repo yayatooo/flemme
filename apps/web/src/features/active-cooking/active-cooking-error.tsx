@@ -19,6 +19,8 @@ export function ActiveCookingError({
 				Home
 			</Button>
 			<ErrorState
+				className="border-destructive/40 bg-card shadow-card"
+				iconClassName="rounded-2xl border-transparent"
 				title="Couldn't restore cooking session"
 				description={message}
 				onRetry={onRetry}

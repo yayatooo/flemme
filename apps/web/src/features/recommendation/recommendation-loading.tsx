@@ -11,7 +11,7 @@ export function RecommendationLoading() {
 			{["first", "second"].map((row) => (
 				<div
 					key={row}
-					className="space-y-4 rounded-3xl border-2 border-foreground bg-card p-5"
+					className="space-y-4 rounded-3xl border border-transparent bg-card p-5 shadow-card"
 				>
 					<Skeleton className="h-8 w-2/3" />
 					<Skeleton className="h-16 w-full" />

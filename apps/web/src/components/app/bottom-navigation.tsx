@@ -22,27 +22,28 @@ export function BottomNavigation() {
 			<PlatformContainer className="pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
 				<nav aria-label="Primary navigation" className="pointer-events-auto">
 					<Dock
-						className="mt-0 h-auto max-w-full gap-1 border-border bg-card/95 p-1.5 shadow-card"
-						iconSize={60}
-						iconMagnification={68}
+						className="mt-0 h-auto w-fit gap-2 rounded-3xl border-transparent bg-background/95 p-2 shadow-card"
+						iconSize={56}
+						iconMagnification={62}
 						iconDistance={96}
 						direction="bottom"
 					>
 						{navigationItems.map((item) => {
 							const Icon = item.icon;
 							return (
-								<DockIcon key={item.to} className="p-0!">
+								<DockIcon key={item.to} className="rounded-2xl p-0!">
 									<Link
 										to={item.to}
 										activeOptions={{ exact: item.to === "/app" }}
-										className="flex size-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl border px-0.5 text-[0.625rem] leading-none font-bold no-underline outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+										aria-label={item.label}
+										className="flex size-full items-center justify-center rounded-2xl border outline-none transition-[background-color,color,border-radius] focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 										activeProps={{
 											className:
-												"border-border bg-primary text-primary-foreground shadow-control",
+												"rounded-xl border-transparent bg-forest text-background shadow-none [&_svg]:text-background",
 										}}
 										inactiveProps={{
 											className:
-												"border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+												"border-transparent text-foreground/55 hover:bg-card hover:text-foreground",
 										}}
 									>
 										<Icon
@@ -50,7 +51,6 @@ export function BottomNavigation() {
 											strokeWidth={2.5}
 											aria-hidden="true"
 										/>
-										<span className="max-w-full truncate">{item.label}</span>
 									</Link>
 								</DockIcon>
 							);

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 import { requireAuthenticatedUser } from "../../auth/auth-guards";
 import {
@@ -59,13 +60,16 @@ function OnboardingCompletionPage() {
 			title="You're all set"
 			description="Flemme is ready to help you cook with the context you've shared. You can update your setup anytime."
 		>
-			<div className="completion-content">
-				<div className="completion-mark" aria-hidden="true">
-					<Check className="completion-icon" />
+			<div className="space-y-5">
+				<div
+					className="flex size-16 items-center justify-center rounded-2xl bg-secondary shadow-control"
+					aria-hidden="true"
+				>
+					<Check className="size-8 stroke-[3]" />
 				</div>
-				<button
+				<Button
 					type="button"
-					className="primary-button completion-button"
+					className="w-full rounded-xl"
 					disabled={completion.isPending}
 					onClick={() => void startCooking()}
 				>
@@ -74,9 +78,12 @@ function OnboardingCompletionPage() {
 						: error
 							? "Try Again"
 							: "Start Cooking"}
-				</button>
+				</Button>
 				{error ? (
-					<p className="form-error" role="alert">
+					<p
+						className="rounded-2xl bg-destructive/10 p-3 text-sm font-bold text-destructive"
+						role="alert"
+					>
 						{error}
 					</p>
 				) : null}

@@ -11,7 +11,7 @@ export function RecommendationList({
 	onSelect,
 }: RecommendationListProps) {
 	return (
-		<div className="space-y-5">
+		<div className="grid gap-4">
 			{recommendations.map((recommendation) => (
 				<RecommendationCard
 					key={recommendation.name}

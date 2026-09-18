@@ -15,12 +15,12 @@ export function CompletionError({
 	onRetry,
 }: CompletionErrorProps) {
 	return (
-		<main className="space-y-6 py-6 sm:py-8">
+		<main className="space-y-5 py-4 sm:space-y-6 sm:py-6">
 			<Button variant="ghost" size="sm" render={<Link to="/app" />}>
 				<ArrowLeft aria-hidden="true" />
 				Home
 			</Button>
-			<header className="space-y-2">
+			<header className="space-y-2 rounded-3xl bg-soft-pink p-5 shadow-card">
 				<p className="text-xs font-extrabold tracking-[0.18em] text-muted-foreground uppercase">
 					Completion
 				</p>
@@ -29,6 +29,8 @@ export function CompletionError({
 				</h1>
 			</header>
 			<ErrorState
+				className="border-destructive/40 bg-card shadow-card"
+				iconClassName="rounded-2xl border-transparent"
 				title="Couldn't prepare your review"
 				description={message}
 				onRetry={onRetry}

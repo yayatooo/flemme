@@ -110,20 +110,26 @@ export function InventoryForm({
 			</p>
 			{message ? (
 				<p
-					className="rounded-xl border-2 border-destructive bg-destructive/10 p-3 font-bold text-destructive"
+					className="rounded-2xl bg-destructive/10 p-3 font-bold text-destructive"
 					role="alert"
 				>
 					{message}
 				</p>
 			) : null}
-			<DialogFooter>
+			<DialogFooter className="mx-0 mb-0 rounded-2xl border-0 bg-muted/55 p-3">
 				<DialogClose
-					render={<Button type="button" variant="outline" />}
+					render={
+						<Button type="button" variant="outline" className="rounded-xl" />
+					}
 					disabled={isPending}
 				>
 					Cancel
 				</DialogClose>
-				<Button type="submit" disabled={isPending || !name.trim()}>
+				<Button
+					type="submit"
+					className="rounded-xl"
+					disabled={isPending || !name.trim()}
+				>
 					{isPending ? "Saving…" : item ? "Save changes" : "Add ingredient"}
 				</Button>
 			</DialogFooter>

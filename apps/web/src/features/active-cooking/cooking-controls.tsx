@@ -17,7 +17,7 @@ export function CookingControls({
 	onAdvance,
 }: CookingControlsProps) {
 	return (
-		<div className="rounded-3xl border-2 border-foreground bg-background p-3 shadow-hard">
+		<div className="rounded-3xl bg-card p-3 shadow-card">
 			<div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3">
 				<Button
 					type="button"
@@ -32,6 +32,8 @@ export function CookingControls({
 				<Button
 					type="button"
 					size="lg"
+					variant="outline"
+					className="border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card!"
 					disabled={isPending}
 					onClick={onAdvance}
 				>

@@ -22,12 +22,12 @@ export function CookingPrompt({
 	const canSubmit = Boolean(normalizedRequest && onSubmit && !isSubmitting);
 
 	return (
-		<Card className="bg-card">
+		<Card className="border-transparent bg-forest text-cream shadow-card">
 			<CardHeader>
-				<h2 className="font-heading text-2xl leading-tight">
+				<h2 className="font-heading text-2xl leading-tight text-cream">
 					Tell Flemme what you want
 				</h2>
-				<p className="text-sm leading-relaxed text-muted-foreground">
+				<p className="text-sm leading-relaxed text-cream/70">
 					Share a craving, ingredient, or time limit. Your saved kitchen context
 					will do the rest.
 				</p>
@@ -51,6 +51,7 @@ export function CookingPrompt({
 						value={request}
 						onChange={(event) => onRequestChange(event.currentTarget.value)}
 						placeholder="e.g. something quick with eggs"
+						className="min-h-24 border-transparent bg-card text-foreground shadow-none placeholder:text-muted-foreground"
 						aria-invalid={Boolean(error)}
 						aria-describedby={error ? "cooking-request-error" : undefined}
 					/>
@@ -64,7 +65,7 @@ export function CookingPrompt({
 						</p>
 					) : null}
 					<div className="flex justify-end">
-						<Button type="submit" disabled={!canSubmit}>
+						<Button type="submit" variant="secondary" disabled={!canSubmit}>
 							{isSubmitting ? "Starting…" : "Start cooking"}
 							<ArrowRight aria-hidden="true" />
 						</Button>

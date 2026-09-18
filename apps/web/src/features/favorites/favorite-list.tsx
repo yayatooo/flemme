@@ -7,7 +7,7 @@ interface FavoriteListProps {
 
 export function FavoriteList({ favorites }: FavoriteListProps) {
 	return (
-		<div className="space-y-4">
+		<div className="grid gap-3">
 			{favorites.map((favorite) => (
 				<FavoriteCard key={favorite.id} favorite={favorite} />
 			))}

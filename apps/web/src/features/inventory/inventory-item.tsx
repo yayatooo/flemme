@@ -62,7 +62,7 @@ export function InventoryItem({ item }: InventoryItemProps) {
 
 	return (
 		<>
-			<Card className="shadow-none">
+			<Card className="border-transparent shadow-card">
 				<CardContent className="flex items-start gap-3">
 					<div className="min-w-0 flex-1 space-y-1">
 						<h2 className="break-words font-heading text-xl leading-tight">
@@ -144,24 +144,26 @@ export function InventoryItem({ item }: InventoryItemProps) {
 			</Card>
 
 			<Dialog open={editOpen} onOpenChange={changeEditOpen}>
-				<DialogContent>
-					<DialogHeader>
+				<DialogContent className="gap-0 overflow-hidden border-transparent p-0 shadow-card">
+					<DialogHeader className="m-4 mb-0 rounded-2xl bg-secondary p-5 pr-14">
 						<DialogTitle>Edit ingredient</DialogTitle>
 						<DialogDescription>
 							Changing the name checks canonical ingredient identity again.
 						</DialogDescription>
 					</DialogHeader>
-					<InventoryForm
-						key={`${item.id}:${item.name}:${item.quantity}:${item.unit}`}
-						item={item}
-						isPending={update.isPending}
-						errorMessage={
-							update.isError
-								? inventoryMutationErrorMessage(update.error)
-								: undefined
-						}
-						onSubmit={save}
-					/>
+					<div className="p-5">
+						<InventoryForm
+							key={`${item.id}:${item.name}:${item.quantity}:${item.unit}`}
+							item={item}
+							isPending={update.isPending}
+							errorMessage={
+								update.isError
+									? inventoryMutationErrorMessage(update.error)
+									: undefined
+							}
+							onSubmit={save}
+						/>
+					</div>
 				</DialogContent>
 			</Dialog>
 		</>

@@ -29,7 +29,7 @@ export function NutritionSummary({ nutrition }: NutritionSummaryProps) {
 	const values = perServingValues(nutrition);
 	if (!values) {
 		return (
-			<Card className="shadow-hard">
+			<Card className="border-transparent shadow-card">
 				<CardHeader>
 					<CardTitle>Not enough data for an estimate</CardTitle>
 				</CardHeader>
@@ -48,9 +48,11 @@ export function NutritionSummary({ nutrition }: NutritionSummaryProps) {
 
 	const approximate = nutrition.status === "partial" ? "~" : "";
 	return (
-		<Card className="overflow-hidden shadow-hard">
-			<CardHeader className="bg-secondary/35">
-				<CardTitle>Estimated nutrition</CardTitle>
+		<Card className="overflow-hidden border-transparent shadow-card">
+			<CardHeader className="mx-5 rounded-2xl bg-forest p-4 text-card sm:mx-6">
+				<CardTitle className="text-2xl text-card!">
+					Estimated nutrition
+				</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-6 pt-1">
 				<div>
@@ -63,7 +65,7 @@ export function NutritionSummary({ nutrition }: NutritionSummaryProps) {
 						Per serving
 					</p>
 				</div>
-				<dl className="grid grid-cols-3 gap-3 border-t-2 pt-4">
+				<dl className="grid grid-cols-3 gap-3 border-t border-border pt-4">
 					{(
 						[
 							["Protein", values.proteinG],
@@ -71,7 +73,7 @@ export function NutritionSummary({ nutrition }: NutritionSummaryProps) {
 							["Fat", values.fatG],
 						] as const
 					).map(([label, value]) => (
-						<div key={label} className="min-w-0">
+						<div key={label} className="min-w-0 rounded-2xl bg-muted/50 p-3">
 							<dt className="text-xs font-bold text-muted-foreground">
 								{label}
 							</dt>

@@ -9,7 +9,10 @@ export function EquipmentRequirements({
 	equipment,
 }: EquipmentRequirementsProps) {
 	return (
-		<section className="space-y-4" aria-labelledby="equipment-heading">
+		<section
+			className="space-y-4 rounded-3xl bg-lavender/35 p-5 shadow-card"
+			aria-labelledby="equipment-heading"
+		>
 			<header className="space-y-1">
 				<h2 id="equipment-heading" className="font-heading text-2xl">
 					Equipment
@@ -23,7 +26,7 @@ export function EquipmentRequirements({
 					{equipment.map((item) => (
 						<li
 							key={item.name}
-							className="flex min-w-0 items-center gap-3 rounded-2xl bg-muted/55 px-4 py-3"
+							className="flex min-w-0 items-center gap-3 rounded-2xl bg-card/75 px-4 py-3"
 						>
 							<Check
 								className="size-4 shrink-0 text-success-foreground"

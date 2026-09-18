@@ -6,12 +6,15 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
 	title: string;
 	description?: string;
 	icon?: ReactNode;
 	action?: ReactNode;
+	className?: string;
+	iconClassName?: string;
 }
 
 export function EmptyState({
@@ -19,12 +22,19 @@ export function EmptyState({
 	description,
 	icon,
 	action,
+	className,
+	iconClassName,
 }: EmptyStateProps) {
 	return (
-		<Card className="shadow-none">
+		<Card className={cn("shadow-none", className)}>
 			<CardHeader className="justify-items-center text-center">
 				{icon ? (
-					<div className="mb-2 grid size-12 place-items-center rounded-full border-2 border-foreground bg-secondary [&_svg]:size-6">
+					<div
+						className={cn(
+							"mb-2 grid size-12 place-items-center rounded-full border-2 border-foreground bg-secondary [&_svg]:size-6",
+							iconClassName,
+						)}
+					>
 						{icon}
 					</div>
 				) : null}

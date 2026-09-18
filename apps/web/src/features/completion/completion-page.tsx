@@ -46,12 +46,12 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 			session.session.status === "active" ||
 			session.session.status === "paused";
 		return (
-			<main className="space-y-6 py-6 sm:py-8">
+			<main className="space-y-5 py-4 sm:space-y-6 sm:py-6">
 				<Button variant="ghost" size="sm" render={<Link to="/app" />}>
 					<ArrowLeft aria-hidden="true" />
 					Home
 				</Button>
-				<header className="space-y-2">
+				<header className="space-y-2 rounded-3xl bg-soft-pink p-5 shadow-card">
 					<p className="text-xs font-extrabold tracking-[0.18em] text-muted-foreground uppercase">
 						Completion
 					</p>
@@ -59,7 +59,7 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 						{displayName}
 					</h1>
 				</header>
-				<Card className="shadow-hard">
+				<Card className="border-transparent shadow-card">
 					<CardHeader>
 						<CardTitle>Completion review isn't available yet</CardTitle>
 					</CardHeader>
@@ -110,9 +110,14 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 	}
 
 	return (
-		<main className="space-y-8 py-6 sm:py-8">
-			<header className="space-y-4">
-				<Button variant="ghost" size="sm" render={<Link to="/app" />}>
+		<main className="space-y-5 py-4 sm:space-y-6 sm:py-6">
+			<header className="space-y-4 rounded-3xl bg-soft-pink p-5 shadow-card">
+				<Button
+					variant="ghost"
+					size="sm"
+					className="border-transparent bg-card/75 shadow-none hover:border-transparent hover:bg-card"
+					render={<Link to="/app" />}
+				>
 					<ArrowLeft aria-hidden="true" />
 					Home
 				</Button>
@@ -134,18 +139,21 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 			<CompletionNotes notes={completion.notes} />
 
 			<section
-				className="space-y-3 border-t-2 pt-6"
+				className="space-y-3 rounded-3xl bg-forest p-5 text-card shadow-card"
 				aria-labelledby="nutrition-boundary-title"
 			>
 				<div className="flex items-start gap-3">
-					<CheckCircle2 className="mt-0.5 size-6 shrink-0" aria-hidden="true" />
+					<CheckCircle2
+						className="mt-0.5 size-6 shrink-0 text-card"
+						aria-hidden="true"
+					/>
 					<div>
 						<h2 id="nutrition-boundary-title" className="font-heading text-xl">
 							Ready for Nutrition
 						</h2>
 						<p
 							id="nutrition-boundary-description"
-							className="text-sm leading-relaxed text-muted-foreground"
+							className="text-sm leading-relaxed text-card/70"
 						>
 							Nutrition review is the next cooking phase.
 						</p>
@@ -167,7 +175,7 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 				</Button>
 				<Button
 					variant="outline"
-					className="w-full"
+					className="w-full border-transparent bg-card text-foreground! shadow-none [&_svg]:text-foreground!"
 					render={<Link to="/app" />}
 				>
 					Back home

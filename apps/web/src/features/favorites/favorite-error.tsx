@@ -7,6 +7,8 @@ interface FavoriteErrorProps {
 export function FavoriteError({ onRetry }: FavoriteErrorProps) {
 	return (
 		<ErrorState
+			className="border-destructive/40 bg-card shadow-card"
+			iconClassName="rounded-2xl border-transparent"
 			title="Couldn't load your favorites"
 			description="Your saved meals are still safe. Try again in a moment."
 			onRetry={onRetry}

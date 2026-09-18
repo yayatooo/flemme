@@ -4,16 +4,138 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Dock Navigation
+Flemme Web — Auth & Onboarding Bento Styling
 
 ## Current Goal
 
-The authenticated app uses the shared animated Dock for its fixed primary
-navigation while preserving the four destinations, route-derived active state,
-keyboard access, safe-area positioning, and the matching out-of-flow
-`PlatformContainer`.
+Extend Flemme's established mobile-first bento visual language through Login,
+Register, and the complete post-registration onboarding flow without changing
+authentication or onboarding behavior, validation, data flow, or navigation.
 
 ## Completed
+
+### Flemme Web — Auth & Onboarding Bento Styling
+
+- Rebuilt the shared Login and Register presentation with the platform theme,
+  Tailwind utilities, and existing shadcn Card, Input, and Button primitives.
+  The screens now use compact brand, lavender header, and card content tiles
+  with Lexend Deca headings and rounded-square controls.
+- Restyled the shared onboarding shell and the existing Profile, Household,
+  Kitchen, Inventory, and Completion steps with mustard headers, soft bento
+  surfaces, consistent shadows, and mobile-first spacing.
+- Anchored Profile preference and Kitchen equipment headings inside their
+  bento tiles with consistent content insets instead of allowing native
+  fieldset legends to overlap the rounded card edge.
+- Kept all auth handlers, Google sign-in behavior, validation attributes,
+  onboarding queries and mutations, submit locks, redirect decisions, cached
+  data behavior, form state, and user-facing actions unchanged.
+- Added explicit label/input associations to the migrated auth forms while
+  preserving their names and native submission behavior.
+- Replaced the shared Button's neo-brutalist hover and pressed translation with
+  bento-style color transitions and soft semantic elevation. Button variants,
+  disabled behavior, focus treatment, and composed link semantics are unchanged.
+- Restyled the existing Add and Edit Ingredient dialogs as borderless bento
+  cards with inset lime headers, soft footer tiles, rounded-square controls,
+  and subdued validation surfaces. Inventory fields, validation, submission,
+  mutations, and close/reset behavior remain unchanged.
+- Validation: all 175 web tests / 610 expectations pass. Web typecheck,
+  production build, and scoped Biome checks pass.
+
+### Flemme Web — Lexend Deca Heading Typography
+
+- Replaced the shared heading family with locally bundled Lexend Deca Variable
+  across Tailwind `font-heading`, the legacy auth/welcome headings, and the
+  legacy brand mark. Body copy remains Plus Jakarta Sans.
+- Added the Fontsource Lexend Deca variable package so heading typography does
+  not depend on a runtime external font request.
+- Removed the now-unused Calistoga dependency. Web typecheck, production build,
+  and the scoped CSS Biome check pass.
+
+### Flemme Web — Cooking Journey Bento Styling
+
+- Extended the authenticated bento language through Recommendations,
+  Pre-Cooking, Active Cooking, Completion, and Nutrition without changing any
+  route, state branch, query, mutation, lifecycle transition, or data flow.
+- Assigned a consistent phase palette: lavender Recommendations, mustard
+  preparation, orange/forest Active Cooking, soft-pink Completion, and lime
+  Nutrition. Existing content order and phase boundaries remain unchanged.
+- Restyled existing headers, cards, readiness summaries, preparation sections,
+  stage previews, cooking controls, assistant surfaces, completion summaries,
+  Nutrition metrics, loading states, and error states with border-light bento
+  tiles, compact spacing, rounded-square accents, and semantic shadows.
+- Explicitly forced cream text and icons on forest action buttons to preserve
+  contrast across Recommendation, Active Cooking, History, Favorites, and Home.
+- Explicitly forced the Completion handoff's cream Back home button label to
+  the dark foreground color so it stays visible inside the forest tile.
+- Refined the Nutrition summary heading from a shallow full-width strip into an
+  inset forest bento tile with balanced padding, medium corners, and an explicit
+  cream title color.
+- Validation: 30 focused component tests / 133 expectations pass across all
+  five cooking phases. Web typecheck, production build, and scoped Biome checks
+  pass.
+
+### Flemme Web — History, Favorites & Inventory Bento Styling
+
+- Extended Home's bento presentation to the existing History, Favorites, and
+  Inventory pages using forest, soft-pink, and lime header tiles, respectively.
+  Page copy, actions, state branches, pagination, dialogs, and destinations are
+  unchanged.
+- Restyled existing content and loading cards as borderless shadowed tiles,
+  tightened list rhythm, replaced circular status decoration with rounded
+  rectangles, and aligned primary card actions with the dark bento treatment.
+- Forced History and Favorites card-action labels and arrows to the card cream
+  color for reliable contrast, and added top padding below the footer divider.
+- Preserved every existing query, mutation, cache behavior, form field,
+  validation path, and remove/edit/view interaction.
+- Added optional presentation hooks to the shared EmptyState and ErrorState so
+  these three pages can use matching bento surfaces without changing other
+  callers or state behavior.
+- Validation: 17 focused component tests / 87 expectations pass. Web typecheck,
+  production build, and scoped Biome checks pass.
+
+### Flemme Web — Bento App Header Refinement
+
+- Restyled the existing sticky AppHeader as a two-tile bento row: a flexible
+  card-colored brand tile and a compact mustard Profile tile. The Flemme Home
+  link, authenticated avatar, Profile destination, accessible label, and
+  identity data remain unchanged.
+- Kept both tiles rectangular with consistent medium-radius geometry, semantic
+  borders, subtle control shadows, and the existing keyboard focus treatment.
+- Validation: 4 Profile/header component tests / 21 expectations pass. Web
+  typecheck, production build, and the scoped Biome check pass.
+
+### Flemme Web — Bento Dock Refinement
+
+- Refined the existing four-destination Dock into an icon-only bento surface.
+  Accessible navigation labels, route-derived active state, destinations,
+  keyboard focus, touch targets, and safe-area positioning remain unchanged.
+- Matched the Dock surface to the authenticated page background and replaced
+  the circular treatment with rounded rectangles. The active destination now
+  uses a tighter forest tile with its icon explicitly set to the cream page
+  background color for clear contrast.
+- Validation: 17 navigation-facing component tests / 95 expectations pass.
+  Web typecheck, production build, and the scoped Biome check pass.
+
+### Flemme Web — Home Bento Visual Refresh
+
+- Restyled the existing Home greeting, cooking prompt, Quick Start choices,
+  resumable-session card, Inventory shortcut, and Recent Cooking states into a
+  compact mobile-first bento rhythm. No content, action, query, route, or state
+  behavior changed.
+- Forced the resumable card's Continue cooking label and arrow to the card cream
+  color so they remain legible on the forest action surface.
+- Adapted the wireframe's dominant dark task surface, varied supporting color
+  tiles, generous rounded geometry, compact section labels, and soft shadows to
+  Flemme's established semantic cream, forest, orange, lime, mustard, lavender,
+  and pink tokens.
+- Updated the existing shared header and four-destination Dock presentation to
+  match the visual reference while preserving Profile access, route-derived
+  active state, labels, focus treatment, safe-area positioning, and the existing
+  Home, Inventory, History, and Favorites destinations.
+- Validation: all 175 web tests / 610 expectations pass. Web typecheck,
+  production build, and scoped Biome checks pass. In-browser visual acceptance
+  was not available in this session because the browser-control runtime was not
+  exposed.
 
 ### Flemme Web — Dock Navigation
 

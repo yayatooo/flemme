@@ -50,12 +50,12 @@ export function NutritionPage({ sessionId }: NutritionPageProps) {
 			session.session.status === "active" ||
 			session.session.status === "paused";
 		return (
-			<main className="space-y-6 py-6 sm:py-8">
+			<main className="space-y-5 py-4 sm:space-y-6 sm:py-6">
 				<Button variant="ghost" size="sm" render={<Link to="/app" />}>
 					<ArrowLeft aria-hidden="true" />
 					Home
 				</Button>
-				<header className="space-y-2">
+				<header className="space-y-2 rounded-3xl bg-secondary p-5 shadow-card">
 					<p className="text-xs font-extrabold tracking-[0.18em] text-muted-foreground uppercase">
 						Nutrition
 					</p>
@@ -63,7 +63,7 @@ export function NutritionPage({ sessionId }: NutritionPageProps) {
 						{displayName}
 					</h1>
 				</header>
-				<Card className="shadow-hard">
+				<Card className="border-transparent shadow-card">
 					<CardHeader>
 						<CardTitle>Nutrition review isn't available yet</CardTitle>
 					</CardHeader>
@@ -126,11 +126,12 @@ export function NutritionPage({ sessionId }: NutritionPageProps) {
 	}
 
 	return (
-		<main className="space-y-8 py-6 sm:py-8">
-			<header className="space-y-4">
+		<main className="space-y-5 py-4 sm:space-y-6 sm:py-6">
+			<header className="space-y-4 rounded-3xl bg-secondary p-5 shadow-card">
 				<Button
 					variant="ghost"
 					size="sm"
+					className="border-transparent bg-card/75 shadow-none hover:border-transparent hover:bg-card"
 					render={
 						<Link
 							to="/app/cooking/$sessionId/completion"
@@ -164,7 +165,7 @@ export function NutritionPage({ sessionId }: NutritionPageProps) {
 			<FavoriteAction sessionId={sessionId} />
 			<Button
 				variant="outline"
-				className="w-full"
+				className="w-full border-transparent bg-card shadow-card"
 				render={
 					<Link
 						to="/app/cooking/$sessionId/completion"

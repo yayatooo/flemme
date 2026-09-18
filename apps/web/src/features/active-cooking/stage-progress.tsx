@@ -26,7 +26,7 @@ export function StageProgress({
 				</span>
 			</div>
 			<div
-				className="h-2 overflow-hidden rounded-full border border-foreground bg-muted"
+				className="h-2 overflow-hidden rounded-md bg-muted"
 				role="progressbar"
 				aria-label="Cooking stage progress"
 				aria-valuemin={1}

@@ -16,7 +16,7 @@ export function RecommendationNoViable({
 	onCheckInventory,
 }: RecommendationNoViableProps) {
 	return (
-		<Card className="bg-soft-pink/40 shadow-none">
+		<Card className="border-transparent bg-soft-pink/45 shadow-card">
 			<CardHeader className="space-y-3">
 				<PackageSearch className="size-9" aria-hidden="true" />
 				<h2 className="font-heading text-3xl leading-tight">

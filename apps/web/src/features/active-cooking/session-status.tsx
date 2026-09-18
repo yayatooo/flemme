@@ -23,7 +23,7 @@ export function PausedSessionStatus({
 	onResume,
 }: PausedSessionStatusProps) {
 	return (
-		<Card className="bg-secondary shadow-hard">
+		<Card className="border-transparent bg-secondary shadow-card">
 			<CardHeader className="gap-3">
 				<PauseCircle className="size-9" aria-hidden="true" />
 				<CardTitle>Cooking paused</CardTitle>
@@ -35,7 +35,8 @@ export function PausedSessionStatus({
 				<Button
 					type="button"
 					size="lg"
-					className="w-full"
+					variant="outline"
+					className="w-full border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card!"
 					disabled={isPending}
 					onClick={onResume}
 				>
@@ -66,7 +67,11 @@ export function ClosedSessionStatus({ state }: ClosedSessionStatusProps) {
 
 	return (
 		<Card
-			className={abandoned ? "border-destructive shadow-none" : "bg-success/35"}
+			className={
+				abandoned
+					? "border-destructive/40 bg-card shadow-card"
+					: "border-transparent bg-success/35 shadow-card"
+			}
 		>
 			<CardHeader className="gap-3">
 				{abandoned ? (

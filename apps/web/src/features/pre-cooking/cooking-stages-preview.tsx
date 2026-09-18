@@ -13,7 +13,10 @@ interface CookingStagesPreviewProps {
 
 export function CookingStagesPreview({ stages }: CookingStagesPreviewProps) {
 	return (
-		<section className="space-y-4" aria-labelledby="cooking-plan-heading">
+		<section
+			className="space-y-4 rounded-3xl bg-soft-pink/35 p-5 shadow-card"
+			aria-labelledby="cooking-plan-heading"
+		>
 			<header className="space-y-1">
 				<h2 id="cooking-plan-heading" className="font-heading text-2xl">
 					Cooking plan
@@ -25,7 +28,7 @@ export function CookingStagesPreview({ stages }: CookingStagesPreviewProps) {
 			<div className="space-y-3">
 				{stages.map((stage, stageIndex) => (
 					<Collapsible key={stage.id}>
-						<div className="overflow-hidden rounded-2xl border-2 border-foreground bg-card">
+						<div className="overflow-hidden rounded-2xl border border-transparent bg-card shadow-control">
 							<CollapsibleTrigger className="group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/70">
 								<span className="font-heading text-xl text-primary">
 									{String(stageIndex + 1).padStart(2, "0")}
@@ -44,7 +47,7 @@ export function CookingStagesPreview({ stages }: CookingStagesPreviewProps) {
 									aria-hidden="true"
 								/>
 							</CollapsibleTrigger>
-							<CollapsibleContent className="border-t-2 border-foreground bg-muted/35 px-4 py-4">
+							<CollapsibleContent className="border-t border-border bg-muted/35 px-4 py-4">
 								<ol className="space-y-4">
 									{stage.steps.map((step, stepIndex) => (
 										<li key={step.id} className="flex gap-3">

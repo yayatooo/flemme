@@ -62,7 +62,7 @@ function ReadinessSummary({
 		requirements.length > 0 && counts.unconfirmed === 0 && counts.missing === 0;
 
 	return (
-		<div className="min-w-0 rounded-2xl border-2 border-foreground bg-muted/45 p-3">
+		<div className="min-w-0 rounded-2xl border border-transparent bg-muted/55 p-3">
 			<p className="text-[0.6875rem] font-extrabold tracking-wide uppercase">
 				{label}
 			</p>
@@ -93,7 +93,7 @@ function ReadinessSummary({
 function RequiredConfirmations({ items }: { items: readonly string[] }) {
 	if (items.length === 0) return null;
 	return (
-		<div className="rounded-2xl border-2 border-foreground bg-mustard/30 p-4">
+		<div className="rounded-2xl border border-transparent bg-mustard/40 p-4">
 			<p className="flex items-center gap-2 text-xs font-extrabold tracking-wide uppercase">
 				<CircleAlert className="size-4" aria-hidden="true" />
 				Quick check
@@ -262,7 +262,7 @@ export function RecommendationCard({
 	onSelect,
 }: RecommendationCardProps) {
 	return (
-		<Card className="gap-0 py-0">
+		<Card className="gap-0 border-transparent py-0 shadow-card">
 			<div className="space-y-5 p-5 sm:p-6">
 				<Badge
 					variant={
@@ -325,7 +325,8 @@ export function RecommendationCard({
 				<Button
 					type="button"
 					size="lg"
-					className="w-full"
+					variant="outline"
+					className="w-full border-transparent bg-forest text-card! shadow-none hover:bg-forest/90 [&_svg]:text-card!"
 					onClick={() => onSelect(recommendation)}
 				>
 					Select recipe

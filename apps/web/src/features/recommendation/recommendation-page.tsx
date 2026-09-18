@@ -41,14 +41,19 @@ export function RecommendationPage() {
 	}
 
 	return (
-		<PageContainer>
-			<div className="space-y-6">
-				<header className="space-y-3">
-					<Button variant="ghost" size="sm" render={<Link to="/app" />}>
+		<PageContainer className="pt-4 sm:pt-6">
+			<div className="space-y-5 sm:space-y-6">
+				<header className="space-y-3 rounded-3xl bg-lavender p-5 shadow-card">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="border-transparent bg-card/75 shadow-none hover:border-transparent hover:bg-card"
+						render={<Link to="/app" />}
+					>
 						<ArrowLeft aria-hidden="true" />
 						Home
 					</Button>
-					<h1 className="font-heading text-4xl leading-none tracking-tight">
+					<h1 className="font-heading text-3xl leading-none tracking-tight sm:text-4xl">
 						Recommendations
 					</h1>
 					{flow?.request ? (
@@ -60,6 +65,8 @@ export function RecommendationPage() {
 
 				{!flow ? (
 					<EmptyState
+						className="border-transparent bg-card shadow-card"
+						iconClassName="rounded-2xl border-transparent"
 						title="Start with a cooking request"
 						description="Tell Flemme what you feel like cooking from Home."
 						action={<Button render={<Link to="/app" />}>Go to Home</Button>}
@@ -69,6 +76,8 @@ export function RecommendationPage() {
 				{flow?.status === "error" ? (
 					<div className="space-y-3">
 						<ErrorState
+							className="border-destructive/40 bg-card shadow-card"
+							iconClassName="rounded-2xl border-transparent"
 							title="Couldn't prepare recommendations"
 							description={flow.message}
 							onRetry={() => runRequest(flow.request)}

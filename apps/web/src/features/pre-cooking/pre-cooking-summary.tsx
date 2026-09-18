@@ -8,7 +8,7 @@ interface PreCookingSummaryProps {
 
 export function PreCookingSummary({ summary }: PreCookingSummaryProps) {
 	return (
-		<Card className="bg-secondary shadow-none">
+		<Card className="border-transparent bg-secondary shadow-card">
 			<CardHeader>
 				<CardTitle>Get ready</CardTitle>
 			</CardHeader>
