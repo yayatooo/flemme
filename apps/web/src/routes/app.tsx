@@ -4,7 +4,12 @@ import {
 	redirect,
 	useRouterState,
 } from "@tanstack/react-router";
-import { AppHeader, AppShell, BottomNavigation } from "@/components/app";
+import {
+	AppHeader,
+	AppShell,
+	BottomNavigation,
+	PlatformContainer,
+} from "@/components/app";
 import { requireAuthenticatedUser } from "../auth/auth-guards";
 import { useAuth } from "../auth/auth-query";
 import {
@@ -43,10 +48,12 @@ function AppLayout() {
 
 	return (
 		<AppShell hasBottomNavigation={!hideBottomNavigation}>
-			{isCooking ? null : <AppHeader user={auth.user} />}
-			<main className="flex-1">
-				<Outlet />
-			</main>
+			<PlatformContainer className="flex flex-1 flex-col">
+				{isCooking ? null : <AppHeader user={auth.user} />}
+				<main className="flex-1">
+					<Outlet />
+				</main>
+			</PlatformContainer>
 			{hideBottomNavigation ? null : <BottomNavigation />}
 		</AppShell>
 	);

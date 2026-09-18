@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface AppShellProps {
 	children: ReactNode;
@@ -10,16 +11,14 @@ export function AppShell({
 	hasBottomNavigation = true,
 }: AppShellProps) {
 	return (
-		<div className="min-h-dvh bg-muted">
-			<div
-				className={`relative mx-auto flex min-h-dvh w-full max-w-xl flex-col bg-background sm:border-x-2 sm:border-foreground ${
-					hasBottomNavigation
-						? "pb-[calc(5rem+env(safe-area-inset-bottom))]"
-						: ""
-				}`}
-			>
-				{children}
-			</div>
+		<div
+			data-theme="platform"
+			className={cn(
+				"flex min-h-dvh flex-col bg-background text-foreground",
+				hasBottomNavigation && "pb-[calc(6.5rem+env(safe-area-inset-bottom))]",
+			)}
+		>
+			{children}
 		</div>
 	);
 }

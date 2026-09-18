@@ -24,19 +24,35 @@
 shadcn/ui source primitives under `src/components/ui`. The `@/*` TypeScript and
 Vite alias resolves from `src`, and shadcn generation targets the same path.
 
-The global theme maps Flemme's cream, ink, orange, lime, lavender, danger,
-radius, typography, and hard-shadow decisions to semantic Tailwind/shadcn
-tokens. Shared primitives own accessible interaction structure and Flemme's
-neubrutalist presentation; Product Domain behavior remains outside
-`components/ui`. Existing page migration remains incremental rather than a
-single application rewrite.
-Authenticated global application pages compose one compact, mobile-first
-`max-w-xl` AppShell at the guarded `/app` route. The route layout owns the
-shared AppHeader and safe-area-aware BottomNavigation once; child pages consume
-PageContainer and reusable loading, empty, and recoverable error states. Global
-navigation remains Home, Inventory, History, and Favorites, while the focused
-Recommendation route intentionally hides BottomNavigation without introducing
-a second shell.
+The global theme maps Flemme's cream, forest/ink, orange, lime/leaf, lavender,
+danger, radius, typography, and semantic shadow decisions to Tailwind/shadcn
+tokens. `AppShell` scopes the authenticated platform refinements with
+`data-theme="platform"` so public Landing and legacy Auth/Onboarding styling
+retain their established tokens. Shared primitives own accessible interaction
+structure and Flemme's soft neubrutalist presentation; Product Domain behavior
+remains outside `components/ui`. Existing legacy page migration remains
+incremental rather than a single application rewrite.
+
+Authenticated application pages use a full-width guarded `/app` `AppShell`
+that owns platform theming, viewport background, safe-area clearance, and
+global vertical composition without drawing or clipping a framed application
+canvas. The route layout places AppHeader and main content inside one
+normal-flow `PlatformContainer`, making that component the sole owner of
+application width and horizontal padding: `container mx-auto w-full max-w-xl`
+with `px-4 sm:px-6`. `PageContainer` and feature pages own vertical or local
+content styling only and add no competing layout-width container.
+BottomNavigation remains fixed outside normal flow and therefore uses one
+separate matching `PlatformContainer` inside its full-width fixed wrapper. Its
+interactive surface is the shared `components/ui/dock.tsx` Dock: four 60px
+icon-and-label links in a centered glass container, with pointer magnification
+to 68px, route-derived active state, and keyboard-visible focus. The fixed
+wrapper ignores pointer input while the semantic primary navigation restores
+it, so the clear viewport area remains interactive. Neither AppShell nor the
+normal-flow container establishes overflow, transform, or containment that
+could clip fixed navigation. The document viewport is explicitly
+`width=device-width, initial-scale=1`. The platform stays single-column with no
+desktop sidebar or alternate shell. Global navigation remains Home, Inventory,
+History, and Favorites.
 
 The authenticated Home implementation lives under `src/features/home`; its
 `/app` index route only selects HomePage. Home reuses the shared shell and page
@@ -85,7 +101,7 @@ unavailable, and absent Nutrition, and route by session ID to the existing
 Completion review. Completion, rename, Completion-generation,
 Nutrition-generation, and Favorite-creation paths invalidate the History key,
 so the server projection remains authoritative without requiring an app
-restart. History remains inside the global compact AppShell with
+restart. History remains inside the global authenticated AppShell with
 BottomNavigation visible.
 
 Phase 9C keeps Favorites as the canonical relation over completed Cooking
@@ -111,9 +127,9 @@ keep the card stable and retryable.
 Phase 9D makes `/app/inventory` the normal post-onboarding editor for the same
 persisted Inventory aggregate used by cooking context. `src/features/inventory`
 owns one canonical TanStack Query cache and the add, edit, and delete mutations.
-The page uses the compact AppShell, single-column item rows, explicit loading,
-empty, and retryable error states, and mobile-safe Dialog forms. Quantity and
-unit remain an optional pair; unknown quantity stays `null`.
+The page uses the shared platform AppShell, single-column item rows, explicit
+loading, empty, and retryable error states, and mobile-safe Dialog forms.
+Quantity and unit remain an optional pair; unknown quantity stays `null`.
 
 Inventory create and update requests accept a user-facing name. The API trims
 and normalizes it, resolves bilingual names and aliases through
@@ -155,7 +171,7 @@ never required before selection.
 
 The Pre-Cooking flow lives under `src/features/pre-cooking`.
 `/app/pre-cooking` requires the current selected recommendation and matching
-generation state, and remains inside the focused compact shell without global
+generation state, and remains inside the focused platform shell without global
 BottomNavigation. Its TanStack Query mutation posts the exact selection plus the
 current `session.request` to `POST /cooking/pre-cooking`; persistent Profile,
 Household, Kitchen, Inventory, and preference context remains API-owned. The
@@ -187,7 +203,7 @@ it does not depend on Recommendation or Pre-Cooking memory. The initial
 placeholder intentionally contains no Active Cooking controls. A fresh page
 load restores through `GET /cooking-sessions/:id`, preserving API-owned
 authentication, ownership, missing-session, and corrupt-snapshot behavior. The
-focused session route remains inside the compact app canvas without
+focused session route remains inside the centered platform canvas without
 BottomNavigation.
 
 The Phase 5B Active Cooking experience lives under
@@ -261,7 +277,7 @@ loads only the owned Cooking Session. Active and paused sessions return to
 Active Cooking; abandoned sessions receive a separate closed response. A
 completed session renders `customName` before the immutable recipe name and
 uses the existing browser-safe Completion output contract. The focused route
-retains the compact canvas and hides AppHeader and BottomNavigation.
+retains the centered platform canvas and hides AppHeader and BottomNavigation.
 
 The Completion TanStack Query has a session-scoped key separate from the
 canonical Cooking Session query. A restored `completionSnapshot` renders
@@ -283,7 +299,7 @@ Completion itself still performs no Nutrition work.
 The Phase 7 Nutrition experience lives under `src/features/nutrition`.
 `/app/cooking/$sessionId/nutrition` restores only the canonical owned Cooking
 Session, requires completed status plus persisted Completion output, and keeps
-the focused compact canvas without AppHeader or BottomNavigation. Active and
+the focused platform canvas without AppHeader or BottomNavigation. Active and
 paused sessions return to Active Cooking, abandoned sessions remain closed, and
 a completed session without Completion output returns to that prerequisite.
 `customName` retains priority over the immutable selected-recipe name.
@@ -337,8 +353,8 @@ Phase 10 adds `/app/profile` as the authenticated control center for persistent
 personal cooking context. `src/features/profile` owns the page, personal
 information, cooking-preference, Household, loading, recoverable error, and
 logout sections; the file route remains thin. AppHeader's single avatar entry
-opens Profile, while the four-item BottomNavigation and compact `max-w-xl`
-AppShell remain unchanged.
+opens Profile, while the four-item BottomNavigation remains unchanged and
+aligns with the shared `max-w-xl` content column.
 
 The canonical Auth query now exposes normalized ID, email, name, and optional
 provider image. The shared display presenter still applies name, email username,

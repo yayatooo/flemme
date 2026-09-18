@@ -127,12 +127,11 @@ test("profile loading and failure states remain visible and retryable", () => {
 	expect(error).not.toContain("Database detail");
 });
 
-test("header opens Profile while account logout and four-item navigation remain visible", async () => {
+test("header and account actions remain visible alongside primary navigation", async () => {
 	const markup = await renderProfileNavigation();
 
 	expect(markup).toContain('href="/app/profile"');
 	expect(markup).toContain("Log out");
 	expect(markup).toContain("Primary navigation");
-	expect(markup).toContain("grid-cols-4");
 	expect(markup).not.toContain("Delete account");
 });

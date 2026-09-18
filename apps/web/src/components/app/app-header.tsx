@@ -11,7 +11,7 @@ export function AppHeader({ user }: AppHeaderProps) {
 	const displayName = getUserDisplayName(user);
 
 	return (
-		<header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b-2 border-foreground bg-background px-5 py-2 sm:px-6">
+		<header className="sticky top-0 z-20 flex min-h-16 w-full items-center justify-between gap-3 border-b border-border bg-background/95 py-2 backdrop-blur">
 			<Link
 				to="/app"
 				className="font-heading text-2xl leading-none tracking-tight no-underline focus-visible:rounded-sm"

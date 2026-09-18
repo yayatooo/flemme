@@ -46,7 +46,7 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 			session.session.status === "active" ||
 			session.session.status === "paused";
 		return (
-			<main className="mx-auto w-full max-w-3xl space-y-6 px-5 py-6 sm:px-6 sm:py-8">
+			<main className="space-y-6 py-6 sm:py-8">
 				<Button variant="ghost" size="sm" render={<Link to="/app" />}>
 					<ArrowLeft aria-hidden="true" />
 					Home
@@ -110,7 +110,7 @@ export function CompletionPage({ sessionId }: CompletionPageProps) {
 	}
 
 	return (
-		<main className="mx-auto w-full max-w-3xl space-y-8 px-5 py-6 sm:px-6 sm:py-8">
+		<main className="space-y-8 py-6 sm:py-8">
 			<header className="space-y-4">
 				<Button variant="ghost" size="sm" render={<Link to="/app" />}>
 					<ArrowLeft aria-hidden="true" />

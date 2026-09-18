@@ -6,6 +6,7 @@
 @import "@fontsource-variable/plus-jakarta-sans";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant platform (&:where([data-theme="platform"] *));
 
 :root {
 	font-family: "Plus Jakarta Sans Variable", system-ui, sans-serif;
@@ -27,11 +28,16 @@
 	--soft-pink: #e9a6a0;
 	--muted: #526760;
 	--danger: #a53030;
+	--forest: var(--ink);
+	--leaf: var(--lime);
 
 	/* Existing visual tokens */
 	--border: 3px solid var(--ink);
 	--shadow-sm: 4px 4px 0 var(--ink);
 	--shadow-lg: 8px 8px 0 var(--ink);
+	--card-shadow: var(--shadow-sm);
+	--control-shadow: 2px 2px 0 var(--ink);
+	--button-hover-shadow: 6px 6px 0 var(--ink);
 	--container: 76rem;
 
 	/* shadcn semantic tokens */
@@ -57,6 +63,27 @@
 	--input: var(--ink);
 	--ring: var(--lavender);
 	--radius: 1.25rem;
+}
+
+[data-theme="platform"] {
+	--foreground: var(--forest);
+	--card-foreground: var(--forest);
+	--popover-foreground: var(--forest);
+	--primary-foreground: var(--forest);
+	--secondary-foreground: var(--forest);
+	--accent-foreground: var(--forest);
+	--success-foreground: var(--forest);
+	--muted-surface: color-mix(in srgb, var(--cream) 78%, var(--forest));
+	--muted-foreground: color-mix(in srgb, var(--forest) 76%, transparent);
+	--border-color: color-mix(in srgb, var(--forest) 38%, transparent);
+	--input: color-mix(in srgb, var(--forest) 48%, transparent);
+	--ring: var(--lavender);
+	--shadow-sm: 3px 3px 0 color-mix(in srgb, var(--forest) 78%, transparent);
+	--shadow-lg: 5px 5px 0 color-mix(in srgb, var(--forest) 78%, transparent);
+	--card-shadow: 0 8px 24px color-mix(in srgb, var(--forest) 12%, transparent);
+	--control-shadow: 0 2px 6px color-mix(in srgb, var(--forest) 10%, transparent);
+	--button-hover-shadow: 5px 5px 0
+		color-mix(in srgb, var(--forest) 78%, transparent);
 }
 
 * {
@@ -735,6 +762,9 @@ button:disabled {
 	--color-border: var(--border-color);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+	--color-cream: var(--cream);
+	--color-forest: var(--forest);
+	--color-leaf: var(--leaf);
 	--color-mustard: var(--mustard);
 	--color-lavender: var(--lavender);
 	--color-soft-pink: var(--soft-pink);
@@ -746,7 +776,12 @@ button:disabled {
 	--radius-2xl: 2rem;
 	--radius-3xl: 2.25rem;
 	--radius-4xl: 2.75rem;
+	--radius-platform-card: 1.25rem;
+	--radius-platform-control: 0.875rem;
 	--shadow-hard: var(--shadow-sm);
 	--shadow-hard-lg: var(--shadow-lg);
+	--shadow-card: var(--card-shadow);
+	--shadow-control: var(--control-shadow);
+	--shadow-button-hover: var(--button-hover-shadow);
 	--animate-marquee: marquee 30s linear infinite;
 }

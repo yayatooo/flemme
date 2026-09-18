@@ -4,16 +4,126 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Phase 10: Profile & Preferences v0.1
+Flemme Web — Dock Navigation
 
 ## Current Goal
 
-Phase 10 completes the final core user-facing account surface before global
-UI/UX refinement. `/app/profile` now manages normalized account identity,
-persistent cooking preferences, Household context, and logout without creating
-duplicate stores or mutating historical Cooking Sessions.
+The authenticated app uses the shared animated Dock for its fixed primary
+navigation while preserving the four destinations, route-derived active state,
+keyboard access, safe-area positioning, and the matching out-of-flow
+`PlatformContainer`.
 
 ## Completed
+
+### Flemme Web — Dock Navigation
+
+- Replaced BottomNavigation's static four-column control row with the shared
+  `Dock` and `DockIcon` components while preserving Home, Inventory, History,
+  and Favorites as semantic links.
+- Kept the fixed navigation outside normal flow in its matching
+  `PlatformContainer`. The transparent full-width wrapper ignores pointer
+  input; the centered glass dock restores it.
+- Set 60px mobile touch targets and 68px pointer magnification. All four labels
+  remain untruncated at 320px, active routes retain `aria-current="page"`, and
+  keyboard focus keeps the existing visible focus ring.
+- Browser verification passed at 320px and 1024px with zero horizontal
+  overflow. The History dock link navigated to `/app/history`, activated the
+  History state, and rendered the Cooking History page.
+- Validation: all 175 web tests / 610 expectations pass. Web typecheck,
+  production build, and scoped Biome checks pass.
+
+### Flemme Web — Platform Container Ownership Refinement
+
+- Moved AppHeader and route main content into one normal-flow
+  `PlatformContainer`. Removed AppHeader's nested container so header and page
+  content inherit one `max-w-xl` width and `px-4 sm:px-6` padding boundary.
+- Kept `AppShell` full-width and frame-free. It owns only theme, viewport-height
+  composition, and BottomNavigation safe-area clearance; it has no overflow,
+  transform, filter, or containment that can clip fixed descendants.
+- Kept `PageContainer` vertical-only and verified feature layout wrappers add no
+  competing `container`, centered wrapper, or `max-w-xl`-plus constraint.
+- Kept BottomNavigation fixed outside normal flow with its own matching
+  `PlatformContainer`, full-width structural wrapper, four existing
+  destinations, and unchanged Profile access through AppHeader.
+- Added the explicit responsive viewport declaration
+  `width=device-width, initial-scale=1`.
+- Browser verification passed at 320px, 390px, 768px, 1024px, 1440px, and
+  1920px. Exactly two platform containers render: one normal-flow owner and one
+  fixed-navigation inner wrapper. Both are full-width on 320px and 390px, then
+  remain 576px and centered. Fixed navigation remains at `bottom: 0`, AppShell
+  computes to `overflow: visible` and `transform: none`, controls remain 48px,
+  and all widths have zero horizontal overflow and no console errors.
+- Validation: all 175 web tests / 611 expectations pass. Web typecheck,
+  production build, and scoped Biome checks pass.
+
+
+### Flemme Web — Platform Base Layout v0.2
+
+- Superseded the v0.1 `max-w-5xl` root-container direction. `AppShell` now owns
+  only the full-width themed viewport, vertical composition, and safe-area
+  clearance; it no longer wraps the complete application in a constrained
+  frame.
+- Standardized `PlatformContainer` on `container mx-auto w-full max-w-xl` with
+  `px-4 sm:px-6`. AppHeader, route main content, and BottomNavigation each use
+  their own instance, so full-width structural wrappers surround one consistently
+  aligned 576px content column.
+- Kept `PageContainer` responsible for vertical rhythm and removed redundant
+  `max-w-3xl` constraints from Completion and Nutrition states. No page content
+  order, route, data boundary, or feature behavior changed.
+- AppHeader keeps only the Flemme brand and Profile avatar. BottomNavigation
+  keeps Home, Inventory, History, and Favorites. Both wrappers span the
+  viewport while their interactive content aligns exactly with main content.
+- Browser verification passed at 320px, 390px, 768px, 1024px, 1440px, and
+  1920px. All three inner containers are full-width at 320px and 390px, then
+  remain 576px and centered from 768px upward. Full-width header and navigation
+  wrappers, zero horizontal overflow, 48px primary controls, contained long
+  History titles, no sidebar, and a visible 3px keyboard focus outline were
+  observed.
+- Home, Profile, and History pilot review passed. Landing remains outside the
+  platform theme, and legacy Auth/Onboarding CSS and shells remain unchanged.
+- Validation: all 175 web tests / 611 expectations pass. Web typecheck,
+  production build, and scoped Biome checks pass.
+
+
+### Flemme Web — Platform Base Styling Foundation v0.1
+
+- Added `PlatformContainer` as the authenticated root width owner with
+  Tailwind `container`, `mx-auto`, `max-w-5xl`, and responsive 16/24/32px
+  horizontal padding. `AppShell` now owns this root plus viewport background,
+  platform theme scope, and safe-area BottomNavigation clearance.
+- Removed the global `max-w-xl` desktop canvas constraint without introducing
+  a sidebar, alternate shell, or page-level layout redesign. `PageContainer`
+  now owns vertical rhythm; focused Cooking, Completion, and Nutrition routes
+  no longer stack duplicate horizontal padding.
+- Scoped the authenticated theme through `data-theme="platform"` and normalized
+  forest/leaf aliases, semantic surfaces, muted text, borders, focus treatment,
+  card/control shadows, and platform radius tokens. The public Landing page
+  remains outside that scope.
+- Refined shared shadcn Card, Button, Input, Textarea, and Badge styling.
+  Platform Cards resolve to a 20px radius, 1px semantic border, and subtle
+  shadow; form controls resolve to a 14px radius, 1px border, and 48px minimum
+  input height; primary controls retain restrained physical shadows.
+- Aligned AppHeader and BottomNavigation to the same `max-w-5xl` container.
+  Header information structure is unchanged. BottomNavigation still exposes
+  exactly Home, Inventory, History, and Favorites; Profile remains the header
+  avatar destination.
+- Shared `Button` now defaults Base UI `nativeButton` semantics from
+  composition: ordinary controls remain native buttons, while `render`-composed
+  TanStack Router links and anchors opt out unless a caller explicitly
+  overrides the prop. Home and History render the intended `<button>`/`<a>`
+  elements with no Base UI console warnings.
+- Legacy Auth/Onboarding selectors remain in `index.css` and were not migrated
+  or deleted. The retained `.platform-page`, `.auth-page`, `.welcome-card`, and
+  `.onboarding-card` selectors are still referenced; no proven-dead selector
+  was identified during the bounded audit.
+- Browser verification passed on Home at 320px, 390px, 768px, 1024px, 1440px,
+  and 1920px with zero horizontal overflow. The root is full-width through
+  1024px, then remains centered at 1024px; responsive padding resolves to
+  16px, 24px, and 32px. Home, Profile, and History pilot review passed, and
+  Landing remained unscoped at mobile and desktop widths.
+- Validation: all 175 web tests / 611 expectations pass. Web typecheck and the
+  production build pass.
+
 
 ### Flemme Web — Phase 10: Profile & Preferences v0.1
 

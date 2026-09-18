@@ -17,7 +17,7 @@ export function NutritionError({
 	onRetry,
 }: NutritionErrorProps) {
 	return (
-		<main className="mx-auto w-full max-w-3xl space-y-6 px-5 py-6 sm:px-6 sm:py-8">
+		<main className="space-y-6 py-6 sm:py-8">
 			<Button
 				variant="ghost"
 				size="sm"

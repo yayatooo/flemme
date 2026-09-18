@@ -13,7 +13,7 @@ export function ActiveCookingError({
 	onRetry,
 }: ActiveCookingErrorProps) {
 	return (
-		<div className="space-y-4 px-5 py-8 sm:px-6">
+		<div className="space-y-4 py-8">
 			<Button variant="ghost" size="sm" render={<Link to="/app" />}>
 				<ArrowLeft aria-hidden="true" />
 				Home
