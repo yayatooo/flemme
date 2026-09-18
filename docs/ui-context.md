@@ -60,20 +60,24 @@ interaction hierarchy as mobile.
 
 ## Visual Direction
 
-Flemme takes inspiration from playful editorial food/lifestyle websites.
+Flemme uses the mobile-first Bento language established by the authenticated
+application. Public, authentication, onboarding, and application surfaces share
+the same semantic theme rather than maintaining separate retro and platform
+directions.
 
 The visual language combines:
 
-- warm neutral backgrounds,
-- deep dark-green/ink outlines,
-- bright accent colors,
-- oversized rounded shapes,
-- offset shadows,
-- expressive typography,
-- playful decorative illustrations,
-- large breathing room between sections.
+- a warm cream page background,
+- deep forest text and controls,
+- calm card surfaces and focused accent-color tiles,
+- medium-to-generous rounded rectangles,
+- thin semantic borders,
+- soft card and control elevation,
+- Lexend Deca headings with Plus Jakarta Sans body text,
+- compact, readable spacing inside generous page sections.
 
-The result should feel intentional and memorable without becoming chaotic.
+The result should feel warm, playful, and recognizably food-oriented without
+becoming chaotic or resembling a generic SaaS template.
 
 Avoid:
 
@@ -84,19 +88,21 @@ Avoid:
 - overly sterile white interfaces,
 - excessive gradients,
 - excessive micro-card layouts,
+- hard offset shadows or thick outlines as the default treatment,
+- arbitrary card rotation and sticker-like decoration,
 - dense enterprise UI patterns.
 
 ---
 
 ## Surface Style
 
-Prefer soft neo-brutalist surfaces.
+Prefer calm Bento surfaces.
 
 Typical characteristics:
 
-- visible dark outlines,
-- large rounded corners,
-- offset hard or semi-hard shadows,
+- thin semantic borders or transparent borders on colored tiles,
+- medium or large rounded corners drawn from the shared radius scale,
+- soft semantic card or control shadows,
 - clear separation between foreground and background,
 - strong visual hierarchy.
 
@@ -105,16 +111,16 @@ Examples:
 Primary button:
 
 [ bright surface ]
-[ dark outline ]
-[ dark offset shadow ]
+[ readable semantic foreground ]
+[ soft control elevation ]
 
 Cards:
 
 [ light surface ]
-[ dark border ]
-[ slight offset shadow ]
+[ optional thin border ]
+[ soft card elevation ]
 
-Do not apply heavy borders and shadows to every element.
+Do not apply borders and shadows to every element.
 
 Use them primarily for:
 
@@ -187,10 +193,9 @@ Used sparingly for:
 
 Warm beige / cream variations.
 
-Exact color tokens must be defined before production UI implementation.
-
-Components should use semantic CSS variables rather than arbitrary hardcoded
-colors.
+The implemented semantic palette and Tailwind mappings in
+`apps/web/src/index.css` are the source of truth. Components should use those
+tokens rather than arbitrary hardcoded colors or a page-specific palette.
 
 ---
 
@@ -210,29 +215,17 @@ Used for:
 - recipe information,
 - cooking instructions.
 
-Characteristics:
+The implemented family is Plus Jakarta Sans Variable. It is used for readable
+body copy, navigation, buttons, recipe information, and cooking instructions.
 
-- highly readable,
-- friendly,
-- modern,
-- slightly rounded or humanist.
+### Heading Family
 
-### Display / Editorial Accent
+The implemented heading family is Lexend Deca Variable. It is used for page,
+section, card, and marketing headings. Marketing headings may be larger than
+application headings while retaining the same family, weight, readable line
+height, and tracking.
 
-A serif or expressive italic typeface may be used selectively for:
-
-- hero emphasis,
-- marketing headings,
-- section highlights,
-- celebratory moments.
-
-Example:
-
-"Cook what you have,
-make it yours."
-
-The expressive font must not be used for long body text or critical cooking
-instructions.
+Do not introduce a separate retro display font for public-page emphasis.
 
 Cooking-session readability always has priority over visual personality.
 
@@ -245,10 +238,10 @@ Flemme uses generous rounded geometry.
 General direction:
 
 - buttons: large pill / rounded-full where appropriate,
-- navigation: large rounded container,
-- cards: large rounded corners,
+- navigation: rounded rectangular tiles,
+- cards: `rounded-platform-card` or an established larger Bento tile radius,
 - badges: pill-shaped,
-- small controls: medium rounded corners.
+- small controls: `rounded-platform-control` or an established medium radius.
 
 Avoid inconsistent random radius values.
 
@@ -263,11 +256,11 @@ Primary buttons should feel tactile.
 Typical characteristics:
 
 - strong contrast,
-- visible border,
+- semantic border where the surface requires it,
 - generous height,
 - bold label,
 - rounded shape,
-- optional offset shadow.
+- soft control elevation.
 
 Primary mobile CTA should generally be large and easy to press.
 
@@ -289,7 +282,7 @@ Avoid having multiple competing primary buttons on one screen.
 Navigation should feel like a floating or contained element rather than a
 traditional enterprise navbar.
 
-Desktop may use a wide rounded navigation container.
+Desktop may use a wide rounded rectangular navigation tile.
 
 Mobile navigation should prioritize:
 
@@ -305,20 +298,11 @@ Mobile navigation may use a different composition if needed.
 
 ## Decorative Elements
 
-Flemme may use small food-related or playful illustrations.
+Flemme may use established brand and food-related illustrations.
 
-Examples:
-
-- sparkles,
-- ingredient doodles,
-- utensils,
-- flames,
-- leaves,
-- cooking symbols.
-
-Illustrations should feel hand-drawn or simple rather than photorealistic.
-
-They are decorative and must never interfere with readability.
+They are decorative and must never interfere with readability. Do not add
+generic AI sparkles, floating blobs, arbitrary stickers, or decorative icons
+solely to make a Bento surface look busier.
 
 ---
 
@@ -326,17 +310,10 @@ They are decorative and must never interfere with readability.
 
 Food photography should feel appetizing and natural.
 
-Images may be placed inside editorial-style frames inspired by printed
-photographs or cards.
+Images may be placed inside rounded card or tile frames using the shared border
+and radius language.
 
-Optional treatments:
-
-- slight rotation,
-- thick border,
-- offset shadow,
-- caption underneath.
-
-Do not overuse tilted cards.
+Avoid defaulting to tilted cards, thick borders, or hard offset shadows.
 
 Image treatments should remain secondary to the food itself.
 
@@ -360,7 +337,8 @@ Primary content / visual
 ↓
 Primary action
 
-Desktop sections may use asymmetric two-column editorial layouts.
+Desktop sections may use asymmetric two-column marketing layouts and existing
+Bento grids.
 
 Mobile should normally collapse into a single clear vertical flow.
 

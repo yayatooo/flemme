@@ -1,6 +1,5 @@
 import {
 	AboutSection,
-	BrandTicker,
 	DiscoverSection,
 	FinalCtaSection,
 	HowItWorksSection,
@@ -13,10 +12,12 @@ import {
 
 export function LandingPage() {
 	return (
-		<main className="overflow-x-hidden bg-background">
+		<main
+			data-theme="platform"
+			className="overflow-x-clip bg-background text-foreground"
+		>
 			<LandingNavbar />
 			<LandingBanner />
-			<BrandTicker />
 			<DiscoverSection />
 			<AboutSection />
 			<HowItWorksSection />

@@ -5,7 +5,7 @@ export function BrandTicker() {
 
 	return (
 		<section
-			className="scale-[1.02] -rotate-1 overflow-hidden border-y-[3px] border-foreground bg-primary"
+			className="overflow-hidden border-y border-border bg-primary"
 			aria-label="Flemme values"
 		>
 			<div className="flex w-max animate-marquee motion-reduce:animate-none">
@@ -17,7 +17,7 @@ export function BrandTicker() {
 					>
 						{tickerItems.map(({ id, text }) => (
 							<span
-								className="py-3.5 pl-6 text-xs font-black tracking-widest whitespace-nowrap text-background uppercase"
+								className="py-3.5 pl-6 text-xs font-extrabold tracking-widest whitespace-nowrap text-primary-foreground uppercase"
 								key={id}
 							>
 								{text} <b className="ml-6 text-foreground">✦</b>

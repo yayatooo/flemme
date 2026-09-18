@@ -10,8 +10,6 @@ export const recipeCards = [
 			src: "/nasi-goreng.jpeg",
 			alt: "A plate of nasi goreng topped with sliced green onions",
 		},
-		surface: "bg-card shadow-hard-lg",
-		featured: true,
 		nutrition: {
 			calories: 420,
 			protein: 18,
@@ -28,8 +26,6 @@ export const recipeCards = [
 			src: "/ayam-kecap.jpeg",
 			alt: "Ayam kecap with onions, chilies, and herbs in a savory sauce",
 		},
-		surface: "bg-soft-pink",
-		featured: false,
 		nutrition: {
 			calories: 510,
 			protein: 34,
@@ -46,8 +42,6 @@ export const recipeCards = [
 			src: "/Creamy-Sambal-Pasta-Recipe.jpg",
 			alt: "Creamy sambal pasta garnished with herbs and cucumber",
 		},
-		surface: "bg-card shadow-hard",
-		featured: false,
 		nutrition: {
 			calories: 460,
 			protein: 16,

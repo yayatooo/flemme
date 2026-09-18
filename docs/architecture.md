@@ -26,12 +26,12 @@ Vite alias resolves from `src`, and shadcn generation targets the same path.
 
 The global theme maps Flemme's cream, forest/ink, orange, lime/leaf, lavender,
 danger, radius, typography, and semantic shadow decisions to Tailwind/shadcn
-tokens. `AppShell` scopes the authenticated platform refinements with
-`data-theme="platform"` so public Landing and legacy Auth/Onboarding styling
-retain their established tokens. Shared primitives own accessible interaction
-structure and Flemme's soft neubrutalist presentation; Product Domain behavior
-remains outside `components/ui`. Existing legacy page migration remains
-incremental rather than a single application rewrite.
+tokens. `AppShell`, the public Landing composition, and Auth/Onboarding shells
+apply `data-theme="platform"` at their local roots so all browser experiences
+share the established Bento refinements without changing global primitive
+defaults. Shared primitives own accessible interaction structure and Flemme's
+soft Bento presentation; Product Domain behavior remains outside
+`components/ui`.
 
 Authenticated application pages use a full-width guarded `/app` `AppShell`
 that owns platform theming, viewport background, safe-area clearance, and
@@ -377,6 +377,9 @@ The public landing page composes section exports from `src/components/landing`.
 That directory owns marketing layouts, static display data, and decorative
 helpers; `src/landing/landing-page.tsx` owns section order only. Landing-specific
 recipe cards wrap the generic shadcn Card without modifying shared primitives.
+The Landing root reuses the scoped platform tokens, Lexend Deca/Plus Jakarta
+Sans typography, semantic palette, soft shadows, and radius scale while keeping
+its existing marketing composition and wider container.
 
 ## System Boundaries
 

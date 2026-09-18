@@ -2,7 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/lexend-deca";
-@import "@fontsource/shrikhand/400.css";
 @import "@fontsource-variable/plus-jakarta-sans";
 
 @custom-variant dark (&:is(.dark *));
@@ -17,10 +16,10 @@
 	-webkit-font-smoothing: antialiased;
 
 	/* Flemme brand palette */
-	--cream: #f6eedb;
+	--cream: #fdf4ed;
 	--paper: #fffaf0;
 	--ink: #16352d;
-	--orange: #e95b32;
+	--orange: #f76326;
 	--tomato: #c93627;
 	--mustard: #f4b73f;
 	--lime: #a9c958;

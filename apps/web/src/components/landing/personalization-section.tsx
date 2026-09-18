@@ -1,39 +1,63 @@
 import { Clock3 } from "lucide-react";
 
-import { groovyAccentClass, headingClass, kickerClass } from "./styles";
+import { kickerClass } from "./styles";
 
 export function PersonalizationSection() {
 	return (
 		<section
 			className="
-				border-y-[3px]
-				border-foreground
+				relative
+				isolate
+				z-0
+				overflow-hidden
+				border-y
+				border-border
 				bg-mustard
 				py-20
 				sm:py-24
-				lg:py-32
+				lg:py-28
 			"
 		>
 			<div className="container mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
 				<div
 					className="
 						grid
-						gap-14
-						lg:grid-cols-[minmax(0,0.8fr)_minmax(32rem,1.2fr)]
+						gap-16
+						lg:grid-cols-[minmax(0,0.72fr)_minmax(34rem,1.28fr)]
 						lg:items-center
 						lg:gap-20
 					"
 				>
+					{/* Copy */}
 					<div className="max-w-xl">
 						<p className={kickerClass}>Made for your kitchen</p>
 
-						<h2 className={headingClass}>
+						<h2
+							className="
+								mt-4
+								text-[clamp(3.25rem,5.6vw,5.8rem)]
+								leading-[0.92]
+								font-extrabold
+								tracking-[-0.055em]
+								text-foreground
+							"
+						>
 							Your dinner.
 							<br />
-							<em className={groovyAccentClass}>Your rules.</em>
+							Your rules.
 						</h2>
 
-						<p className="mt-5 max-w-md text-base leading-7 lg:text-lg">
+						<p
+							className="
+								mt-7
+								max-w-md
+								text-base
+								leading-7
+								text-foreground/80
+								sm:text-lg
+								sm:leading-8
+							"
+						>
 							Flemme remembers the context that makes a recipe useful to you.
 						</p>
 					</div>
@@ -50,18 +74,21 @@ function PersonalizationOrbit() {
 		absolute
 		z-20
 		inline-flex
+		min-h-11
 		items-center
-		gap-1.5
+		gap-2
 		whitespace-nowrap
 		rounded-full
-		border-[3px]
-		border-foreground
-		bg-background
+		border
+		border-foreground/15
+		bg-card
 		px-4
 		py-2.5
 		text-xs
-		font-extrabold
-		shadow-[4px_4px_0_var(--ink)]
+		font-bold
+		text-foreground
+		shadow-control
+		sm:text-sm
 	`;
 
 	return (
@@ -69,119 +96,123 @@ function PersonalizationOrbit() {
 			className="
 				relative
 				mx-auto
-				aspect-[1.35/1]
+				aspect-[1.2/1]
 				w-full
-				max-w-2xl
-				lg:aspect-[1.3/1]
+				max-w-3xl
+				sm:aspect-[1.35/1]
 				lg:max-w-none
 			"
-			aria-label="Flemme personalizes recipes to your context"
+			aria-label="Flemme considers your ingredients, taste, time, kitchen and household"
 			role="img"
 		>
-			{/* Orbit */}
+			{/* Outer context orbit */}
 			<div
 				className="
 					absolute
-					inset-[16%_9%]
-					rounded-full
-					border-[3px]
-					border-dashed
-					border-foreground
+					inset-[12%_5%]
+					rounded-[50%]
+					border-2
+					border-foreground/35
 				"
 				aria-hidden="true"
 			/>
 
-			{/* Center mascot */}
+			{/* Inner soft focus area */}
+			<div
+				className="
+					absolute
+					top-1/2
+					left-1/2
+					h-[54%]
+					w-[48%]
+					-translate-x-1/2
+					-translate-y-1/2
+					rounded-full
+					bg-background/15
+				"
+				aria-hidden="true"
+			/>
+
+			{/* Mascot */}
 			<img
 				className="
 					absolute
 					top-1/2
 					left-1/2
 					z-10
-					size-80
+					w-[42%]
+					max-w-72
 					-translate-x-1/2
 					-translate-y-1/2
 					object-contain
-					lg:size-48
+					sm:w-[38%]
+					lg:max-w-80
 				"
-				src="/brain-flemme.png"
+				src="/mascot-thinking.png"
 				alt=""
 				aria-hidden="true"
 			/>
 
-			{/* Top — sits directly on orbit */}
+			{/* Ingredients */}
 			<span
 				className={`
 					${stickerClass}
-
-					top-[16%]
+					top-[12%]
 					left-1/2
 					-translate-x-1/2
 					-translate-y-1/2
-					-rotate-2
 				`}
 			>
 				Your ingredients
 			</span>
 
-			{/* Right upper */}
+			{/* Taste */}
 			<span
 				className={`
 					${stickerClass}
-
 					top-[29%]
-					right-[5%]
-					translate-x-[8%]
-					-translate-y-1/2
-					rotate-3
+					right-[2%]
 					bg-soft-pink
+					sm:right-[3%]
 				`}
 			>
 				Your taste
 			</span>
 
-			{/* Left middle */}
+			{/* Time */}
 			<span
 				className={`
 					${stickerClass}
-
 					top-1/2
-					left-[7%]
-					translate-x-[-12%]
+					left-[1%]
 					-translate-y-1/2
+					sm:left-[2%]
 				`}
 			>
 				<Clock3 className="size-4" aria-hidden="true" />
 				Your time
 			</span>
 
-			{/* Bottom left */}
+			{/* Kitchen */}
 			<span
 				className={`
 					${stickerClass}
-
-					bottom-[17%]
-					left-[17%]
-					-translate-x-1/2
+					bottom-[12%]
+					left-[16%]
 					translate-y-1/2
-					rotate-2
 					bg-secondary
 				`}
 			>
 				Your kitchen
 			</span>
 
-			{/* Bottom right */}
+			{/* Household */}
 			<span
 				className={`
 					${stickerClass}
-
-					right-[12%]
-					bottom-[17%]
-					translate-x-[10%]
+					right-[9%]
+					bottom-[12%]
 					translate-y-1/2
-					-rotate-2
-					bg-accent
 				`}
 			>
 				Your household

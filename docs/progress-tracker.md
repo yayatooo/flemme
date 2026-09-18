@@ -4,15 +4,99 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Auth & Onboarding Bento Styling
+Flemme Web — Landing Hero Banner
 
 ## Current Goal
 
-Extend Flemme's established mobile-first bento visual language through Login,
-Register, and the complete post-registration onboarding flow without changing
-authentication or onboarding behavior, validation, data flow, or navigation.
+Refine the supplied landing hero composition for mobile with centered English
+actions and a cleaner, compact benefit group without changing the navbar or
+any later landing section.
 
 ## Completed
+
+### Flemme Web — Personalization Navbar Layering Fix
+
+- Isolated the Personalization section into its own lower stacking context so
+  orbit labels cannot paint above the sticky navbar while scrolling. The
+  navbar and Personalization composition remain otherwise unchanged.
+
+### Flemme Web — Discover Section Improvement
+
+- Reframed Discover with the locked “See what you can make.” heading and
+  supporting description while preserving the existing kicker and section
+  order.
+- Kept the same three recipe records and full-width featured / two-secondary
+  composition, using an orange-tinted featured surface, a soft-green secondary
+  surface, and a warm neutral secondary surface from existing theme tokens.
+- Tightened the featured card's image/content balance and retained its full
+  primary action. Secondary cards now use poster-like image-first layouts,
+  compact nutrition summaries, and quieter link actions.
+- Compacted the desktop composition to fit within a typical viewport by using
+  smaller section rhythm and heading scale, a shorter featured card, and
+  horizontal secondary cards. Mobile keeps the required vertical card flow.
+- Removed the redundant bottom Discover CTA without adding routes, filters,
+  metrics, data, or product behavior.
+
+### Flemme Web — Landing Hero Banner
+
+- Centered the secondary hero action on mobile, translated both hero actions
+  and all three benefit labels to English, and preserved their existing routes.
+- Grouped the mobile benefits in one compact Bento surface with consistent
+  row spacing and dividers; the existing lightweight three-column treatment is
+  preserved from the small breakpoint upward.
+- Constrained the hero content to the same `max-w-7xl` canvas and responsive
+  horizontal padding used by the navbar and following landing sections.
+- Made the landing navbar sticky with a translucent cream surface, subtle
+  backdrop blur as page content scrolls beneath it. The inner navigation
+  retains the established landing content width on every viewport.
+- Replaced the Landing root's `overflow-x-hidden` with `overflow-x-clip` so it
+  still prevents horizontal paint overflow without creating the overflow
+  ancestor that blocked the sticky navbar. Removed the navbar divider.
+- Sticky-navbar validation: web typecheck, production build, Oxlint, and
+  `git diff --check` pass. Scoped Biome still reports the three existing mobile
+  fragment anchors because they close the menu through click handlers. Live
+  scroll review remains unavailable without an exposed browser runtime.
+- Replaced the previous CSS-built hero illustration with the supplied
+  `public/banner-mascot.png` as one intact, uncropped, responsive image. No
+  ingredient, recipe, or decorative cards were rebuilt around the asset.
+- Reworked only the existing `LandingBanner` into a content-sized, responsive
+  two-column desktop hero and an intentional mobile sequence of copy, actions,
+  mascot, and benefits.
+- Preserved the English eyebrow, headline, and supporting copy alongside the
+  English Register CTA, How It Works anchor, and three lightweight Lucide
+  benefit items.
+- Used the existing locally loaded Lexend Deca variable font at weight 900 for
+  the geometric headline; no font dependency or alternate loading strategy was
+  added.
+- Preserved the updated Landing navbar exactly and made no changes to later
+  landing sections, `/app`, Auth, Onboarding, APIs, or backend behavior.
+- Validation: all 175 web tests / 610 expectations, web typecheck, production
+  build, scoped Biome, Oxlint, and `git diff --check` pass. Oxlint reports only
+  the existing Fast Refresh warnings. Runtime viewport review remains
+  unavailable because neither the in-app browser execution capability nor a
+  local headless browser is exposed in this session.
+
+### Flemme Web — Landing Bento Theme Sync
+
+- Audited the guarded `/app` route, AppShell, PlatformContainer, AppHeader,
+  BottomNavigation, Home composition, shared Card/Button/Badge/Input primitives,
+  global semantic tokens, and locally loaded fonts before changing Landing.
+- Scoped the existing platform theme to the public Landing root, retaining the
+  wider marketing container while reusing the cream/forest/accent palette,
+  Lexend Deca headings, Plus Jakarta Sans body text, thin semantic borders,
+  shared radius scale, and soft card/control shadows.
+- Restyled the existing navigation, hero illustration, ticker, recipe cards,
+  journey tiles, personalization orbit, pricing card, and final CTA without
+  changing copy, destinations, section order, card counts, data, or handlers.
+- Removed Landing's Shrikhand typography, card/sticker tilts, thick outline
+  overrides, and hard offset shadows. The now-unused Shrikhand font dependency
+  and import were removed; no new dependency was introduced.
+- Preserved the existing five recipe/brand assets used by Landing. Banner
+  animation, card rotation, and any new banner composition remain out of scope.
+- Validation: all 175 web tests / 610 expectations pass. Web typecheck,
+  production build, scoped Biome checks, and Oxlint pass; Oxlint reports only
+  the existing Fast Refresh warnings. Browser viewport review was unavailable
+  because the in-app browser execution capability was not exposed.
 
 ### Flemme Web — Auth & Onboarding Bento Styling
 

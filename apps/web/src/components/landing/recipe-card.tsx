@@ -24,14 +24,11 @@ export function LandingRecipeCard({
 				`
 					group
 					overflow-hidden
-					border-[3px] border-foreground
-					bg-card
+					border-transparent
 					p-0
-					shadow-hard
-					transition-transform
-					duration-200
-					hover:-translate-y-1
+					shadow-card
 				`,
+				featured ? "bg-primary/15" : "bg-card",
 				className,
 			)}
 		>
@@ -39,27 +36,39 @@ export function LandingRecipeCard({
 				className={cn(
 					"grid h-full",
 					featured
-						? "lg:grid-cols-[minmax(20rem,0.85fr)_minmax(0,1.15fr)]"
-						: "sm:grid-cols-[minmax(11rem,0.8fr)_minmax(0,1.2fr)]",
+						? "lg:grid-cols-[minmax(20rem,0.9fr)_minmax(0,1.1fr)]"
+						: "grid-rows-[auto_1fr] lg:grid-cols-[minmax(11rem,0.78fr)_minmax(0,1.22fr)] lg:grid-rows-1",
 				)}
 			>
 				{/* Visual */}
-				<div className={cn("min-h-56 p-4", featured && "lg:min-h-80")}>
+				<div
+					className={cn(
+						featured
+							? "min-h-56 p-3 lg:min-h-60"
+							: "p-3 pb-0 lg:min-h-48 lg:pb-3",
+					)}
+				>
 					{recipe.image ? (
 						<img
 							src={recipe.image.src}
 							alt={recipe.image.alt}
-							className="
-								h-full
-								min-h-56
-								w-full
-								rounded-2xl
-								border-[3px] border-foreground
-								object-cover
-							"
+							className={cn(
+								"w-full rounded-2xl object-cover",
+								featured
+									? "h-full min-h-56"
+									: "aspect-[16/9] min-h-48 sm:min-h-56 lg:h-full lg:min-h-0",
+							)}
 						/>
 					) : (
-						<RecipeArt tone={recipe.art} className="h-full min-h-56 w-full" />
+						<RecipeArt
+							tone={recipe.art}
+							className={cn(
+								"w-full",
+								featured
+									? "h-full min-h-56"
+									: "aspect-[16/9] min-h-48 sm:min-h-56 lg:h-full lg:min-h-0",
+							)}
+						/>
 					)}
 				</div>
 
@@ -67,12 +76,12 @@ export function LandingRecipeCard({
 				<div className="flex min-w-0 flex-col">
 					<div
 						className={cn(
-							"flex flex-1 flex-col p-5 sm:p-6",
-							featured && "lg:p-8",
+							"flex flex-1 flex-col p-5 sm:p-6 lg:p-5",
+							featured && "lg:p-7",
 						)}
 					>
 						{/* Meta */}
-						<div className="flex flex-wrap items-center gap-2 text-xs font-black tracking-[0.11em] uppercase">
+						<div className="flex flex-wrap items-center gap-2 text-xs font-extrabold tracking-[0.11em] uppercase">
 							<span>{recipe.detail}</span>
 
 							<span
@@ -88,8 +97,8 @@ export function LandingRecipeCard({
 
 						<h3
 							className={cn(
-								"mt-4 font-heading leading-[0.95] font-normal tracking-[-0.03em]",
-								featured ? "text-4xl sm:text-5xl" : "text-3xl",
+								"mt-4 font-heading leading-tight font-bold tracking-[-0.035em]",
+								featured ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl",
 							)}
 						>
 							{recipe.name}
@@ -97,54 +106,55 @@ export function LandingRecipeCard({
 
 						<p
 							className={cn(
-								"mt-4 leading-7 text-muted-foreground",
-								featured && "max-w-xl",
+								"mt-3 text-muted-foreground",
+								featured ? "max-w-xl leading-7" : "text-sm leading-6",
 							)}
 						>
 							{recipe.description}
 						</p>
 
 						{/* Footer */}
-						<div
-							className="
-								mt-auto
-								flex
-								flex-col
-								gap-5
-								pt-8
-								sm:flex-row
-								sm:items-end
-								sm:justify-between
-							"
-						>
-							<div className="flex flex-wrap gap-6 sm:gap-8">
-								<RecipeMetric
-									label="Calories"
-									value={`${recipe.nutrition.calories} kcal`}
-									icon={<Flame className="size-4" />}
-								/>
+						{featured ? (
+							<div className="mt-auto flex flex-col gap-5 pt-6 sm:flex-row sm:items-end sm:justify-between">
+								<div className="flex flex-wrap gap-6 sm:gap-8">
+									<RecipeMetric
+										label="Calories"
+										value={`${recipe.nutrition.calories} kcal`}
+										icon={<Flame className="size-4" />}
+									/>
 
-								<RecipeMetric
-									label="Protein"
-									value={`${recipe.nutrition.protein}g`}
-									icon={<Dumbbell className="size-4" />}
-								/>
+									<RecipeMetric
+										label="Protein"
+										value={`${recipe.nutrition.protein}g`}
+										icon={<Dumbbell className="size-4" />}
+									/>
+								</div>
+
+								<Button
+									className="min-h-12 shrink-0 justify-between gap-6 sm:min-w-40"
+									render={<a href="#how-it-works" />}
+								>
+									View recipe
+									<ArrowRight />
+								</Button>
 							</div>
+						) : (
+							<div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-5">
+								<p className="m-0 text-sm font-bold text-muted-foreground">
+									{recipe.nutrition.calories} kcal · {recipe.nutrition.protein}g
+									protein
+								</p>
 
-							<Button
-								className="
-									min-h-12
-									shrink-0
-									justify-between
-									gap-6
-									sm:min-w-40
-								"
-								render={<a href="#how-it-works" />}
-							>
-								View recipe
-								<ArrowRight />
-							</Button>
-						</div>
+								<Button
+									variant="link"
+									className="min-h-11 shrink-0 font-bold"
+									render={<a href="#how-it-works" />}
+								>
+									View recipe
+									<ArrowRight />
+								</Button>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
@@ -161,7 +171,7 @@ type RecipeMetricProps = {
 function RecipeMetric({ label, value, icon }: RecipeMetricProps) {
 	return (
 		<div>
-			<p className="text-[0.65rem] font-black tracking-[0.12em] text-muted-foreground uppercase">
+			<p className="text-[0.65rem] font-extrabold tracking-[0.12em] text-muted-foreground uppercase">
 				{label}
 			</p>
 
