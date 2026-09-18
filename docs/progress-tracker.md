@@ -4,16 +4,70 @@ Update this file after every meaningful implementation change.
 
 ## Current Phase
 
-Flemme Web — Phase 9D: Inventory Management v0.1
+Flemme Web — Phase 10: Profile & Preferences v0.1
 
 ## Current Goal
 
-Phase 9D now exposes the persisted Inventory aggregate as the normal
-post-onboarding management surface. Users can add, edit, resolve, and remove
-ingredients while future Recommendations read the latest server context and
-existing Cooking Session plans remain immutable.
+Phase 10 completes the final core user-facing account surface before global
+UI/UX refinement. `/app/profile` now manages normalized account identity,
+persistent cooking preferences, Household context, and logout without creating
+duplicate stores or mutating historical Cooking Sessions.
 
 ## Completed
+
+### Flemme Web — Phase 10: Profile & Preferences v0.1
+
+- Added thin `/app/profile` routing under the existing guarded AppShell. The
+  AppHeader avatar is the single Profile entry; the four-item BottomNavigation
+  remains visible and no fifth destination was introduced.
+- Extended canonical `/auth/me` reads with Auth-owned name and optional provider
+  image. Added strict authenticated name-only PATCH support over the existing
+  `users` row; email and image stay read-only, and no auth-provider metadata or
+  token enters the web response.
+- Added a mobile-first Profile feature with normalized avatar/name/email
+  presentation, safe name fallback, read-only email guidance, display-name
+  editing, Cooking Preferences, Household, Account/logout, Skeleton loading,
+  and controlled retryable error states.
+- Successful name updates replace the existing Auth query cache, immediately
+  updating AppHeader and Home greeting. A real long-name save issued exactly
+  one PATCH even under a double click, updated both surfaces, and survived
+  logout/login restoration.
+- Reused the canonical `user_profiles` preference arrays, `["profile"]` query
+  key, PUT boundary, existing option vocabulary, and a shared onboarding/Profile
+  preference form. The verified Mild-to-Spicy equivalent changed the saved
+  context to Spicy plus One-pan through exactly one PUT.
+- Reused the canonical `households` aggregate, `["household"]` query key, PUT
+  boundary, 0–20 clamping, at-least-one-member validation, and one shared form
+  for onboarding and Profile. A real edit issued one PUT and restored
+  `1 adult · 1 child · 1 toddler` after a new login.
+- Preference and Household updates continue feeding the existing
+  database-backed cooking-context loader for future Recommendation and
+  Pre-Cooking requests. No duplicate Profile, preference, or Household model,
+  migration, Agent call, Recommendation generation, cooking lifecycle write,
+  Favorite write, or Inventory write was added.
+- Mutation dialogs preserve local input on controlled failure, show safe copy,
+  and use synchronous submission locks plus pending disabled states. Logout
+  reuses the existing Better Auth action, clears user-scoped queries, redirects
+  to Login, and leaves persisted identity and cooking context intact.
+- Browser acceptance passed at 320px, 390px, 768px, 1440px, and 1920px with no
+  horizontal overflow, contained long identity text, 48px visible actions,
+  visible BottomNavigation, keyboard-visible focus, and a 576px compact desktop
+  canvas. Logout remained reachable at every size.
+- Network acceptance observed one name PATCH, one preference PUT, and one
+  Household PUT. The same flow produced zero Recommendation, Pre-Cooking,
+  Cooking Session, progress, Completion, Nutrition, Favorite, Inventory, or
+  Agent mutation; a fresh login restored all three saved changes.
+- Validation: 175 web tests / 611 expectations and 162 API tests / 1,423
+  expectations pass. Focused Profile web coverage passes 8 tests / 41
+  expectations; the focused Auth boundary suite passes 10 tests / 599
+  expectations. Web typecheck, web production build, API build, scoped Biome,
+  and Oxlint pass. Oxlint reports only 17 established Fast Refresh warnings.
+  Standalone API typecheck remains blocked separately by the unchanged malformed
+  OpenAI declaration parser issue in
+  `node_modules/openai/internal/types.d.mts`.
+- The next project stage is Global UI/UX Refinement. No additional mandatory
+  core-product phase precedes that review.
+
 
 ### Flemme Web — Phase 9D: Inventory Management v0.1
 

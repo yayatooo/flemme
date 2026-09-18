@@ -1,11 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import type { CurrentUser } from "@/auth/auth-query";
+import { getUserDisplayName, getUserInitial } from "@/auth/user-display-name";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppHeaderProps {
-	initial?: string;
+	user: CurrentUser | null;
 }
 
-export function AppHeader({ initial = "F" }: AppHeaderProps) {
+export function AppHeader({ user }: AppHeaderProps) {
+	const displayName = getUserDisplayName(user);
+
 	return (
 		<header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b-2 border-foreground bg-background px-5 py-2 sm:px-6">
 			<Link
@@ -15,9 +19,16 @@ export function AppHeader({ initial = "F" }: AppHeaderProps) {
 				Flemme<span className="text-primary">.</span>
 			</Link>
 
-			<Avatar size="sm" role="img" aria-label="Account">
-				<AvatarFallback>{initial}</AvatarFallback>
-			</Avatar>
+			<Link
+				to="/app/profile"
+				aria-label={`Open ${displayName}'s profile`}
+				className="grid size-11 place-items-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+			>
+				<Avatar size="sm" role="img" aria-label={`${displayName}'s avatar`}>
+					{user?.image ? <AvatarImage src={user.image} alt="" /> : null}
+					<AvatarFallback>{getUserInitial(user)}</AvatarFallback>
+				</Avatar>
+			</Link>
 		</header>
 	);
 }

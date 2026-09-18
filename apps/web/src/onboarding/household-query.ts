@@ -84,16 +84,23 @@ export function householdQueryOptions(queryClient: QueryClient) {
 	});
 }
 
+export async function saveHouseholdState(
+	queryClient: QueryClient,
+	payload: HouseholdState,
+) {
+	return requestApi<HouseholdState>(
+		"/household",
+		{ method: "PUT", body: JSON.stringify(payload) },
+		() => handleUnauthorized(queryClient),
+	);
+}
+
 export async function saveHouseholdAndResolveNext(
 	queryClient: QueryClient,
 	payload: HouseholdState,
 	currentPath: string,
 ): Promise<string> {
-	const saved = await requestApi<HouseholdState>(
-		"/household",
-		{ method: "PUT", body: JSON.stringify(payload) },
-		() => handleUnauthorized(queryClient),
-	);
+	const saved = await saveHouseholdState(queryClient, payload);
 	queryClient.setQueryData(householdQueryKey, saved);
 	await queryClient.invalidateQueries({ queryKey: onboardingDecisionQueryKey });
 	const decision = await queryClient.fetchQuery(

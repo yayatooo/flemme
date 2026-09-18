@@ -256,7 +256,12 @@ test("Google callback provisions one UUID identity, restores sessions and preser
 		).status,
 	).toBe(200);
 	expect(await (await jar.request("/auth/me")).json()).toEqual({
-		user: { id: user.id, email: claims.email },
+		user: {
+			id: user.id,
+			email: claims.email,
+			name: claims.name,
+			image: claims.picture,
+		},
 	});
 	for (const path of [
 		"/get-access-token",

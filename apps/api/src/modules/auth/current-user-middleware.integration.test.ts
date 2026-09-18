@@ -118,7 +118,7 @@ class CookieJar {
 function domainRequest(
 	jar: CookieJar,
 	path: string,
-	method: "GET" | "POST" | "PUT",
+	method: "GET" | "POST" | "PUT" | "PATCH",
 	body?: unknown,
 	extra: Record<string, string> = {},
 ) {
@@ -143,6 +143,7 @@ async function expectUnauthenticated(response: Response) {
 const resourceId = crypto.randomUUID();
 const protectedRoutes = [
 	["GET", "/auth/me"],
+	["PATCH", "/auth/me"],
 	["GET", "/profile"],
 	["PUT", "/profile"],
 	["GET", "/household"],
@@ -203,6 +204,9 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	expect(openapi.paths["/auth/me"]?.get?.security).toEqual([
 		{ CurrentUser: [] },
 	]);
+	expect(openapi.paths["/auth/me"]?.patch?.security).toEqual([
+		{ CurrentUser: [] },
+	]);
 	expect(openapi.paths["/profile"]?.get?.security).toEqual([
 		{ CurrentUser: [] },
 	]);
@@ -223,7 +227,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	if (!user) throw new Error("A5 user missing");
 	await expectProtectedRoutesRejected({ "x-flemme-user-id": user.id });
 	expect(await (await jar.request("/auth/me")).json()).toEqual({
-		user: { id: user.id, email: address },
+		user: { id: user.id, email: address, name: "A5 User", image: null },
 	});
 	for (const path of [
 		"/profile",
@@ -256,7 +260,37 @@ test("only live Better Auth sessions authenticate protected routes and select do
 				"x-flemme-user-id": otherUser.id,
 			})
 		).json(),
-	).toEqual({ user: { id: user.id, email: address } });
+	).toEqual({
+		user: { id: user.id, email: address, name: "A5 User", image: null },
+	});
+	const updateNameResponse = await domainRequest(jar, "/auth/me", "PATCH", {
+		name: "  A5 Profile Cook  ",
+	});
+	expect(updateNameResponse.status).toBe(200);
+	expect(await updateNameResponse.json()).toEqual({
+		user: {
+			id: user.id,
+			email: address,
+			name: "A5 Profile Cook",
+			image: null,
+		},
+	});
+	expect(
+		await db
+			.select({ name: users.name })
+			.from(users)
+			.where(eq(users.id, user.id)),
+	).toEqual([{ name: "A5 Profile Cook" }]);
+	const invalidNameResponse = await domainRequest(jar, "/auth/me", "PATCH", {
+		name: "   ",
+	});
+	expect(invalidNameResponse.status).toBe(400);
+	expect(
+		await db
+			.select({ name: users.name })
+			.from(users)
+			.where(eq(users.id, user.id)),
+	).toEqual([{ name: "A5 Profile Cook" }]);
 	expect(
 		(
 			await domainRequest(

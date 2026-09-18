@@ -8,18 +8,15 @@ import {
 	resolveOnboardingRedirect,
 } from "../../onboarding/onboarding-query";
 import { OnboardingStepShell } from "../../onboarding/onboarding-step-shell";
+import { ProfilePreferenceForm } from "../../onboarding/profile-preference-form";
 import {
 	buildProfilePayload,
-	cookingPreferenceOptions,
 	emptyProfile,
-	foodPreferenceOptions,
 	type ProfileState,
-	preferenceOptionsWithPersistedValues,
 	profileErrorMessage,
 	profileQueryOptions,
 	profileStateKey,
 	saveProfileAndResolveNext,
-	togglePreferenceValue,
 } from "../../onboarding/profile-query";
 
 export const Route = createFileRoute("/onboarding/profile")({
@@ -106,131 +103,11 @@ function OnboardingProfilePage() {
 				initialFoodPreferences={profile.foodPreferences}
 				initialCookingPreferences={profile.cookingPreferences}
 				disabled={saveProfile.isPending}
-				onContinue={(next) => void persistProfile(next)}
+				submitLabel="Continue"
+				onSubmit={(next) => void persistProfile(next)}
 				onSkip={() => void persistProfile(buildProfilePayload([], []))}
 				errorMessage={mutationError}
 			/>
 		</OnboardingStepShell>
-	);
-}
-
-interface ProfilePreferenceFormProps {
-	initialFoodPreferences: string[];
-	initialCookingPreferences: string[];
-	disabled: boolean;
-	errorMessage: string | null;
-	onContinue: (state: ProfileState) => void;
-	onSkip: () => void;
-}
-
-function ProfilePreferenceForm({
-	initialFoodPreferences,
-	initialCookingPreferences,
-	disabled,
-	errorMessage,
-	onContinue,
-	onSkip,
-}: ProfilePreferenceFormProps) {
-	const [foodPreferences, setFoodPreferences] = useState(
-		initialFoodPreferences,
-	);
-	const [cookingPreferences, setCookingPreferences] = useState(
-		initialCookingPreferences,
-	);
-	const visibleFoodOptions = preferenceOptionsWithPersistedValues(
-		foodPreferenceOptions,
-		foodPreferences,
-	);
-	const visibleCookingOptions = preferenceOptionsWithPersistedValues(
-		cookingPreferenceOptions,
-		cookingPreferences,
-	);
-
-	return (
-		<div>
-			<PreferenceGroup
-				title="Food preferences"
-				options={visibleFoodOptions}
-				selectedValues={foodPreferences}
-				disabled={disabled}
-				onToggle={(value) =>
-					setFoodPreferences((current) => togglePreferenceValue(current, value))
-				}
-			/>
-			<PreferenceGroup
-				title="Cooking preferences"
-				options={visibleCookingOptions}
-				selectedValues={cookingPreferences}
-				disabled={disabled}
-				onToggle={(value) =>
-					setCookingPreferences((current) =>
-						togglePreferenceValue(current, value),
-					)
-				}
-			/>
-			<div className="preference-actions">
-				<button
-					type="button"
-					className="primary-button"
-					disabled={disabled}
-					onClick={() =>
-						onContinue(buildProfilePayload(foodPreferences, cookingPreferences))
-					}
-				>
-					{disabled ? "Saving…" : "Continue"}
-				</button>
-				<button
-					type="button"
-					className="secondary-button"
-					disabled={disabled}
-					onClick={onSkip}
-				>
-					Skip
-				</button>
-			</div>
-			{errorMessage ? (
-				<p className="form-error" role="alert">
-					{errorMessage}
-				</p>
-			) : null}
-		</div>
-	);
-}
-
-function PreferenceGroup({
-	title,
-	options,
-	selectedValues,
-	disabled,
-	onToggle,
-}: {
-	title: string;
-	options: ReadonlyArray<{ value: string; label: string }>;
-	selectedValues: ReadonlyArray<string>;
-	disabled: boolean;
-	onToggle: (value: string) => void;
-}) {
-	return (
-		<fieldset className="preference-section">
-			<legend>{title}</legend>
-			<div className="preference-grid">
-				{options.map((option) => {
-					const selected = selectedValues.includes(option.value);
-					return (
-						<button
-							key={option.value}
-							type="button"
-							className={`preference-chip ${selected ? "is-selected" : ""}`}
-							aria-pressed={selected}
-							disabled={disabled}
-							onClick={() => onToggle(option.value)}
-						>
-							<span aria-hidden="true">{selected ? "✓" : "◯"}</span>
-							{option.label}
-						</button>
-					);
-				})}
-			</div>
-		</fieldset>
 	);
 }

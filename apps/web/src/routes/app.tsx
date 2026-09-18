@@ -4,7 +4,6 @@ import {
 	redirect,
 	useRouterState,
 } from "@tanstack/react-router";
-import { getUserInitial } from "@/auth/user-display-name";
 import { AppHeader, AppShell, BottomNavigation } from "@/components/app";
 import { requireAuthenticatedUser } from "../auth/auth-guards";
 import { useAuth } from "../auth/auth-query";
@@ -33,7 +32,6 @@ export const Route = createFileRoute("/app")({
 
 function AppLayout() {
 	const auth = useAuth();
-	const initial = getUserInitial(auth.user);
 	const pathname = useRouterState({
 		select: (state) => state.location.pathname,
 	});
@@ -45,7 +43,7 @@ function AppLayout() {
 
 	return (
 		<AppShell hasBottomNavigation={!hideBottomNavigation}>
-			{isCooking ? null : <AppHeader initial={initial} />}
+			{isCooking ? null : <AppHeader user={auth.user} />}
 			<main className="flex-1">
 				<Outlet />
 			</main>

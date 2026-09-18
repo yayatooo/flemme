@@ -149,7 +149,7 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 	expect(restored.session).toMatchObject({ id: session?.id, userId: user.id });
 	expect((restored.session as Record<string, unknown>).token).toBeUndefined();
 	expect(await (await jar.request("/auth/me")).json()).toEqual({
-		user: { id: user.id, email: address },
+		user: { id: user.id, email: address, name: "Rahmat", image: null },
 	});
 	expect((await jar.request("/profile")).status).toBe(404);
 	for (const duplicate of [address, address.toUpperCase()]) {

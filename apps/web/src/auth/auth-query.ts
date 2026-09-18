@@ -4,6 +4,8 @@ import { FlemmeApiError, requestApi } from "../api/api-client";
 export interface CurrentUser {
 	id: string;
 	email: string;
+	name: string;
+	image: string | null;
 }
 
 interface CurrentUserResponse {

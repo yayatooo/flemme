@@ -19,6 +19,7 @@ import { Route as AppFavoritesRouteImport } from './routes/app/favorites'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
 import { Route as AppInventoryRouteImport } from './routes/app/inventory'
 import { Route as AppPreCookingRouteImport } from './routes/app/pre-cooking'
+import { Route as AppProfileRouteImport } from './routes/app/profile'
 import { Route as AppRecommendationRouteImport } from './routes/app/recommendation'
 import { Route as OnboardingCompleteRouteImport } from './routes/onboarding/complete'
 import { Route as OnboardingHouseholdRouteImport } from './routes/onboarding/household'
@@ -79,6 +80,11 @@ const AppPreCookingRoute = AppPreCookingRouteImport.update({
   path: '/pre-cooking',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRecommendationRoute = AppRecommendationRouteImport.update({
   id: '/recommendation',
   path: '/recommendation',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/app/history': typeof AppHistoryRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/pre-cooking': typeof AppPreCookingRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/recommendation': typeof AppRecommendationRoute
   '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/app/history': typeof AppHistoryRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/pre-cooking': typeof AppPreCookingRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/recommendation': typeof AppRecommendationRoute
   '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/app/history': typeof AppHistoryRoute
   '/app/inventory': typeof AppInventoryRoute
   '/app/pre-cooking': typeof AppPreCookingRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/recommendation': typeof AppRecommendationRoute
   '/onboarding/complete': typeof OnboardingCompleteRoute
   '/onboarding/household': typeof OnboardingHouseholdRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/app/history'
     | '/app/inventory'
     | '/app/pre-cooking'
+    | '/app/profile'
     | '/app/recommendation'
     | '/onboarding/complete'
     | '/onboarding/household'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/app/history'
     | '/app/inventory'
     | '/app/pre-cooking'
+    | '/app/profile'
     | '/app/recommendation'
     | '/onboarding/complete'
     | '/onboarding/household'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/app/history'
     | '/app/inventory'
     | '/app/pre-cooking'
+    | '/app/profile'
     | '/app/recommendation'
     | '/onboarding/complete'
     | '/onboarding/household'
@@ -335,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPreCookingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/recommendation': {
       id: '/app/recommendation'
       path: '/recommendation'
@@ -406,6 +425,7 @@ interface AppRouteChildren {
   AppHistoryRoute: typeof AppHistoryRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppPreCookingRoute: typeof AppPreCookingRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppRecommendationRoute: typeof AppRecommendationRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCookingSessionIdRoute: typeof AppCookingSessionIdRoute
@@ -418,6 +438,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHistoryRoute: AppHistoryRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppPreCookingRoute: AppPreCookingRoute,
+  AppProfileRoute: AppProfileRoute,
   AppRecommendationRoute: AppRecommendationRoute,
   AppIndexRoute: AppIndexRoute,
   AppCookingSessionIdRoute: AppCookingSessionIdRoute,

@@ -333,10 +333,27 @@ recipe snapshot, cooking progress, Inventory, or history. Direct access and
 refresh derive saved state from the server; the focused route continues to hide
 AppHeader and BottomNavigation.
 
-Active-session and recent-history sections accept persisted summary data and
-never synthesize progress or cooked meals. The current Auth identity exposes
-only ID and email, so one shared presenter derives the non-email greeting label
-and header initial from the email username with a `User` fallback.
+Phase 10 adds `/app/profile` as the authenticated control center for persistent
+personal cooking context. `src/features/profile` owns the page, personal
+information, cooking-preference, Household, loading, recoverable error, and
+logout sections; the file route remains thin. AppHeader's single avatar entry
+opens Profile, while the four-item BottomNavigation and compact `max-w-xl`
+AppShell remain unchanged.
+
+The canonical Auth query now exposes normalized ID, email, name, and optional
+provider image. The shared display presenter still applies name, email username,
+then `User` fallback priority. A successful display-name update replaces that
+same Auth cache, so AppHeader and Home update without a reload. Email and
+provider image remain read-only.
+
+Profile editing reuses the existing `["profile"]` and `["household"]` TanStack
+Query caches, complete replacement APIs, preference vocabulary, validation, and
+shared onboarding forms. Successful writes replace only their canonical cache;
+controlled failures preserve dialog input for retry. These writes affect the
+database context read by future Recommendation and Pre-Cooking requests, never
+an existing Cooking Session snapshot. Logout uses the existing Better Auth
+action, clears user-scoped query state, and returns to Login without deleting
+persisted data.
 
 
 
@@ -464,8 +481,11 @@ Auth v1 has one HTTP `currentUserId` boundary. The common middleware calls
 Flemme's `UNAUTHENTICATED` 401 without exposing framework internals. There is
 no alternative adapter, authentication selector, or fallback.
 Application-owned GET `/auth/me` runs through the same boundary and returns
-only canonical user ID plus email. Product Domain services and ownership
-queries remain provider/session agnostic and unchanged.
+canonical user ID, email, normalized name, and optional provider image.
+Authenticated PATCH `/auth/me` accepts only a trimmed non-empty display name and
+updates the same Auth-owned `users` row; email and image are not writable
+through this boundary. Product Domain services and ownership queries remain
+provider/session agnostic and unchanged.
 Protected OpenAPI operations use `CurrentUser` with the actual HttpOnly
 session cookie. Valid production Auth configuration is allowed; HTTPS API and
 web origins remain required in production for transport security.
