@@ -9,7 +9,7 @@ eval, which the owner manually confirmed in the Lens UI.
 | 0 — baseline | completed | Core capability smoke 1/1; existing Agent tests 62/62; locked versions reconfirmed | None |
 | 1 — typecheck isolation | completed | Reinstalling the frozen Bun lock restored a truncated OpenAI declaration; Agent typecheck passes without suppression or version change | Root still has unrelated existing API errors |
 | 2 — Recommendation foundation | completed | 10 typed cases, 6 hard metrics, live smoke 1/1 and 6/6 | Provider usage unavailable through public output-only intent |
-| 3 — four deterministic phases | completed | 24/24 cases and 102/102 metric evaluations on locked and upgraded graphs | Abort signals cannot enter current public intent APIs |
+| 3 — four live target-model phases with deterministic scoring | completed | Final combined result: 26/26 cases and 121/121 metric evaluations across 17 metrics; corrected targeted `active-resume` rerun passed 1/1 and 3/3 | Abort signals cannot enter current public intent APIs |
 | 4 — locked baseline | completed | `flemme-eval-baseline-core-1.1.2.md` records versions, totals, latency, commands, and typecheck state | None |
 | 5 — coordinated upgrade | completed | Core 1.5.0 / OpenAI 1.1.5 / shared Zod 4.6.5; 67 Agent tests, package typecheck, and root build pass; same live suites pass | Five root API type errors predate and are outside this unit |
 | 6 — qualitative eval | completed | Separate 4-case, 5-metric judge command; final 5/5 pass at threshold 0.8, 6,106 evaluation tokens | Cost unavailable without configured pricing |
@@ -24,7 +24,10 @@ production `src`; Lens and judge code are not reachable from application entry
 points. No output schema changed, no RAG metric was introduced, and no Agent
 package became a backend or telemetry bridge.
 
-The deterministic matrix is documented in `packages/agent/evals/README.md`.
+The local execution and scoring matrix is documented in
+`packages/agent/evals/README.md`. Offline metric unit tests, live target-model
+cases with deterministic scoring, and live qualitative judge evals are distinct
+execution modes and must not be described interchangeably.
 Hard schema, enum, availability, cardinality, action, and grounding-anchor rules
 remain ordinary TypeScript metrics. Judge metrics cover only usefulness,
 request alignment, plan clarity, calm active guidance, and grounded synthesis.
@@ -85,3 +88,31 @@ run in the Lens UI.
 
 OTel and Langfuse were not installed or compared because the assignment did not
 select either alternative.
+
+## Four-phase coverage audit checkpoint — 2026-09-20
+
+One owner-authorized `eval:all` execution ran the original 24 synthetic cases
+against `gpt-5.6-luna`. Recommendation passed 10/10 cases and 60/60 metrics;
+Pre-Cooking passed 3/3 and 9/9; Active Cooking passed 8/8 and 24/24; Completion
+passed 3/3 and 9/9. Total duration was 107,568 ms. The output-only intent
+contract exposed no target usage, so Core reported zero/unavailable target
+tokens. No qualitative judge, Lens reporter, or runtime trace ran.
+
+The audit found narrow deterministic-scoring gaps for Recommendation time
+limits, Pre-Cooking selected-recipe ingredient fidelity and exact step-minute
+claims, and Active Cooking serving/step change kinds. The authorized
+incremental runs passed Recommendation 10/10 and 70/70, Pre-Cooking 3/3 and
+12/12, and nine of ten Active Cooking cases. The initial `active-resume` result
+failed only because its new expectation required an optional ingredient
+`record-change` alongside the contract-required `resume`. Removing that one
+over-constrained expectation and adding focused offline assertions changed no
+production prompt, schema, intent, runtime, or API behavior. One authorized
+targeted rerun then passed `active-resume` 1/1 with all 3/3 deterministic
+metrics. Combined with the unchanged Completion baseline, the final result is
+26/26 cases and 121/121 metric evaluations across 17 deterministic metrics.
+No qualitative judge ran during this continuation; the prior 2026-09-19 result
+remains 4/4 cases and 5/5 metrics.
+
+The Lens UI contains only the bounded synthetic Recommendation eval smoke.
+Runtime tracing currently covers Recommendation only. Local eval definitions,
+however, span all four cooking phases.

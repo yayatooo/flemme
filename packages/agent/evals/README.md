@@ -1,8 +1,19 @@
 # Flemme agent evals
 
-These evals call the four real public Flemme intent paths with the production
-input/output schemas. Core deterministic evals have no Lens dependency and no
-judge cost.
+These evals exercise the four public Flemme intent paths with production
+input/output schemas and synthetic fixtures. The suite has three distinct
+execution modes:
+
+- `eval:test` is an offline deterministic metric unit-test command. It makes no
+  model call.
+- `eval:smoke`, the four phase commands, and `eval:all` are live target-model
+  case runs whose outputs are scored by deterministic metrics. They are not
+  offline or fully deterministic executions.
+- `eval:judge` calls both the live target model and a qualitative judge. It is
+  stochastic and separately authorized from deterministic scoring.
+
+None of these Bun-local commands sends records to Lens. Lens ingestion and
+runtime tracing use separate isolated boundaries.
 
 ## Commands
 
@@ -19,7 +30,8 @@ bun run --filter @flemme/agent eval:all
 bun run --filter @flemme/agent eval:judge
 ```
 
-Live commands require `MUX_API_KEY` and `BASE_URL`. `FLEMME_EVAL_MODEL_ID` is
+The live target-model and judge commands require `MUX_API_KEY` and `BASE_URL`.
+`FLEMME_EVAL_MODEL_ID` is
 optional and defaults to the same `gpt-5.6-luna` model used by the existing
 development runners. Judge evals optionally use `FLEMME_EVAL_JUDGE_MODEL_ID`,
 falling back to the normal eval model. Never place values in this document.
@@ -30,20 +42,29 @@ out the case but cannot forward cancellation into an in-flight provider call.
 
 ## Case matrix
 
+The four-phase coverage audit established a final combined result of 26/26
+cases and 121/121 deterministic metric evaluations across 17 metrics. The
+result combines the unchanged-case results from the authorized incremental
+phase runs, the corrected one-case `active-resume` rerun, and the previously
+verified unchanged Completion baseline. The initial `active-resume` run exposed
+an over-constrained expectation that required an optional ingredient
+`record-change` in addition to the required `resume`; removing only that extra
+expectation changed no production behavior.
+
 | Phase | Cases | Categories |
 | --- | ---: | --- |
 | Recommendation | 10 | inventory fit, unknown staples, missing ingredient, equipment, household, time, insufficient context, no viable result, cuisine signals, cross-cuisine fallback |
 | Pre-Cooking | 3 | standard plan, unknown quantities, equipment adaptation |
-| Active Cooking | 8 | advance, previous, pause, resume, record change, complete, abandon, clarify |
+| Active Cooking | 10 | advance, previous, pause, resume, ingredient/equipment/serving/step changes, complete, abandon, clarify |
 | Completion | 3 | standard, taste feedback, recorded change |
 
 ## Deterministic metric matrix
 
 | Phase | Metrics |
 | --- | --- |
-| Recommendation | schema, allowed variant/cardinality, servings, inventory honesty, equipment honesty, optional/required separation |
-| Pre-Cooking | schema, globally unique IDs/executable stages/qualitative timing, explicit required equipment |
-| Active Cooking | schema/action-union cardinality, intent-compatible actions, clarification/change-reference safety |
+| Recommendation | schema, allowed variant/cardinality, servings, available-time practicality, inventory honesty, equipment honesty, optional/required separation |
+| Pre-Cooking | schema, globally unique IDs/executable stages/qualitative timing without exact step minutes, selected-recipe ingredient fidelity, explicit required equipment |
+| Active Cooking | schema/action-union cardinality, intent-compatible actions and change kinds, clarification/change-reference safety |
 | Completion | schema/no action surface, grounding anchor, cooking-vs-medical boundary |
 
 Hard contract rules are deterministic. Judge metrics are limited to practical
@@ -54,6 +75,11 @@ The judge command runs four representative live cases and five metrics at a
 tokens; target usage was not exposed, and cost is not estimated without a
 configured pricing table. Judge scores are stochastic and are not a required
 deterministic CI gate.
+
+The most recent qualitative baseline remains the 2026-09-19 run documented in
+`docs/evals/flemme-evals-observability-implementation-report.md`: 4/4 cases and
+5/5 metrics passed at threshold 0.8. The four-phase coverage audit did not rerun
+the qualitative judge.
 
 ## Known observability gaps
 
@@ -74,3 +100,6 @@ The first Lens ingestion smoke is implemented in the separate Node 24-only
 capture disabled. Lens remains absent from these Bun evals and every production
 entry point. A separate Recommendation-only runtime canary now uses the same
 Node 24 isolation boundary; other phases and a general rollout have not started.
+Local eval coverage spans Recommendation, Pre-Cooking, Active Cooking, and
+Completion. The Recommendation-only Lens record and Recommendation-only runtime
+trace therefore do not imply that local eval coverage is Recommendation-only.

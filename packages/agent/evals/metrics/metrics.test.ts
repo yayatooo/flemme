@@ -14,11 +14,14 @@ import {
 } from "./completion-metrics";
 import {
 	hasUniquePlanIds,
+	preCookingPlanMetric,
+	preCookingRecipeFidelityMetric,
 	preCookingSchemaMetric,
 } from "./pre-cooking-metrics";
 import {
 	recommendationInventoryMetric,
 	recommendationSchemaMetric,
+	recommendationTimeMetric,
 } from "./recommendation-metrics";
 
 const signal = new AbortController().signal;
@@ -89,6 +92,24 @@ describe("deterministic eval metrics", () => {
 		).toBe("fail");
 	});
 
+	test("rejects a recommendation that exceeds the explicit available time", async () => {
+		const testCase = required(
+			recommendationCases.find(
+				({ id }) => id === "recommendation-time-constrained",
+			),
+		);
+		const output = {
+			type: "recommendations",
+			recommendations: [
+				{ estimatedDuration: { minMinutes: 20, maxMinutes: 30 } },
+			],
+		};
+
+		expect(
+			(await evaluate(recommendationTimeMetric, testCase, output)).outcome,
+		).toBe("fail");
+	});
+
 	test("pre-cooking plan schema and ID uniqueness are deterministic", async () => {
 		const testCase = {
 			id: "plan",
@@ -107,6 +128,40 @@ describe("deterministic eval metrics", () => {
 		expect(hasUniquePlanIds(AYAM_KECAP_COOKING_PLAN)).toBe(true);
 	});
 
+	test("rejects silent recipe ingredient replacement and exact step minutes", async () => {
+		const testCase = {
+			id: "plan-fidelity",
+			input: {
+				selectedRecipe: {
+					ingredients: [{ name: "chicken" }, { name: "garlic" }],
+				},
+			},
+			expected: { requiredEquipment: [] },
+		};
+		const replacedPlan = {
+			...AYAM_KECAP_COOKING_PLAN,
+			ingredients: [{ name: "tofu" }, { name: "garlic" }],
+		};
+		const precisePlan = {
+			...AYAM_KECAP_COOKING_PLAN,
+			preparationSteps: [
+				{
+					...AYAM_KECAP_COOKING_PLAN.preparationSteps[0],
+					instruction: "Cut the chicken, then wait exactly 5 minutes.",
+				},
+				...AYAM_KECAP_COOKING_PLAN.preparationSteps.slice(1),
+			],
+		};
+
+		expect(
+			(await evaluate(preCookingRecipeFidelityMetric, testCase, replacedPlan))
+				.outcome,
+		).toBe("fail");
+		expect(
+			(await evaluate(preCookingPlanMetric, testCase, precisePlan)).outcome,
+		).toBe("fail");
+	});
+
 	test("active cooking accepts a compatible advance and rejects mutation on clarification", async () => {
 		const advance = required(activeCookingCases[0]);
 		const output = {
@@ -122,6 +177,63 @@ describe("deterministic eval metrics", () => {
 		const clarify = required(activeCookingCases.at(-1));
 		expect(
 			(await evaluate(activeCookingActionMetric, clarify, output)).outcome,
+		).toBe("fail");
+	});
+
+	test("requires the case-specific recorded change kind", async () => {
+		const servingCase = required(
+			activeCookingCases.find(
+				({ id }) => id === "active-record-serving-change",
+			),
+		);
+		const wrongKind = {
+			reply: "Recorded.",
+			actions: [
+				{
+					type: "record-change" as const,
+					change: { kind: "equipment" as const, description: "Wrong kind." },
+				},
+			],
+		};
+
+		expect(
+			(await evaluate(activeCookingActionMetric, servingCase, wrongKind))
+				.outcome,
+		).toBe("fail");
+	});
+
+	test("requires resume without requiring an additional recorded change", async () => {
+		const resumeCase = required(
+			activeCookingCases.find(({ id }) => id === "active-resume"),
+		);
+		const standaloneResume = {
+			reply: "Continue from the paused step.",
+			actions: [{ type: "resume" as const }],
+		};
+		const noAction = {
+			reply: "Continue from the paused step.",
+			actions: [],
+		};
+		const unrelatedLifecycleAction = {
+			reply: "Pause cooking.",
+			actions: [{ type: "pause" as const, reason: "user-request" as const }],
+		};
+
+		expect(
+			(await evaluate(activeCookingActionMetric, resumeCase, standaloneResume))
+				.outcome,
+		).toBe("pass");
+		expect(
+			(await evaluate(activeCookingActionMetric, resumeCase, noAction)).outcome,
+		).toBe("fail");
+		expect(
+			(
+				await evaluate(
+					activeCookingActionMetric,
+					resumeCase,
+					unrelatedLifecycleAction,
+				)
+			).outcome,
 		).toBe("fail");
 	});
 

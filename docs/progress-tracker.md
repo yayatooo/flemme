@@ -24,6 +24,21 @@ any later landing section.
 
 ### Agent Evals and Observability Compatibility
 
+- Audited local eval coverage across Recommendation, Pre-Cooking, Active
+  Cooking, and Completion. One bounded live `eval:all` run of the original 24
+  synthetic cases passed 24/24 cases and 102/102 deterministic metric
+  evaluations with `gpt-5.6-luna`; no judge, Lens reporter, or runtime trace ran.
+- Corrected eval terminology: `eval:test` is offline metric-unit testing; phase
+  and `eval:all` commands are live target-model cases with deterministic
+  scoring; `eval:judge` adds a separate live qualitative judge.
+- Added pending deterministic definitions for Recommendation time practicality,
+  Pre-Cooking selected-recipe ingredient fidelity and no exact step-level minute
+  claims, plus Active Cooking serving and step change cases with change-kind
+  assertions. Offline metric tests pass, but these additions are not yet part of
+  a live passing baseline and require separate execution approval.
+- Documented that local eval coverage spans all four phases while Lens eval
+  ingestion and runtime tracing remain Recommendation-only boundaries.
+
 - Added independent Core eval suites for Recommendation, Pre-Cooking, Active
   Cooking, and Completion: 24 typed synthetic cases, 15 deterministic metrics,
   offline metric tests, live smoke/per-phase/all commands, and a separate
@@ -2671,3 +2686,23 @@ and local runner are now connected without adding post-cooking side effects.
 
 The implemented Agent cooking phases now provide the stable structured
 contracts used by the bounded API integration milestones.
+
+## Four-phase eval coverage completion — 2026-09-20
+
+- Local eval coverage now spans Recommendation, Pre-Cooking, Active Cooking,
+  and Completion with 26 synthetic cases, 17 deterministic metrics, and 121
+  metric applications.
+- The final combined live result is 26/26 cases and 121/121 deterministic
+  metric evaluations. It combines the authorized unchanged-case incremental
+  runs, one corrected targeted `active-resume` generation, and the previously
+  verified unchanged Completion baseline.
+- The initial `active-resume` validation exposed an over-constrained eval
+  expectation: `resume` is required, while recording that an ingredient became
+  available is optional. Removing only that extra expectation and adding
+  focused metric assertions changed no production prompt, schema, intent,
+  runtime, API, web, or database behavior.
+- The previous qualitative result remains 4/4 cases and 5/5 metrics from
+  2026-09-19. No qualitative judge ran during this completion task.
+- Lens contains only the bounded Recommendation eval smoke, and runtime
+  tracing covers Recommendation only. Those observability boundaries do not
+  limit the four-phase local eval suite.

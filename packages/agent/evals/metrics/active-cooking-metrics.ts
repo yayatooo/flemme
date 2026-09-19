@@ -37,9 +37,16 @@ export const activeCookingActionMetric = defineMetric({
 		const requiredPresent =
 			!expected?.requiredActionType ||
 			output.actions.some(({ type }) => type === expected.requiredActionType);
+		const requiredChangePresent =
+			!expected?.requiredChangeKind ||
+			output.actions.some(
+				(action) =>
+					action.type === "record-change" &&
+					action.change.kind === expected.requiredChangeKind,
+			);
 		return outcome(
-			allAllowed && requiredPresent,
-			"Proposed actions must be compatible with the case's explicit user intent.",
+			allAllowed && requiredPresent && requiredChangePresent,
+			"Proposed actions and recorded change kinds must match the case's explicit user intent.",
 		);
 	},
 });

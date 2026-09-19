@@ -92,6 +92,31 @@ export const activeCookingCases: ActiveCase[] = [
 		{
 			allowedActionTypes: ["record-change"],
 			requiredActionType: "record-change",
+			requiredChangeKind: "equipment",
+		},
+	),
+	activeCase(
+		"active-record-serving-change",
+		"record-serving-change",
+		activeCookingInput(
+			"We are serving three people instead of two; record that change without advancing.",
+		),
+		{
+			allowedActionTypes: ["record-change"],
+			requiredActionType: "record-change",
+			requiredChangeKind: "servings",
+		},
+	),
+	activeCase(
+		"active-record-step-change",
+		"record-step-change",
+		activeCookingInput(
+			"I already completed the current oil-heating step outside the app; record that fact without advancing.",
+		),
+		{
+			allowedActionTypes: ["record-change"],
+			requiredActionType: "record-change",
+			requiredChangeKind: "step",
 		},
 	),
 	activeCase(

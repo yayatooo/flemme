@@ -26,6 +26,7 @@ export interface RecommendationExpectation {
 export interface ActiveCookingExpectation {
 	allowedActionTypes: string[];
 	requiredActionType?: string;
+	requiredChangeKind?: "ingredient" | "equipment" | "servings" | "step";
 }
 
 export interface CompletionExpectation {

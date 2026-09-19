@@ -72,6 +72,29 @@ export const recommendationServingsMetric = defineMetric({
 	},
 });
 
+export const recommendationTimeMetric = defineMetric({
+	name: "recommendation-time-practicality",
+	required: true,
+	dataType: "BOOLEAN",
+	evaluate: ({ output, case: testCase }) => {
+		const availableMinutes = testCase.input.session.availableMinutes;
+		if (output.type !== "recommendations" || availableMinutes === undefined) {
+			return result(
+				true,
+				"No recommendation time limit applies to this variant.",
+			);
+		}
+
+		return result(
+			output.recommendations.every(
+				({ estimatedDuration }) =>
+					estimatedDuration.maxMinutes <= availableMinutes,
+			),
+			"Every recommendation must fit within the explicit available-time limit.",
+		);
+	},
+});
+
 export const recommendationInventoryMetric = defineMetric({
 	name: "recommendation-inventory-honesty",
 	required: true,
@@ -159,6 +182,7 @@ export const recommendationMetrics = [
 	recommendationSchemaMetric,
 	recommendationVariantMetric,
 	recommendationServingsMetric,
+	recommendationTimeMetric,
 	recommendationInventoryMetric,
 	recommendationEquipmentMetric,
 	recommendationOptionalMetric,
