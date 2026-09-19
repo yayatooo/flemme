@@ -14,6 +14,14 @@ any later landing section.
 
 ## Completed
 
+### Flemme Web — Global Not Found Page
+
+- Added a mobile-first global TanStack Router fallback using the supplied
+  Flemme otter 404 artwork, shared typography, semantic colors, and button
+  treatment. Unknown routes now provide a clear return-to-home action.
+- Added the supplied 32×32 Flemme favicon to the document head without changing
+  application routing or product behavior.
+
 ### Agent Evals and Observability Compatibility
 
 - Added independent Core eval suites for Recommendation, Pre-Cooking, Active
@@ -38,8 +46,37 @@ any later landing section.
 - Verified Logger 1.1.4 with a real, flushed Agent run under Bun and Studio
   1.2.4 with a loopback-only start/config/shutdown smoke. Logger was not adopted
   because its default run-end record included generated text. Lens 1.2.0 is
-  compatible with Node 24 and Core 1.5.0 but remains correctly blocked until
-  its three required credentials are supplied for an isolated Node runner.
+  compatible with Node 24 and Core 1.5.0 and is restricted to an isolated
+  Node-only eval smoke package outside Flemme's Bun workspaces.
+- Bootstrapped the self-hosted Lens v0.13.0 release as an isolated local Compose
+  project named `flemme-lens-local`. Its PostgreSQL, ClickHouse, Redis, API,
+  worker, and monitor stay private; only the healthy web gateway is bound to
+  `127.0.0.1:18080`. Local secrets and the Agent key file remain ignored, and
+  the manual owner/project/key checkpoint is complete.
+- Added a Node 24-only Lens eval-ingestion package with its own Bun lockfile and
+  exact Lens SDK 1.2.0 / Core 1.5.0 dependencies. Six offline tests enforce a
+  narrow telemetry metadata allowlist and payload omission. One static synthetic
+  Recommendation eval and deterministic metric were ingested successfully;
+  Lens stored a null payload with status `not_requested`. The owner manually
+  confirmed run `64f5af35-27a7-4bc3-b39f-42c1e9af1c91`; the eval foundation,
+  local infrastructure, and eval ingestion are complete.
+- Added an opt-in, zero-sampled-by-default Recommendation runtime observability
+  boundary with a strict metadata allowlist, deterministic trace-ID sampling,
+  bounded fail-open loopback delivery, sanitized errors, and no Lens credentials
+  in Bun. An isolated Node 24 relay uses the official Lens 1.2.0 observer to
+  send outbound telemetry. Manual inspection of the first canary found its
+  actual Agent span complete beneath a missing synthetic remote parent. The
+  relay no longer passes Flemme's correlation ID as Lens parent context; it
+  explicitly ends the observer-created root before flush and shutdown. The
+  replacement deterministic fake-model canary emitted trace
+  `55fdda8f362fe93ac0b3f3460fcad3f2` at
+  `2026-09-19T13:20:36.831Z`; its state remains
+  `awaiting_manual_runtime_trace_confirmation`. Pre-Cooking, Active Cooking,
+  and Completion are not instrumented. Production deployment has not started.
+  Focused observability tests pass 15/15, the isolated Lens tool tests pass
+  8/8, Agent tests pass 82/82, the Recommendation API integration tests pass
+  10/10, and the full repository passes 511/511 tests with root typecheck and
+  production build green.
 - Documented case/metric matrices, known observability gaps, locked baseline,
   post-upgrade comparison, stage evidence, and exact external unblock work in
   `packages/agent/evals/README.md` and `docs/evals/`.
