@@ -8,7 +8,9 @@ Complete the three remaining security processes in strict order:
 2. Remove the obsolete `.codex/config.toml` path from affected Git history in a fresh disposable clone.
 3. Push only the approved rewritten branch refs with explicit atomic `--force-with-lease`, then verify the remote.
 
-This is a security-sensitive history rewrite. Do not skip the approval gate between inspection and mutation.
+This is a security-sensitive history rewrite. Do not skip either mandatory
+approval gate. The first gate authorizes only the disposable-clone rewrite;
+the second gate separately authorizes the exact controlled remote push.
 
 ## Confirmed starting state
 
@@ -136,17 +138,24 @@ Then stop and return:
 
 `AWAITING_EXACT_HISTORY_REWRITE_APPROVAL`
 
-Also print one exact approval sentence for the owner to copy. It must name every affected ref and bind approval to the recorded expected-old SHAs. Do not treat the current task request as approval for the destructive phases.
+Also print one exact Phase 2 approval sentence for the owner to copy. It must
+name every affected ref, bind approval to the recorded expected-old SHAs, and
+state explicitly that it authorizes the disposable-clone rewrite only and no
+remote push. Do not treat the current task request as approval for either
+destructive phase.
 
-## Mandatory approval gate
+## Mandatory approval gate 1 — Disposable-clone rewrite
 
-Do not begin Phase 2 or Phase 3 until the owner returns the exact approval sentence generated in Phase 1.
+Do not begin Phase 2 until the owner returns the exact Phase 2 approval sentence
+generated in Phase 1. This approval authorizes history rewriting only inside the
+disposable clone. It does not authorize Phase 3 or any remote push.
 
 If any live remote SHA changes after approval, the approval is invalid. Return to Phase 1 and generate a new manifest and approval sentence.
 
 ## Phase 2 — Rewrite in a disposable clone
 
-Run this phase only after exact approval.
+Run this phase only after the exact Phase 2 rewrite approval. Do not push any
+remote ref during this phase.
 
 ### 1. Freeze and prepare
 
@@ -218,9 +227,41 @@ Update the execution report with a table containing, for every approved ref:
 - Whether the ref changed.
 - Verification result.
 
-Before Phase 3, re-run live `git ls-remote` one final time. If any old SHA differs, stop with `BLOCKED_REMOTE_MOVED_AFTER_APPROVAL`.
+Construct and record the complete explicit atomic push command using:
+
+- One exact new rewritten SHA per approved ref.
+- One `--force-with-lease=<full-ref>:<approved-old-sha>` argument per ref.
+- One explicit `<new-sha>:<full-ref>` refspec per ref.
+- `--atomic` and no wildcard, mirror, deletion, tag, or unscoped-force option.
+
+Re-run live `git ls-remote` and confirm every approved expected-old SHA remains
+unchanged. If any old SHA differs, stop with
+`BLOCKED_REMOTE_MOVED_AFTER_APPROVAL` and invalidate the first approval.
+
+After recording the complete old-to-new mapping, exact command, and unchanged
+remote state, stop with:
+
+`AWAITING_CONTROLLED_PUSH_APPROVAL`
+
+Also print one exact Phase 3 approval sentence for the owner to copy. It must
+name every approved full ref, bind each exact expected-old SHA to its exact new
+SHA, and authorize only the exact atomic command shown in the report.
+
+## Mandatory approval gate 2 — Controlled remote push
+
+Do not begin Phase 3 until the owner separately returns the exact Phase 3
+approval sentence generated after Phase 2. The original task request and the
+Phase 2 rewrite approval do not authorize a remote push.
+
+The second approval authorizes only the listed refs, exact old-to-new mapping,
+and exact atomic force-with-lease command. Re-run `git ls-remote` immediately
+before pushing. Any remote movement invalidates the approval; stop with
+`BLOCKED_REMOTE_MOVED_AFTER_APPROVAL` and do not push.
 
 ## Phase 3 — Controlled atomic push and verification
+
+Run this phase only after the exact Phase 3 controlled-push approval and the
+final unchanged-remote check.
 
 ### 1. Push only approved refs
 
@@ -268,6 +309,7 @@ Update `docs/security/needmcp-history-rewrite-execution.md` with:
 Return exactly one terminal status:
 
 - `HISTORY_REWRITE_AND_CONTROLLED_PUSH_COMPLETE`
+- `AWAITING_CONTROLLED_PUSH_APPROVAL`
 - `BLOCKED_LOCAL_STATE_CHANGED`
 - `BLOCKED_GITHUB_GOVERNANCE_UNVERIFIED`
 - `BLOCKED_REWRITE_TOOLING`
