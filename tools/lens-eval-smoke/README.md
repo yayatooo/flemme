@@ -30,6 +30,12 @@ Run the one-case smoke test:
 bun run --cwd tools/lens-eval-smoke smoke
 ```
 
+Run the four-phase ingestion smoke:
+
+```sh
+bun run --cwd tools/lens-eval-smoke smoke:four-phase
+```
+
 The smoke command executes with Node 24 and loads only
 `infra/lens-local/.env.flemme-agent` through Node's explicit `--env-file`
 option. It validates all required variable names without printing values,
@@ -37,6 +43,20 @@ checks `http://127.0.0.1:18080/health/ready`, emits one run named
 `flemme.eval.smoke.recommendation`, flushes, and closes the official Lens SDK.
 Configuration, readiness, reporting, flush, or shutdown failure produces a
 non-zero exit and a safe error category without printing the exception payload.
+The four-phase command preserves that Recommendation identity and adds one
+separate one-case run for Pre-Cooking, Active Cooking, and Completion. It emits
+exactly four static synthetic cases and four passing deterministic metrics,
+then performs one flush and closes the SDK. It does not call a target model,
+qualitative judge, Lens runtime observer, or Flemme production runtime.
+
+The four stable run identities are:
+
+| Phase | Suite | Case | Metric |
+| --- | --- | --- | --- |
+| Recommendation | `flemme.eval.smoke.recommendation` | `flemme-synthetic-recommendation-001` | `flemme-synthetic-contract` |
+| Pre-Cooking | `flemme.eval.smoke.pre-cooking` | `flemme-synthetic-pre-cooking-001` | `flemme-synthetic-contract` |
+| Active Cooking | `flemme.eval.smoke.active-cooking` | `flemme-synthetic-active-cooking-001` | `flemme-synthetic-contract` |
+| Completion | `flemme.eval.smoke.completion` | `flemme-synthetic-completion-001` | `flemme-synthetic-contract` |
 
 ## Privacy contract
 
@@ -48,7 +68,7 @@ inventory, household context, preferences, cooking plans, credentials, headers,
 cookies, connection strings, environment dumps, and exception objects are not
 allowed.
 
-The only case uses the synthetic input/output markers
+Every case uses the synthetic input/output markers
 `synthetic-input-redacted` and `synthetic-output-redacted` and the deterministic
 metric `flemme-synthetic-contract`. No provider or production Flemme code runs.
 
@@ -58,6 +78,10 @@ Open `http://127.0.0.1:18080`, select `Flemme Local`, then open **Evaluations** 
 **Runs**. Search for `flemme.eval.smoke.recommendation` or the safe run ID printed
 by the command. After manual verification, an owner can open that run, choose
 **Delete**, and confirm deletion. Delete only the matching synthetic run.
+
+For a four-phase smoke, search separately for each suite listed above or for
+each run ID printed by `smoke:four-phase`. The SDK creates four independent
+one-case runs, one per stable phase identity.
 
 ## Recommendation runtime trace canary
 

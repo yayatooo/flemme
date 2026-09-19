@@ -9,6 +9,7 @@ const SAFE_METADATA_KEYS = [
 	"runtime",
 	"environment",
 	"modelIdentifier",
+	"synthetic",
 ] as const;
 
 type SafeMetadataKey = (typeof SAFE_METADATA_KEYS)[number];
@@ -18,6 +19,14 @@ export type SafeTelemetryMetadata = Partial<
 >;
 
 const safeMetadataKeySet = new Set<string>(SAFE_METADATA_KEYS);
+const safePhaseValues = new Set([
+	"recommendation",
+	"pre-cooking",
+	"active-cooking",
+	"completion",
+]);
+const sensitiveValuePattern =
+	/(?:secret|password|credential|bearer|private[-_ ]?key|api[-_ ]?key|\b(?:sk|pk)-[a-z0-9_-]{8,})/i;
 
 export const LENS_REPORTER_PRIVACY_OPTIONS = Object.freeze({
 	includePayloads: false,
@@ -52,9 +61,35 @@ export function allowlistTelemetryMetadata(
 				`Telemetry metadata field must be a finite primitive: ${key}`,
 			);
 		}
+		validateSafeMetadataValue(key, value);
 		safe[key] = value;
 	}
 	return safe;
+}
+
+function validateSafeMetadataValue(
+	key: SafeMetadataKey,
+	value: SafeMetadataValue,
+) {
+	if (key === "synthetic") {
+		if (value !== true) {
+			throw new TypeError("Telemetry metadata synthetic flag must be true");
+		}
+		return;
+	}
+	if (typeof value !== "string" || value.length === 0 || value.length > 96) {
+		throw new TypeError(
+			`Telemetry metadata field must be a bounded string: ${key}`,
+		);
+	}
+	if (sensitiveValuePattern.test(value)) {
+		throw new TypeError(
+			`Telemetry metadata field contains a forbidden value: ${key}`,
+		);
+	}
+	if (key === "phase" && !safePhaseValues.has(value)) {
+		throw new TypeError("Telemetry metadata phase is not allowed");
+	}
 }
 
 export function serializeSafeTelemetryMetadata(

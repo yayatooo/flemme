@@ -1,8 +1,10 @@
 # Flemme evals and observability implementation report
 
-Execution date: 2026-09-19. The eval and provider-backed work is complete. The
-later isolated Lens checkpoint successfully ingested one payload-free synthetic
-eval, which the owner manually confirmed in the Lens UI.
+Execution dates: 2026-09-19 through 2026-09-20. The eval and provider-backed
+work is complete. The isolated Lens boundary first ingested one payload-free
+Recommendation record, which the owner manually confirmed in the Lens UI, and
+later ingested a bounded four-phase payload-free smoke awaiting manual UI
+confirmation.
 
 | Stage | Status | Evidence | Remaining blocker |
 | --- | --- | --- | --- |
@@ -15,6 +17,7 @@ eval, which the owner manually confirmed in the Lens UI.
 | 6 — qualitative eval | completed | Separate 4-case, 5-metric judge command; final 5/5 pass at threshold 0.8, 6,106 evaluation tokens | Cost unavailable without configured pricing |
 | 7 — isolated Lens boundary | completed and manually confirmed | Lens SDK 1.2.0 peers with Core `^1.4.0`; Node 24.15.0 satisfies `>=24`; Lens UI confirmed synthetic run `64f5af35-27a7-4bc3-b39f-42c1e9af1c91`, with its metric passed and payload status `not_requested` | None |
 | 8 — local/runtime observability | completed with known limitation | Logger 1.1.4 real Agent run and flush passed under Bun; Studio 1.2.4 loopback start/config/shutdown passed under Bun | Logger default run-end event includes generated text; no production integration recommended |
+| 9 — four-phase Lens ingestion smoke | locally verified; manual UI confirmation pending | Four static synthetic runs completed with one passing metric each; ClickHouse reports 4/4 null payloads and 4/4 `not_requested` | Owner UI checkpoint |
 
 ## Implementation boundaries
 
@@ -57,14 +60,34 @@ isolated `tools/lens-eval-smoke` package pins Lens SDK 1.2.0 and Core 1.5.0 in
 its own Bun lockfile, but executes with Node 24. It does not import the provider
 or any production intent.
 
-The smoke runner checks Lens readiness, emits one static synthetic case and
-deterministic metric with `includePayloads: false`, flushes, and closes the SDK.
+The original smoke runner checks Lens readiness, emits one static synthetic
+Recommendation case and deterministic metric with `includePayloads: false`,
+flushes, and closes the SDK. Its command and identifiers remain unchanged.
 Offline tests enforce the metadata allowlist and reject raw input, output,
 personal-context, and secret-bearing fields. Run
 `64f5af35-27a7-4bc3-b39f-42c1e9af1c91` started at
 `2026-09-19T08:31:05.360Z`; ClickHouse confirms the metric passed and its
 payload is null with status `not_requested`. The owner manually confirmed the
 run in the Lens UI.
+
+The separate `smoke:four-phase` command ran once on 2026-09-20 through the same
+Node 24 and payload-disabled boundary. It emitted one independent static run
+for each cooking phase, with no target-model, qualitative-judge, or runtime
+trace call:
+
+| Phase | Suite | Run ID | Result | Payload |
+| --- | --- | --- | --- | --- |
+| Recommendation | `flemme.eval.smoke.recommendation` | `d80e4e35-d2b7-45ae-926d-0c1438673044` | pass | null / `not_requested` |
+| Pre-Cooking | `flemme.eval.smoke.pre-cooking` | `89fb21cd-173e-47a0-842d-432f895b5f1f` | pass | null / `not_requested` |
+| Active Cooking | `flemme.eval.smoke.active-cooking` | `d74e5d9c-f743-4a60-9973-6540451ebf6d` | pass | null / `not_requested` |
+| Completion | `flemme.eval.smoke.completion` | `22c3c0d3-62cc-482c-be91-cc786fdcb4f9` | pass | null / `not_requested` |
+
+ClickHouse count/null-only verification found exactly four result records, four
+passing `flemme-synthetic-contract` metrics, four null payloads, four
+`not_requested` payload statuses, and zero credential-candidate metadata hits.
+This proves four-phase Lens ingestion only. Local eval coverage independently
+remains 26/26 cases, 17 deterministic metrics, and 121/121 metric evaluations;
+runtime tracing remains Recommendation-only.
 
 ## Runtime observer decision
 
@@ -83,8 +106,9 @@ run in the Lens UI.
   Studio requirement.
 - Lens was exercised only through the isolated Node 24 synthetic eval package.
   It remains absent from Bun production and the normal 24-case eval commands.
-  A later Recommendation-only runtime canary uses the same isolation boundary;
-  broader runtime observability remains unimplemented.
+  A later Recommendation-only runtime canary uses the same isolation boundary.
+  Four-phase eval ingestion does not expand runtime observability; broader
+  runtime tracing remains unimplemented.
 
 OTel and Langfuse were not installed or compared because the assignment did not
 select either alternative.

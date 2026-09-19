@@ -22,9 +22,18 @@ test("rejects raw input, output, personal context, and secret-bearing fields", (
 	for (const field of [
 		"input",
 		"output",
+		"error",
 		"prompt",
 		"email",
 		"inventory",
+		"equipment",
+		"household",
+		"preferences",
+		"cookingPlan",
+		"sessionId",
+		"headers",
+		"environmentDump",
+		"arbitrary",
 		"secretKey",
 	]) {
 		assert.throws(
@@ -32,6 +41,35 @@ test("rejects raw input, output, personal context, and secret-bearing fields", (
 			/Telemetry metadata field is not allowed/,
 		);
 	}
+});
+
+test("rejects secret-like values even under an allowlisted metadata key", () => {
+	for (const value of [
+		"secret-test-value",
+		"password=must-not-pass",
+		"Bearer must-not-pass",
+		"sk-must-not-pass-12345678",
+	]) {
+		assert.throws(
+			() => allowlistTelemetryMetadata({ environment: value }),
+			/forbidden value/,
+		);
+	}
+});
+
+test("accepts only known phases and the literal synthetic flag", () => {
+	assert.deepEqual(
+		allowlistTelemetryMetadata({ phase: "completion", synthetic: true }),
+		{ phase: "completion", synthetic: true },
+	);
+	assert.throws(
+		() => allowlistTelemetryMetadata({ phase: "inventory" }),
+		/phase is not allowed/,
+	);
+	assert.throws(
+		() => allowlistTelemetryMetadata({ synthetic: false }),
+		/synthetic flag must be true/,
+	);
 });
 
 test("omits eval inputs and outputs from Lens reporter payloads by default", () => {

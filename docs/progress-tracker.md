@@ -2706,3 +2706,24 @@ contracts used by the bounded API integration milestones.
 - Lens contains only the bounded Recommendation eval smoke, and runtime
   tracing covers Recommendation only. Those observability boundaries do not
   limit the four-phase local eval suite.
+
+## Four-phase Lens eval ingestion smoke — 2026-09-20
+
+- The isolated Node 24 tool now has a separate `smoke:four-phase` command. The
+  existing Recommendation-only `smoke` command and identifiers are unchanged.
+- One bounded local execution created four independent static synthetic Lens
+  runs: Recommendation `d80e4e35-d2b7-45ae-926d-0c1438673044`, Pre-Cooking
+  `89fb21cd-173e-47a0-842d-432f895b5f1f`, Active Cooking
+  `d74e5d9c-f743-4a60-9973-6540451ebf6d`, and Completion
+  `22c3c0d3-62cc-482c-be91-cc786fdcb4f9`.
+- Each run contains one passing `flemme-synthetic-contract` metric. Safe
+  ClickHouse verification found four null payloads, four `not_requested`
+  payload statuses, and zero credential-candidate metadata hits.
+- The command made zero target-model calls, zero qualitative-judge calls, and
+  zero runtime trace calls. It used no Flemme production runtime behavior or
+  real user/session data.
+- Local eval coverage remains four-phase at 26/26 cases, 17 deterministic
+  metrics, and 121/121 metric evaluations. Lens ingestion smoke is now also
+  four-phase, while runtime tracing remains Recommendation-only.
+- Manual confirmation of all four runs in the Lens UI is the remaining
+  checkpoint. No runtime observability expansion is authorized or implied.
