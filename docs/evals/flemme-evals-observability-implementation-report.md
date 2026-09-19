@@ -1,8 +1,8 @@
 # Flemme evals and observability implementation report
 
-Execution date: 2026-09-19. The assignment was completed through every safe
-local and provider-backed gate. Lens reporting is the only externally blocked
-stage; the missing credentials correctly prevented code or dependency churn.
+Execution date: 2026-09-19. The eval and provider-backed work is complete. The
+later isolated Lens checkpoint successfully ingested one payload-free synthetic
+eval, which the owner manually confirmed in the Lens UI.
 
 | Stage | Status | Evidence | Remaining blocker |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ stage; the missing credentials correctly prevented code or dependency churn.
 | 4 — locked baseline | completed | `flemme-eval-baseline-core-1.1.2.md` records versions, totals, latency, commands, and typecheck state | None |
 | 5 — coordinated upgrade | completed | Core 1.5.0 / OpenAI 1.1.5 / shared Zod 4.6.5; 67 Agent tests, package typecheck, and root build pass; same live suites pass | Five root API type errors predate and are outside this unit |
 | 6 — qualitative eval | completed | Separate 4-case, 5-metric judge command; final 5/5 pass at threshold 0.8, 6,106 evaluation tokens | Cost unavailable without configured pricing |
-| 7 — isolated Lens boundary | blocked | Lens 1.2.0 peers with Core `^1.4.0`; Node 24.15.0 satisfies `>=24`; credential presence check failed | Supply `ANVIA_LENS_BASE_URL`, `ANVIA_LENS_PUBLIC_KEY`, and `ANVIA_LENS_SECRET_KEY`, then add and smoke an isolated Node runner |
+| 7 — isolated Lens boundary | completed and manually confirmed | Lens SDK 1.2.0 peers with Core `^1.4.0`; Node 24.15.0 satisfies `>=24`; Lens UI confirmed synthetic run `64f5af35-27a7-4bc3-b39f-42c1e9af1c91`, with its metric passed and payload status `not_requested` | None |
 | 8 — local/runtime observability | completed with known limitation | Logger 1.1.4 real Agent run and flush passed under Bun; Studio 1.2.4 loopback start/config/shutdown passed under Bun | Logger default run-end event includes generated text; no production integration recommended |
 
 ## Implementation boundaries
@@ -47,18 +47,21 @@ assertion regressions.
 
 ## Lens compatibility gate
 
-The available Node runtime is 24.15.0. Stable Lens 1.2.0 requires Node `>=24`
-and is compatible with upgraded Core 1.5.0. None of the three required Lens
-environment variables is present. The production provider and intent functions
-do not read Bun globals, but current source uses Bun-friendly extensionless
-TypeScript imports; an isolated Node runner would therefore need a narrow TS
-loader or compiled entry point. Because credentials are already a hard blocker,
-no Lens package, runner, reporter, or payload capture was added to Flemme.
+The available Node runtime is 24.15.0. Stable Lens SDK 1.2.0 requires Node
+`>=24` and is compatible with upgraded Core 1.5.0. The required connection
+values now live only in the ignored `infra/lens-local/.env.flemme-agent`. The
+isolated `tools/lens-eval-smoke` package pins Lens SDK 1.2.0 and Core 1.5.0 in
+its own Bun lockfile, but executes with Node 24. It does not import the provider
+or any production intent.
 
-Smallest unblock: provide the three Lens variables in the local environment,
-then create a Node-24-only workspace/runner that imports shared cases and
-metrics, uses safe capture with payload omission/redaction, runs one synthetic
-case, awaits reporter close/flush, and verifies local non-zero exit behavior.
+The smoke runner checks Lens readiness, emits one static synthetic case and
+deterministic metric with `includePayloads: false`, flushes, and closes the SDK.
+Offline tests enforce the metadata allowlist and reject raw input, output,
+personal-context, and secret-bearing fields. Run
+`64f5af35-27a7-4bc3-b39f-42c1e9af1c91` started at
+`2026-09-19T08:31:05.360Z`; ClickHouse confirms the metric passed and its
+payload is null with status `not_requested`. The owner manually confirmed the
+run in the Lens UI.
 
 ## Runtime observer decision
 
@@ -75,9 +78,10 @@ case, awaits reporter close/flush, and verifies local non-zero exit behavior.
   not production startup. No repository script was added because Flemme's
   production intents are still direct completions and there is no durable
   Studio requirement.
-- Lens was not executed or installed in Flemme because credentials are absent.
-  It remains the preferred CI eval reporter through a Node 24 boundary once
-  unblocked, never in Bun production.
+- Lens was exercised only through the isolated Node 24 synthetic eval package.
+  It remains absent from Bun production and the normal 24-case eval commands.
+  A later Recommendation-only runtime canary uses the same isolation boundary;
+  broader runtime observability remains unimplemented.
 
 OTel and Langfuse were not installed or compared because the assignment did not
 select either alternative.

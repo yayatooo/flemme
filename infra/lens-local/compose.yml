@@ -1,0 +1,236 @@
+name: flemme-lens-local
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  PUBLIC_APP_URL: ${PUBLIC_APP_URL:?Set PUBLIC_APP_URL in .env}
+  API_PORT: 3001
+  WEB_ORIGIN: ${WEB_ORIGIN:?Set WEB_ORIGIN in .env}
+  POSTGRES_URL: postgresql://lens:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/lens
+  POSTGRES_MAX_CONNECTIONS: 4
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_DATABASE: lens
+  CLICKHOUSE_USERNAME: lens
+  CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in .env}
+  CLICKHOUSE_MAX_THREADS: 2
+  CLICKHOUSE_MAX_MEMORY_USAGE_BYTES: 402653184
+  CLICKHOUSE_MAX_BYTES_BEFORE_EXTERNAL_GROUP_BY: 201326592
+  CLICKHOUSE_MAX_BYTES_BEFORE_EXTERNAL_SORT: 201326592
+  REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379
+  SYSTEM_MONITOR_URL: http://monitor:3100
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
+  PASSWORD_LOGIN_ENABLED: "true"
+  OIDC_ENABLED: "false"
+  INGESTION_KEY_PEPPER: ${INGESTION_KEY_PEPPER:?Set INGESTION_KEY_PEPPER in .env}
+  SMTP_HOST: ""
+  SMTP_USER: ""
+  SMTP_PASSWORD: ""
+  OTLP_MAX_BODY_BYTES: 2097152
+  OTLP_RATE_LIMIT_PER_MINUTE: 600
+  INGESTION_QUEUE_MAX_WAITING: 500
+  MCP_RATE_LIMIT_PER_MINUTE: 120
+  WORKER_INGEST_CONCURRENCY: 2
+  WORKER_MATERIALIZE_CONCURRENCY: 1
+  WORKER_EVALUATION_CONCURRENCY: 1
+  MATERIALIZE_DELAY_MS: 3000
+  QUEUE_RETAIN_COMPLETED_AGE_SECONDS: 300
+  QUEUE_RETAIN_COMPLETED_COUNT: 100
+  QUEUE_RETAIN_FAILED_AGE_SECONDS: 86400
+  QUEUE_RETAIN_FAILED_COUNT: 100
+  LOG_LEVEL: info
+
+x-backend-service: &backend-service
+  image: ghcr.io/anvia-hq/lens:${LENS_VERSION:?Pin LENS_VERSION in .env}
+  pull_policy: missing
+  environment: *app-environment
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  monitor:
+    image: ghcr.io/anvia-hq/lens:${LENS_VERSION:?Pin LENS_VERSION in .env}
+    pull_policy: missing
+    command: ["node", "apps/monitor/dist/index.js"]
+    environment:
+      NODE_ENV: production
+      SYSTEM_MONITOR_PORT: 3100
+      HOST_PROC_PATH: /host/proc
+      HOST_ROOT_PATH: /host/root
+      HOST_DATA_PATH: /host/data
+      HOST_DATA_DISPLAY_PATH: /var/lib/docker
+      NODE_OPTIONS: --max-old-space-size=64
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    volumes:
+      - type: bind
+        source: /proc
+        target: /host/proc
+        read_only: true
+      - type: bind
+        source: /
+        target: /host/root
+        read_only: true
+        bind:
+          propagation: rslave
+      - type: bind
+        source: /var/lib/docker
+        target: /host/data
+        read_only: true
+        bind:
+          propagation: rslave
+    networks:
+      - lens-monitor
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3100/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 96m
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: lens
+      POSTGRES_USER: lens
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lens -d lens"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    volumes:
+      - lens-postgres:/var/lib/postgresql/data
+    mem_limit: 384m
+
+  redis:
+    image: redis:8-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 192mb
+      - --maxmemory-policy
+      - noeviction
+      - --requirepass
+      - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    volumes:
+      - lens-redis:/data
+    mem_limit: 384m
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.4-alpine
+    environment:
+      CLICKHOUSE_DB: lens
+      CLICKHOUSE_USER: lens
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in .env}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "clickhouse-client --user lens --password \"$$CLICKHOUSE_PASSWORD\" --query 'SELECT 1'",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    volumes:
+      - lens-clickhouse:/var/lib/clickhouse
+    mem_limit: 1536m
+
+  migrate:
+    <<: *backend-service
+    command: ["node", "packages/db/dist/migrate.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    mem_limit: 384m
+    environment:
+      <<: *app-environment
+      NODE_OPTIONS: --max-old-space-size=256
+
+  api:
+    <<: *backend-service
+    networks:
+      - default
+      - lens-monitor
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      <<: *app-environment
+      NODE_OPTIONS: --max-old-space-size=256
+
+  worker:
+    <<: *backend-service
+    command: ["node", "apps/worker/dist/index.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 512m
+    environment:
+      <<: *app-environment
+      NODE_OPTIONS: --max-old-space-size=384
+
+  web:
+    image: ghcr.io/anvia-hq/lens-web:${LENS_VERSION:?Pin LENS_VERSION in .env}
+    pull_policy: missing
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "127.0.0.1:18080:8080"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+
+volumes:
+  lens-clickhouse:
+  lens-postgres:
+  lens-redis:
+
+networks:
+  default:
+  lens-monitor:
+    internal: true

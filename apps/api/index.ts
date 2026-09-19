@@ -1,5 +1,7 @@
 import {
 	createOpenAIModel,
+	createRecommendationTraceObserver,
+	readRecommendationObservabilityConfig,
 	runActiveCooking,
 	runCompletion,
 	runCookingAgent,
@@ -24,6 +26,9 @@ if (!Number.isInteger(port) || port <= 0) {
 }
 
 const authEnvironment = readAuthEnvironment(Bun.env);
+const recommendationObservability = createRecommendationTraceObserver(
+	readRecommendationObservabilityConfig(Bun.env),
+);
 const { db } = createDatabase(databaseUrl);
 const auth = createAuthServer(db, authEnvironment);
 await auth.$context;
@@ -39,7 +44,11 @@ const model =
 		: undefined;
 const recommendationRunner = model
 	? (context: Parameters<typeof runCookingAgent>[0]["context"]) =>
-			runCookingAgent({ model, context })
+			runCookingAgent({
+				model,
+				context,
+				observability: recommendationObservability,
+			})
 	: undefined;
 const activeCookingRunner = model
 	? (input: Parameters<typeof runActiveCooking>[0]["input"]) =>

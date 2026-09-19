@@ -21,6 +21,7 @@
 		"eval:smoke": "bun --env-file=../../.env run evals/recommendation.eval.ts --smoke",
 		"eval:test": "bun test evals",
 		"probe:structured-output": "bun --env-file=../../.env run structured-output-probe.ts",
+		"canary:recommendation-observability": "bun run runners/recommendation-observability-canary.ts",
 		"runner": "bun --env-file=../../.env run runners/recommendation.ts",
 		"runner:active-cooking": "bun --env-file=../../.env run runners/active-cooking.ts",
 		"runner:completion": "bun --env-file=../../.env run runners/completion.ts",

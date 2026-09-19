@@ -69,5 +69,8 @@ It catches false `available` claims without pretending to solve aliases such as
 “skillet” versus “frying pan.” Qualitative judge checks cover broader semantic
 quality separately and never decide schema, enum, action, or state rules.
 
-Lens, when credentials become available, belongs in an isolated Node 24 runner;
-it is not imported by these Bun evals or production entry points.
+The first Lens ingestion smoke is implemented in the separate Node 24-only
+`tools/lens-eval-smoke` package. It emits one static synthetic eval with payload
+capture disabled. Lens remains absent from these Bun evals and every production
+entry point. A separate Recommendation-only runtime canary now uses the same
+Node 24 isolation boundary; other phases and a general rollout have not started.
