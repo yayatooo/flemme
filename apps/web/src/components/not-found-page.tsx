@@ -37,8 +37,8 @@ export function NotFoundPage() {
 								This page isn&apos;t on the menu.
 							</h1>
 							<p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground sm:text-base">
-								The link may be out of date, or this page may have moved. Let&apos;s
-								get you back to something delicious.
+								The link may be out of date, or this page may have moved.
+								Let&apos;s get you back to something delicious.
 							</p>
 						</div>
 
