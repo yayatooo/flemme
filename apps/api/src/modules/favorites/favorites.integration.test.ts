@@ -349,17 +349,20 @@ test("deterministic saved-at ordering, filtering, and bounded pagination", async
 		.update(favorites)
 		.set({ createdAt: new Date("2021-01-01") })
 		.where(eq(favorites.id, c.id));
-	const tiedIds = [a.id, b.id].sort().reverse();
+	const [laterTiedId, earlierTiedId] = [a.id, b.id].sort().reverse();
+	if (!laterTiedId || !earlierTiedId) {
+		throw new Error("Expected two tied Favorite IDs");
+	}
 
 	const firstPage = await list(uid, "?limit=2&offset=0");
 	const secondPage = await list(uid, "?limit=2&offset=2");
 	expect(firstPage.payload?.items.map((item) => item.id)).toEqual([
 		c.id,
-		tiedIds[0],
+		laterTiedId,
 	]);
 	expect(firstPage.payload?.nextOffset).toBe(2);
 	expect(secondPage.payload?.items.map((item) => item.id)).toEqual([
-		tiedIds[1],
+		earlierTiedId,
 	]);
 	expect(secondPage.payload?.nextOffset).toBeNull();
 

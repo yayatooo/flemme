@@ -6,7 +6,7 @@ import type {
 	PreCookingOutput,
 } from "@flemme/agent";
 import { cookingSessions, createDatabase, users } from "@flemme/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { createApp } from "../../app";
@@ -349,7 +349,7 @@ describe("Completion AI API integration", () => {
 		await completeSession(created.id);
 		await db
 			.update(cookingSessions)
-			.set({ preCookingPlanSnapshot: { invalid: true } })
+			.set({ preCookingPlanSnapshot: sql`'{"invalid":true}'::jsonb` })
 			.where(eq(cookingSessions.id, created.id));
 		let called = false;
 		runner = async () => {

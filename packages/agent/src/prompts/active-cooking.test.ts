@@ -28,6 +28,7 @@ test("builds an Active Cooking prompt from the exact validated position", () => 
 	expect(prompt).toContain('"id": "heat-oil"');
 	expect(prompt).toContain('"message": "sekarang aku harus ngapain?"');
 	expect(prompt).toContain("Guidance that does not propose a session change");
+	expect(prompt).toContain("Never advise leaving active heat unattended");
 	expect(prompt).toContain("Do not return a replacement session");
 	expect(JSON.stringify(input)).toBe(inputBeforePrompt);
 });

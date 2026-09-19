@@ -151,10 +151,14 @@ test("returns a paused session without implicitly resuming it", async () => {
 	const restored = CookingSessionResponseSchema.parse(
 		await restoredResponse.json(),
 	);
+	const resumableSession = payload?.session?.session;
 
 	expect(pauseResponse.status).toBe(200);
-	expect(payload?.session?.session.status).toBe("paused");
-	expect(payload?.session?.session.pauseReason).toBe("interruption");
+	expect(resumableSession?.status).toBe("paused");
+	if (resumableSession?.status !== "paused") {
+		throw new Error("Expected a paused resumable session");
+	}
+	expect(resumableSession.pauseReason).toBe("interruption");
 	expect(restored.session.status).toBe("paused");
 });
 

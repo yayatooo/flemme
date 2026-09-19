@@ -1,0 +1,83 @@
+# Flemme evals and observability implementation report
+
+Execution date: 2026-09-19. The assignment was completed through every safe
+local and provider-backed gate. Lens reporting is the only externally blocked
+stage; the missing credentials correctly prevented code or dependency churn.
+
+| Stage | Status | Evidence | Remaining blocker |
+| --- | --- | --- | --- |
+| 0 — baseline | completed | Core capability smoke 1/1; existing Agent tests 62/62; locked versions reconfirmed | None |
+| 1 — typecheck isolation | completed | Reinstalling the frozen Bun lock restored a truncated OpenAI declaration; Agent typecheck passes without suppression or version change | Root still has unrelated existing API errors |
+| 2 — Recommendation foundation | completed | 10 typed cases, 6 hard metrics, live smoke 1/1 and 6/6 | Provider usage unavailable through public output-only intent |
+| 3 — four deterministic phases | completed | 24/24 cases and 102/102 metric evaluations on locked and upgraded graphs | Abort signals cannot enter current public intent APIs |
+| 4 — locked baseline | completed | `flemme-eval-baseline-core-1.1.2.md` records versions, totals, latency, commands, and typecheck state | None |
+| 5 — coordinated upgrade | completed | Core 1.5.0 / OpenAI 1.1.5 / shared Zod 4.6.5; 67 Agent tests, package typecheck, and root build pass; same live suites pass | Five root API type errors predate and are outside this unit |
+| 6 — qualitative eval | completed | Separate 4-case, 5-metric judge command; final 5/5 pass at threshold 0.8, 6,106 evaluation tokens | Cost unavailable without configured pricing |
+| 7 — isolated Lens boundary | blocked | Lens 1.2.0 peers with Core `^1.4.0`; Node 24.15.0 satisfies `>=24`; credential presence check failed | Supply `ANVIA_LENS_BASE_URL`, `ANVIA_LENS_PUBLIC_KEY`, and `ANVIA_LENS_SECRET_KEY`, then add and smoke an isolated Node runner |
+| 8 — local/runtime observability | completed with known limitation | Logger 1.1.4 real Agent run and flush passed under Bun; Studio 1.2.4 loopback start/config/shutdown passed under Bun | Logger default run-end event includes generated text; no production integration recommended |
+
+## Implementation boundaries
+
+The eval targets are the existing `runCookingAgent`, `runPreCooking`,
+`runActiveCooking`, and `runCompletion` functions. Cases and metrics live outside
+production `src`; Lens and judge code are not reachable from application entry
+points. No output schema changed, no RAG metric was introduced, and no Agent
+package became a backend or telemetry bridge.
+
+The deterministic matrix is documented in `packages/agent/evals/README.md`.
+Hard schema, enum, availability, cardinality, action, and grounding-anchor rules
+remain ordinary TypeScript metrics. Judge metrics cover only usefulness,
+request alignment, plan clarity, calm active guidance, and grounded synthesis.
+
+Zod was aligned to exact 4.6.5 in every schema-owning or schema-consuming
+workspace (API, Agent, Contracts, Ingredients, and Nutrition), plus a root
+override, because schema objects cross those package boundaries. This removed
+all upgrade-induced nominal-version and OpenAPI type failures.
+`@valibot/to-json-schema` 1.8.0 was added to the Agent package because Core
+declares it as an optional peer but Bun's API bundler resolves Core's dynamic
+import. The build otherwise fails before runtime. The final root build passes;
+root typecheck returns only the same five pre-existing API errors captured at
+baseline.
+
+Existing offline suites pass: Agent 67/67, Contracts 4/4, Ingredients 19/19,
+Nutrition 60/60, and Web 175/175. API and DB integration suites reached their
+existing database boundary but could not complete because PostgreSQL was not
+listening on localhost:5432; their failures were connection refusals, not
+assertion regressions.
+
+## Lens compatibility gate
+
+The available Node runtime is 24.15.0. Stable Lens 1.2.0 requires Node `>=24`
+and is compatible with upgraded Core 1.5.0. None of the three required Lens
+environment variables is present. The production provider and intent functions
+do not read Bun globals, but current source uses Bun-friendly extensionless
+TypeScript imports; an isolated Node runner would therefore need a narrow TS
+loader or compiled entry point. Because credentials are already a hard blocker,
+no Lens package, runner, reporter, or payload capture was added to Flemme.
+
+Smallest unblock: provide the three Lens variables in the local environment,
+then create a Node-24-only workspace/runner that imports shared cases and
+metrics, uses safe capture with payload omission/redaction, runs one synthetic
+case, awaits reporter close/flush, and verifies local non-zero exit behavior.
+
+## Runtime observer decision
+
+- Logger 1.1.4 imported and executed under Bun 1.2.20 with Core 1.5.0. A real
+  synthetic Agent call emitted start/generation/end events and `flush()`
+  completed. Despite `includeOutput` being unset, the run-end record contained
+  the generated `text`. That is too permissive for household/session data, so
+  Logger is not integrated until upstream semantics or an explicitly approved
+  application redaction policy removes it.
+- Studio 1.2.4 imported and ran under Bun despite its official Node
+  `>=20.12.0` engine. A temporary Agent was registered, Studio bound only to
+  `127.0.0.1`, `/config` returned the registration, and `shutdown()` completed.
+  Studio is suitable for an explicitly local, trusted development follow-up,
+  not production startup. No repository script was added because Flemme's
+  production intents are still direct completions and there is no durable
+  Studio requirement.
+- Lens was not executed or installed in Flemme because credentials are absent.
+  It remains the preferred CI eval reporter through a Node 24 boundary once
+  unblocked, never in Bun production.
+
+OTel and Langfuse were not installed or compared because the assignment did not
+select either alternative.

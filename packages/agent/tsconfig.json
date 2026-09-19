@@ -4,6 +4,7 @@
 		"types": ["bun"]
 	},
 	"include": [
+		"evals/**/*.ts",
 		"index.ts",
 		"runners/**/*.ts",
 		"structured-output-probe.ts",

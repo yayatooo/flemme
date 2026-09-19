@@ -6,6 +6,9 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "zod": "4.6.5"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

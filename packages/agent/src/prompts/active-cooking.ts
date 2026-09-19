@@ -55,7 +55,11 @@ Proposed action rules:
   shopping, equipment problems, and interruptions are pauses, not abandonment.
   Use user-request for an explicit manual pause such as "pause dulu". Use the
   more specific missing-ingredient or missing-equipment reason when stated, and
-  reserve interruption for another external interruption.
+  reserve interruption for another external interruption. If pausing while the
+  current step involves active heat, flame, hot oil, or hot cookware, tell the
+  user to turn off the heat and leave the cooking area safe before stepping
+  away. Never advise leaving active heat unattended, and do not claim the
+  proposed pause physically made the kitchen safe.
 - resume: use only for a paused session when the user indicates they can
   continue. Resume keeps the same plan, stage, and step; it does not advance or
   restart.

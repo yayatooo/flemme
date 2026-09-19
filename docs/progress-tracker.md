@@ -14,6 +14,44 @@ any later landing section.
 
 ## Completed
 
+### Agent Evals and Observability Compatibility
+
+- Added independent Core eval suites for Recommendation, Pre-Cooking, Active
+  Cooking, and Completion: 24 typed synthetic cases, 15 deterministic metrics,
+  offline metric tests, live smoke/per-phase/all commands, and a separate
+  bounded judge command.
+- Captured a locked Core 1.1.2 baseline, then upgraded the aligned Anvia set to
+  Core 1.5.0 and OpenAI adapter 1.1.5 through Bun. Zod was aligned to exact
+  4.6.5 across every schema-owning or schema-consuming workspace, with a root
+  override to prevent incompatible duplicate copies. Core's optional
+  `@valibot/to-json-schema` peer was added because Bun resolves it during the
+  API bundle. The same live suites passed 24/24 cases and 102/102 metric
+  evaluations before and after the upgrade; public contracts and schemas were
+  preserved.
+- Isolated the previous Agent typecheck failure to a truncated installed OpenAI
+  declaration and repaired the install with a forced frozen-lock Bun reinstall;
+  no compiler suppression or dependency patch was introduced.
+- Added five bounded qualitative metrics. The first run caught unsafe pause
+  wording around active heat; Active Cooking now explicitly tells the user to
+  turn off heat and make the area safe before stepping away. The final judge
+  run passed 4/4 cases and 5/5 metrics.
+- Verified Logger 1.1.4 with a real, flushed Agent run under Bun and Studio
+  1.2.4 with a loopback-only start/config/shutdown smoke. Logger was not adopted
+  because its default run-end record included generated text. Lens 1.2.0 is
+  compatible with Node 24 and Core 1.5.0 but remains correctly blocked until
+  its three required credentials are supplied for an isolated Node runner.
+- Documented case/metric matrices, known observability gaps, locked baseline,
+  post-upgrade comparison, stage evidence, and exact external unblock work in
+  `packages/agent/evals/README.md` and `docs/evals/`.
+- Final validation passes the root production build and the existing Agent
+  (67), Contracts (4), Ingredients (19), Nutrition (60), and Web (175) tests.
+  Root typecheck now passes after fixing the five pre-existing API type errors
+  without changing runtime contracts or dependencies. PostgreSQL verification
+  used an isolated task-owned PostgreSQL 16 database on a separate loopback
+  port: all five migrations applied cleanly, the legacy credential migration
+  path passed, DB tests passed 1/1, API tests passed 162/162, and the complete
+  seven-workspace test run passed 488/488. No application fix was required.
+
 ### Flemme Web — Personalization Navbar Layering Fix
 
 - Isolated the Personalization section into its own lower stacking context so

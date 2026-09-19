@@ -9,10 +9,8 @@ import { and, eq } from "drizzle-orm";
 import { ZodError } from "zod";
 
 import { ApiError } from "../../api-error";
-import {
-	type CookingSessionResponse,
-	restoreCookingSession,
-} from "../cooking-session/cooking-session-service";
+import type { CookingSessionResponse } from "../cooking-session/cooking-session-schema";
+import { restoreCookingSession } from "../cooking-session/cooking-session-service";
 import type { CompletionRequest } from "./completion-schema";
 
 export type CompletionRunner = (input: CompletionInput) => Promise<unknown>;
