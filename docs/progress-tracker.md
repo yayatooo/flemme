@@ -37,7 +37,8 @@ any later landing section.
   assertions. Offline metric tests pass, but these additions are not yet part of
   a live passing baseline and require separate execution approval.
 - Documented that local eval coverage spans all four phases while Lens eval
-  ingestion and runtime tracing remain Recommendation-only boundaries.
+  ingestion and runtime tracing were Recommendation-only boundaries at that
+  checkpoint; both have since received separate four-phase local canaries.
 
 - Added independent Core eval suites for Recommendation, Pre-Cooking, Active
   Cooking, and Completion: 24 typed synthetic cases, 15 deterministic metrics,
@@ -85,9 +86,10 @@ any later landing section.
   explicitly ends the observer-created root before flush and shutdown. The
   replacement deterministic fake-model canary emitted trace
   `55fdda8f362fe93ac0b3f3460fcad3f2` at
-  `2026-09-19T13:20:36.831Z`; its state remains
-  `awaiting_manual_runtime_trace_confirmation`. Pre-Cooking, Active Cooking,
-  and Completion are not instrumented. Production deployment has not started.
+  `2026-09-19T13:20:36.831Z`; the owner later confirmed it in Lens. At that
+  checkpoint Pre-Cooking, Active Cooking, and Completion were not instrumented;
+  the later four-phase canary below supersedes that limitation. Production
+  deployment has not started.
   Focused observability tests pass 15/15, the isolated Lens tool tests pass
   8/8, Agent tests pass 82/82, the Recommendation API integration tests pass
   10/10, and the full repository passes 511/511 tests with root typecheck and
@@ -2703,9 +2705,9 @@ contracts used by the bounded API integration milestones.
   runtime, API, web, or database behavior.
 - The previous qualitative result remains 4/4 cases and 5/5 metrics from
   2026-09-19. No qualitative judge ran during this completion task.
-- Lens contains only the bounded Recommendation eval smoke, and runtime
-  tracing covers Recommendation only. Those observability boundaries do not
-  limit the four-phase local eval suite.
+- At this eval-audit checkpoint Lens contained only the bounded Recommendation
+  eval smoke and runtime tracing covered Recommendation only. Those historical
+  observability boundaries did not limit the four-phase local eval suite.
 
 ## Four-phase Lens eval ingestion smoke — 2026-09-20
 
@@ -2723,7 +2725,36 @@ contracts used by the bounded API integration milestones.
   zero runtime trace calls. It used no Flemme production runtime behavior or
   real user/session data.
 - Local eval coverage remains four-phase at 26/26 cases, 17 deterministic
-  metrics, and 121/121 metric evaluations. Lens ingestion smoke is now also
-  four-phase, while runtime tracing remains Recommendation-only.
-- Manual confirmation of all four runs in the Lens UI is the remaining
-  checkpoint. No runtime observability expansion is authorized or implied.
+  metrics, and 121/121 metric evaluations. Lens ingestion smoke is also
+  four-phase.
+- The owner manually confirmed all four eval-ingestion runs in the Lens UI.
+  Runtime tracing was expanded later as the separately authorized checkpoint
+  below; eval-ingestion records and runtime traces remain distinct.
+
+## Four-phase runtime observability canary — 2026-09-20
+
+- Generalized the strict Recommendation operational event and bounded relay to
+  Recommendation, Pre-Cooking, Active Cooking, and Completion without adding a
+  Lens dependency to Bun or changing phase outputs, errors, API responses, or
+  application persistence.
+- Runtime observability remains disabled by default with sample rate zero,
+  deterministic trace-ID sampling, loopback-only non-blocking delivery, a
+  16-request pending bound, timeout, no retry or persistent queue, fail-open
+  recording, and no global signal handlers.
+- Active Cooking records only the safe `model` or `local` execution-path enum.
+  Tests cover both paths and confirm that plan, progress, actions, messages, and
+  persistence are unchanged and uncaptured.
+- One deterministic local canary emitted four successful traces:
+  Recommendation `334e4932368be0cd8dd8d710e248b2b2`, Pre-Cooking
+  `574d9a9d001a4c0e80a74daf6d319fdb`, Active Cooking
+  `1b90d021adfbf4544445b9e4e431301b`, and Completion
+  `b5b49845952a5532886187516988f8e9`.
+- Safe ClickHouse readback found one terminal root agent observation per trace,
+  no parent span, null input/output and user/session fields, no payload column,
+  zero credential-candidate attributes, and only the approved SDK envelope plus
+  Flemme operational allowlist.
+- Focused observability tests pass 23/23, Agent tests 94/94, isolated tool tests
+  16/16, focused four-phase API integrations 46/46, and the full repository
+  531/531. Root typecheck passes 7/7 workspaces and production build passes.
+- Manual Lens UI confirmation of all four traces is pending. Production
+  deployment and shutdown/sidecar design have not started.

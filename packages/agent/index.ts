@@ -7,12 +7,18 @@ export {
 } from "./src/intents/active-cooking-scope";
 export { runCompletion } from "./src/intents/completion";
 export { runPreCooking } from "./src/intents/pre-cooking";
-export type { RecommendationTraceObserver } from "./src/observability/recommendation-observability";
+export type {
+	RecommendationTraceObserver,
+	RuntimeTraceObserver,
+} from "./src/observability/recommendation-observability";
 export {
 	createRecommendationTraceObserver,
+	createRuntimeTraceObserver,
 	type RecommendationObservabilityConfig,
 	RecommendationObservabilityConfigurationError,
+	type RuntimeObservabilityConfig,
 	readRecommendationObservabilityConfig,
+	readRuntimeObservabilityConfig,
 } from "./src/observability/recommendation-relay";
 export {
 	createOpenAIModel,

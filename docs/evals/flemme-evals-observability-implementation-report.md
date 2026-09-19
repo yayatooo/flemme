@@ -86,8 +86,10 @@ ClickHouse count/null-only verification found exactly four result records, four
 passing `flemme-synthetic-contract` metrics, four null payloads, four
 `not_requested` payload statuses, and zero credential-candidate metadata hits.
 This proves four-phase Lens ingestion only. Local eval coverage independently
-remains 26/26 cases, 17 deterministic metrics, and 121/121 metric evaluations;
-runtime tracing remains Recommendation-only.
+remains 26/26 cases, 17 deterministic metrics, and 121/121 metric evaluations.
+Runtime tracing was subsequently expanded and verified across all four phases
+through the same isolated Node 24 boundary; see the dedicated four-phase runtime
+canary report.
 
 ## Runtime observer decision
 
@@ -104,11 +106,10 @@ runtime tracing remains Recommendation-only.
   not production startup. No repository script was added because Flemme's
   production intents are still direct completions and there is no durable
   Studio requirement.
-- Lens was exercised only through the isolated Node 24 synthetic eval package.
-  It remains absent from Bun production and the normal 24-case eval commands.
-  A later Recommendation-only runtime canary uses the same isolation boundary.
-  Four-phase eval ingestion does not expand runtime observability; broader
-  runtime tracing remains unimplemented.
+- Lens remains isolated in the Node 24 tool and absent from Bun dependencies and
+  normal eval commands. The original Recommendation canary and the later
+  four-phase runtime canary use that same boundary. Four-phase eval ingestion
+  and runtime tracing remain separate commands and record types.
 
 OTel and Langfuse were not installed or compared because the assignment did not
 select either alternative.

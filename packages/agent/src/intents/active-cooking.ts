@@ -1,7 +1,10 @@
-import { generateCompletion } from "@anvia/core";
+import { type CompletionModel, generateCompletion } from "@anvia/core";
+import {
+	observeRuntimeExecution,
+	type RuntimeTraceObserver,
+} from "../observability/recommendation-observability";
 import { createActiveCookingPrompt } from "../prompts/active-cooking";
 import { COOKING_INSTRUCTIONS } from "../prompts/cooking-instructions";
-import type { createOpenAIModel } from "../providers";
 import {
 	type ActiveCookingInput,
 	ActiveCookingInputSchema,
@@ -16,17 +19,17 @@ import {
 	resolveActiveCookingScope,
 } from "./active-cooking-scope";
 
-type CookingModel = ReturnType<typeof createOpenAIModel>;
-
 interface RunActiveCookingOptions {
-	model: CookingModel;
+	model: CompletionModel;
 	input: ActiveCookingInput;
+	observability?: RuntimeTraceObserver;
 }
 
 /** Proposes the next response and actions for an existing cooking session. */
 export async function runActiveCooking({
 	model,
 	input,
+	observability,
 }: RunActiveCookingOptions): Promise<ActiveCookingOutput> {
 	const validatedInput = ActiveCookingInputSchema.parse(input);
 	const scopeDecision = resolveActiveCookingScope(validatedInput);
@@ -35,24 +38,52 @@ export async function runActiveCooking({
 		validatedInput,
 	);
 	if (scopedResponse) {
-		return enforceActiveCookingScopeActions(
-			scopeDecision.scope,
-			scopedResponse,
-		);
+		return observeRuntimeExecution({
+			phase: "active-cooking",
+			modelIdentifier: "deterministic-local",
+			observability,
+			execute: async () => ({
+				output: enforceActiveCookingScopeActions(
+					scopeDecision.scope,
+					scopedResponse,
+				),
+				resultVariant: "active_response" as const,
+				executionPath: "local" as const,
+			}),
+		});
 	}
-	const activeCookingPrompt = createActiveCookingPrompt(validatedInput);
 
-	const prompt = `
+	return observeRuntimeExecution({
+		phase: "active-cooking",
+		modelIdentifier: model.modelId,
+		observability,
+		execute: async () => {
+			const activeCookingPrompt = createActiveCookingPrompt(validatedInput);
+
+			const prompt = `
 ${COOKING_INSTRUCTIONS}
 
 ${activeCookingPrompt}
 `.trim();
 
-	const result = await generateCompletion({
-		model,
-		prompt,
-		outputSchema: ActiveCookingOutputSchema,
-	});
+			const modelStartedAt = performance.now();
+			const result = await generateCompletion({
+				model,
+				prompt,
+				outputSchema: ActiveCookingOutputSchema,
+			});
 
-	return enforceActiveCookingScopeActions(scopeDecision.scope, result.output);
+			return {
+				output: enforceActiveCookingScopeActions(
+					scopeDecision.scope,
+					result.output,
+				),
+				resultVariant: "active_response" as const,
+				executionPath: "model" as const,
+				modelDurationMs: performance.now() - modelStartedAt,
+				inputTokens: result.usage.inputTokens,
+				outputTokens: result.usage.outputTokens,
+			};
+		},
+	});
 }

@@ -8,6 +8,7 @@
 	},
 	"scripts": {
 		"canary:runtime": "node --env-file=../../infra/lens-local/.env.flemme-agent src/run-runtime-canary.ts",
+		"canary:runtime:four-phase": "node --env-file=../../infra/lens-local/.env.flemme-agent src/run-four-phase-runtime-canary.ts",
 		"smoke": "node --env-file=../../infra/lens-local/.env.flemme-agent src/run-smoke.ts",
 		"smoke:four-phase": "node --env-file=../../infra/lens-local/.env.flemme-agent src/run-four-phase-smoke.ts",
 		"test": "node --test src/*.test.ts",

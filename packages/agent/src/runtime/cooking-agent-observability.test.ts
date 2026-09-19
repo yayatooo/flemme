@@ -182,15 +182,15 @@ describe("Recommendation runtime observability", () => {
 		await expect(observer.flush()).rejects.toThrow("relay_unavailable");
 	});
 
-	test("does not add an observability option to the other phase boundaries", () => {
+	test("adds the shared observability option to every phase boundary", () => {
 		type HasObservability<T extends (...args: never[]) => unknown> =
 			"observability" extends keyof Parameters<T>[0] ? true : false;
 		const phaseInstrumentation: [
 			HasObservability<typeof runPreCooking>,
 			HasObservability<typeof runActiveCooking>,
 			HasObservability<typeof runCompletion>,
-		] = [false, false, false];
+		] = [true, true, true];
 
-		expect(phaseInstrumentation).toEqual([false, false, false]);
+		expect(phaseInstrumentation).toEqual([true, true, true]);
 	});
 });

@@ -83,7 +83,7 @@ For a four-phase smoke, search separately for each suite listed above or for
 each run ID printed by `smoke:four-phase`. The SDK creates four independent
 one-case runs, one per stable phase identity.
 
-## Recommendation runtime trace canary
+## Runtime trace canaries
 
 The runtime canary keeps Flemme execution on Bun and starts an ephemeral HTTP
 relay bound to `127.0.0.1` on an operating-system-selected port. The Bun child
@@ -100,6 +100,20 @@ return boundary:
 bun install --cwd tools/lens-eval-smoke --frozen-lockfile
 bun run --cwd tools/lens-eval-smoke canary:runtime
 ```
+
+The Recommendation command and its stable identifiers remain unchanged. To run
+one deterministic trace for every cooking phase through one relay lifecycle:
+
+```sh
+bun run --cwd tools/lens-eval-smoke canary:runtime:four-phase
+```
+
+The four-phase command uses deterministic fake models for Recommendation,
+Pre-Cooking, and Completion plus the deterministic local Active Cooking scope
+path. It makes no provider, judge, or eval-ingestion call. It emits exactly one
+trace named `flemme.runtime.recommendation`, `flemme.runtime.pre-cooking`,
+`flemme.runtime.active-cooking`, and `flemme.runtime.completion`, then flushes
+and closes the shared Node 24 Lens client.
 
 The command checks Lens readiness, enables tracing and 100% sampling for its
 child process only, sends one trace named `flemme.runtime.recommendation`, and
@@ -126,14 +140,16 @@ To disable observability immediately, unset all `FLEMME_OBSERVABILITY_*`
 variables or restore those two defaults. Lens credentials remain only in the
 ignored `infra/lens-local/.env.flemme-agent` file.
 
-The runtime allowlist contains only a random trace ID, fixed trace name,
-service/environment, Recommendation phase, prompt/input/output schema versions,
-model identifier, output variant or sanitized error code, durations,
-provider-returned token counts, sampling decision, and an explicitly configured
-release. Unknown keys are rejected. Prompts, instructions, input/output,
+The runtime allowlist contains only a random trace ID, fixed phase/trace/span
+and operation identities, service/environment, prompt/input/output schema
+versions, model identifier, safe execution path, output variant or sanitized
+error code, durations, provider-returned token counts, sampling decision,
+synthetic-canary marker, and an explicitly configured release. Unknown keys and
+mismatched phase identities are rejected. Prompts, instructions, input/output,
 inventory, equipment, household data, preferences, request constraints,
-recipes, user/session/database identifiers, credentials, headers, environment
-dumps, stack traces, and arbitrary metadata are excluded.
+recipes, plans, actions, progress, user/session/database identifiers,
+credentials, headers, environment dumps, stack traces, and arbitrary metadata
+are excluded.
 
 Normal API delivery is fail-open, bounded to 16 in-flight loopback requests,
 and has no retry or persistent queue. A sanitized diagnostic code may be

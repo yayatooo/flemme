@@ -9,9 +9,11 @@ import {
 	RECOMMENDATION_PROMPT_VERSION,
 	RECOMMENDATION_TRACE_NAME,
 	type RecommendationTrace,
+	RUNTIME_PHASE_CONFIG,
 } from "../../../packages/agent/src/observability/recommendation-observability.ts";
 import {
 	publishRecommendationRuntimeTraceAndFlush,
+	publishRuntimeTrace,
 	runtimeTraceMetadata,
 } from "./runtime-trace.ts";
 
@@ -22,13 +24,16 @@ const LENS_OBSERVATION_ID = "fedcba9876543210";
 const TRACE = {
 	traceId: CONTRACT_TRACE_ID,
 	traceName: RECOMMENDATION_TRACE_NAME,
+	spanName: "agent.flemme-recommendation",
 	serviceName: "flemme-agent",
 	environment: "local",
 	phase: "recommendation" as const,
+	operationName: "recommend-meal",
 	promptVersion: RECOMMENDATION_PROMPT_VERSION,
 	inputSchemaVersion: RECOMMENDATION_INPUT_SCHEMA_VERSION,
 	outputSchemaVersion: RECOMMENDATION_OUTPUT_SCHEMA_VERSION,
 	modelIdentifier: "synthetic-static-v1",
+	executionPath: "model" as const,
 	resultVariant: "recommendations" as const,
 	status: "success" as const,
 	totalDurationMs: 12,
@@ -94,18 +99,92 @@ test("ends the SDK root span before flush without injecting a remote parent", as
 	});
 });
 
+test("maps all four approved phases without a synthetic remote parent", async () => {
+	for (const [phase, config] of Object.entries(RUNTIME_PHASE_CONFIG)) {
+		let startArguments: Parameters<AgentObserver["startRun"]>[0] | undefined;
+		const observer: AgentObserver = {
+			startRun(args) {
+				startArguments = args;
+				return {
+					trace: {
+						traceId: LENS_TRACE_ID,
+						observationId: LENS_OBSERVATION_ID,
+					},
+					end: () => undefined,
+				};
+			},
+		};
+		await publishRuntimeTrace(observer, {
+			...TRACE,
+			phase: phase as keyof typeof RUNTIME_PHASE_CONFIG,
+			traceName: config.traceName,
+			spanName: config.spanName,
+			operationName: config.operationName,
+			promptVersion: config.promptVersion,
+			inputSchemaVersion: config.inputSchemaVersion,
+			outputSchemaVersion: config.outputSchemaVersion,
+			resultVariant: config.resultVariants[0],
+			executionPath: phase === "active-cooking" ? "local" : "model",
+			...(phase === "active-cooking"
+				? {
+						modelIdentifier: "deterministic-local",
+						modelDurationMs: undefined,
+						inputTokens: undefined,
+						outputTokens: undefined,
+					}
+				: {}),
+		});
+		assert.equal(startArguments?.agentName, config.spanName.slice(6));
+		assert.equal(startArguments?.trace?.name, config.traceName);
+		assert.equal(startArguments?.trace?.traceId, undefined);
+		assert.equal(startArguments?.trace?.parentObservationId, undefined);
+	}
+});
+
+test("emits a terminal failed run with only the sanitized error code", async () => {
+	let errorArguments: unknown;
+	const observer: AgentObserver = {
+		startRun() {
+			return {
+				trace: {
+					traceId: LENS_TRACE_ID,
+					observationId: LENS_OBSERVATION_ID,
+				},
+				end: () => undefined,
+				error: (args) => {
+					errorArguments = args;
+				},
+			};
+		},
+	};
+	const { resultVariant: _, ...base } = TRACE;
+	await publishRuntimeTrace(observer, {
+		...base,
+		status: "failure",
+		errorCode: "recommendation_runtime_failed",
+	});
+	assert.equal((errorArguments as { status?: string }).status, "failed");
+	assert.equal(
+		(errorArguments as { error?: Error }).error?.message,
+		"recommendation_runtime_failed",
+	);
+});
+
 test("publishes only the Flemme runtime metadata allowlist", () => {
 	assert.deepEqual(Object.keys(runtimeTraceMetadata(TRACE)).sort(), [
+		"executionPath",
 		"inputSchemaVersion",
 		"inputTokens",
 		"modelDurationMs",
 		"modelIdentifier",
+		"operationName",
 		"outputSchemaVersion",
 		"outputTokens",
 		"phase",
 		"promptVersion",
 		"resultVariant",
 		"samplingDecision",
+		"spanName",
 		"status",
 		"totalDurationMs",
 	]);

@@ -15,13 +15,16 @@ import {
 const TRACE = {
 	traceId: "0123456789abcdef0123456789abcdef",
 	traceName: RECOMMENDATION_TRACE_NAME,
+	spanName: "agent.flemme-recommendation",
 	serviceName: "flemme-agent",
 	environment: "local",
 	phase: "recommendation" as const,
+	operationName: "recommend-meal",
 	promptVersion: RECOMMENDATION_PROMPT_VERSION,
 	inputSchemaVersion: RECOMMENDATION_INPUT_SCHEMA_VERSION,
 	outputSchemaVersion: RECOMMENDATION_OUTPUT_SCHEMA_VERSION,
 	modelIdentifier: "synthetic-static-v1",
+	executionPath: "model" as const,
 	resultVariant: "recommendations" as const,
 	status: "success" as const,
 	totalDurationMs: 12,
@@ -72,14 +75,19 @@ describe("Recommendation relay failure isolation", () => {
 
 	test("reports relay rejection only at explicit flush", async () => {
 		const diagnostics: string[] = [];
+		let attempts = 0;
 		const observer = createRecommendationTraceObserver(enabledConfig, {
-			fetch: async () => new Response(null, { status: 503 }),
+			fetch: async () => {
+				attempts += 1;
+				return new Response(null, { status: 503 });
+			},
 			diagnostic: (code) => diagnostics.push(code),
 		});
 
 		expect(() => observer.record(TRACE)).not.toThrow();
 		await expect(observer.flush()).rejects.toThrow("relay_rejected");
 		expect(diagnostics).toEqual(["relay_rejected"]);
+		expect(attempts).toBe(1);
 	});
 
 	test("bounds timeouts and reports them only at explicit flush", async () => {
@@ -97,5 +105,15 @@ describe("Recommendation relay failure isolation", () => {
 		expect(() => observer.record(TRACE)).not.toThrow();
 		await expect(observer.flush()).rejects.toThrow("relay_unavailable");
 		expect(diagnostics).toEqual(["relay_unavailable"]);
+	});
+
+	test("preserves the bounded pending-request limit", async () => {
+		const diagnostics: string[] = [];
+		const observer = createRecommendationTraceObserver(enabledConfig, {
+			fetch: () => new Promise(() => undefined),
+			diagnostic: (code) => diagnostics.push(code),
+		});
+		for (let index = 0; index < 17; index += 1) observer.record(TRACE);
+		expect(diagnostics).toEqual(["queue_full"]);
 	});
 });

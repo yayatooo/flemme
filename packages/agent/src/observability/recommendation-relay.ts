@@ -1,8 +1,8 @@
 import {
-	isRecommendationTraceSampled,
-	type RecommendationTrace,
-	type RecommendationTraceObserver,
-	serializeRecommendationTrace,
+	isRuntimeTraceSampled,
+	type RuntimeTrace,
+	type RuntimeTraceObserver,
+	serializeRuntimeTrace,
 } from "./recommendation-observability";
 
 const DEFAULT_SERVICE_NAME = "flemme-agent";
@@ -10,6 +10,10 @@ const DEFAULT_ENVIRONMENT = "local";
 const DEFAULT_TIMEOUT_MS = 1_000;
 const MAX_PENDING_DELIVERIES = 16;
 const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9._/-]+$/;
+const ALLOWED_RELAY_PATHS = new Set([
+	"/v1/recommendation-traces",
+	"/v1/runtime-traces",
+]);
 
 export interface RecommendationObservabilityConfig {
 	enabled: boolean;
@@ -19,6 +23,7 @@ export interface RecommendationObservabilityConfig {
 	environment: string;
 	timeoutMs: number;
 	release?: string;
+	syntheticCanary?: true;
 }
 
 export interface RecommendationRelayDependencies {
@@ -75,6 +80,11 @@ export function readRecommendationObservabilityConfig(
 		"release",
 	);
 	const relayUrl = environment.FLEMME_OBSERVABILITY_RELAY_URL?.trim();
+	const syntheticCanary = readBoolean(
+		environment.FLEMME_OBSERVABILITY_SYNTHETIC_CANARY,
+		"synthetic_canary",
+		false,
+	);
 
 	if (enabled && sampleRate > 0 && !relayUrl) {
 		throw new RecommendationObservabilityConfigurationError(
@@ -91,13 +101,19 @@ export function readRecommendationObservabilityConfig(
 		environment: runtimeEnvironment,
 		timeoutMs,
 		release,
+		...(syntheticCanary ? { syntheticCanary: true as const } : {}),
 	};
 }
+
+export const readRuntimeObservabilityConfig =
+	readRecommendationObservabilityConfig;
+export const createRuntimeTraceObserver = createRecommendationTraceObserver;
+export type RuntimeObservabilityConfig = RecommendationObservabilityConfig;
 
 export function createRecommendationTraceObserver(
 	config: RecommendationObservabilityConfig,
 	dependencies: RecommendationRelayDependencies = {},
-): RecommendationTraceObserver {
+): RuntimeTraceObserver {
 	if (!config.enabled || config.sampleRate === 0) {
 		return createNoopRecommendationTraceObserver(config);
 	}
@@ -119,8 +135,9 @@ export function createRecommendationTraceObserver(
 		serviceName: config.serviceName,
 		environment: config.environment,
 		release: config.release,
+		syntheticCanary: config.syntheticCanary,
 		shouldSample: (traceId) =>
-			isRecommendationTraceSampled(traceId, config.sampleRate),
+			isRuntimeTraceSampled(traceId, config.sampleRate),
 		record(trace) {
 			if (pending.size >= MAX_PENDING_DELIVERIES) {
 				failures.push("queue_full");
@@ -164,7 +181,7 @@ class RelayDeliveryError extends Error {
 async function deliverTrace(
 	relayUrl: string,
 	timeoutMs: number,
-	trace: RecommendationTrace,
+	trace: RuntimeTrace,
 	fetchImplementation: RecommendationFetch,
 ) {
 	let response: Response;
@@ -172,7 +189,7 @@ async function deliverTrace(
 		response = await fetchImplementation(relayUrl, {
 			method: "POST",
 			headers: { "content-type": "application/json" },
-			body: serializeRecommendationTrace(trace),
+			body: serializeRuntimeTrace(trace),
 			signal: AbortSignal.timeout(timeoutMs),
 		});
 	} catch {
@@ -183,11 +200,12 @@ async function deliverTrace(
 
 function createNoopRecommendationTraceObserver(
 	config: RecommendationObservabilityConfig,
-): RecommendationTraceObserver {
+): RuntimeTraceObserver {
 	return {
 		serviceName: config.serviceName,
 		environment: config.environment,
 		release: config.release,
+		syntheticCanary: config.syntheticCanary,
 		shouldSample: () => false,
 		record: () => undefined,
 		flush: async () => undefined,
@@ -210,7 +228,7 @@ function assertLoopbackRelayUrl(value: string) {
 		url.password ||
 		url.search ||
 		url.hash ||
-		url.pathname !== "/v1/recommendation-traces"
+		!ALLOWED_RELAY_PATHS.has(url.pathname)
 	) {
 		throw new RecommendationObservabilityConfigurationError(
 			"relay_url_not_loopback",

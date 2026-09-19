@@ -3,7 +3,7 @@ import type {
 	AgentRunObserver,
 } from "@anvia/core/observability";
 
-import type { RecommendationTrace } from "../../../packages/agent/src/observability/recommendation-observability.ts";
+import type { RuntimeTrace } from "../../../packages/agent/src/observability/recommendation-observability.ts";
 
 const TRACE_ID_PATTERN = /^[0-9a-f]{32}$/;
 const OBSERVATION_ID_PATTERN = /^[0-9a-f]{16}$/;
@@ -13,13 +13,13 @@ export interface RuntimeTraceReceipt {
 	observationId: string;
 }
 
-export async function publishRecommendationRuntimeTrace(
+export async function publishRuntimeTrace(
 	observer: AgentObserver,
-	trace: RecommendationTrace,
+	trace: RuntimeTrace,
 ): Promise<RuntimeTraceReceipt> {
 	const run = await observer.startRun({
 		runId: trace.traceId,
-		agentName: "flemme-recommendation",
+		agentName: trace.spanName.replace(/^agent\./, ""),
 		trace: {
 			name: trace.traceName,
 			...(trace.release ? { version: trace.release } : {}),
@@ -36,23 +36,30 @@ export async function publishRecommendationRuntimeTrace(
 	return receipt;
 }
 
-export async function publishRecommendationRuntimeTraceAndFlush(
+export async function publishRuntimeTraceAndFlush(
 	observer: AgentObserver,
-	trace: RecommendationTrace,
+	trace: RuntimeTrace,
 	flush: () => Promise<void>,
 ): Promise<RuntimeTraceReceipt> {
-	const receipt = await publishRecommendationRuntimeTrace(observer, trace);
+	const receipt = await publishRuntimeTrace(observer, trace);
 	await flush();
 	return receipt;
 }
 
-export function runtimeTraceMetadata(trace: RecommendationTrace) {
+export const publishRecommendationRuntimeTrace = publishRuntimeTrace;
+export const publishRecommendationRuntimeTraceAndFlush =
+	publishRuntimeTraceAndFlush;
+
+export function runtimeTraceMetadata(trace: RuntimeTrace) {
 	return {
 		phase: trace.phase,
+		operationName: trace.operationName,
+		spanName: trace.spanName,
 		promptVersion: trace.promptVersion,
 		inputSchemaVersion: trace.inputSchemaVersion,
 		outputSchemaVersion: trace.outputSchemaVersion,
 		modelIdentifier: trace.modelIdentifier,
+		executionPath: trace.executionPath,
 		status: trace.status,
 		totalDurationMs: trace.totalDurationMs,
 		...(trace.modelDurationMs === undefined
@@ -65,9 +72,11 @@ export function runtimeTraceMetadata(trace: RecommendationTrace) {
 			? {}
 			: { outputTokens: trace.outputTokens }),
 		samplingDecision: trace.samplingDecision,
-		...(trace.status === "success"
-			? { resultVariant: trace.resultVariant }
-			: { errorCode: trace.errorCode }),
+		...(trace.syntheticCanary ? { syntheticCanary: true } : {}),
+		...(trace.resultVariant === undefined
+			? {}
+			: { resultVariant: trace.resultVariant }),
+		...(trace.errorCode === undefined ? {} : { errorCode: trace.errorCode }),
 	};
 }
 
@@ -85,10 +94,7 @@ function traceReceipt(run: AgentRunObserver): RuntimeTraceReceipt {
 	return { traceId, observationId };
 }
 
-async function endRuntimeTrace(
-	run: AgentRunObserver,
-	trace: RecommendationTrace,
-) {
+async function endRuntimeTrace(run: AgentRunObserver, trace: RuntimeTrace) {
 	const usage = {
 		inputTokens: trace.inputTokens ?? 0,
 		outputTokens: trace.outputTokens ?? 0,

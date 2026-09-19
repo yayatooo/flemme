@@ -1,8 +1,10 @@
-import { generateCompletion } from "@anvia/core";
-
+import { type CompletionModel, generateCompletion } from "@anvia/core";
+import {
+	observeRuntimeExecution,
+	type RuntimeTraceObserver,
+} from "../observability/recommendation-observability";
 import { COOKING_INSTRUCTIONS } from "../prompts/cooking-instructions";
 import { createPreCookingPrompt } from "../prompts/pre-cooking";
-import type { createOpenAIModel } from "../providers";
 import {
 	type PreCookingInput,
 	PreCookingInputSchema,
@@ -12,32 +14,47 @@ import {
 	PreCookingOutputSchema,
 } from "../schemas/pre-cooking-output";
 
-type CookingModel = ReturnType<typeof createOpenAIModel>;
-
 interface RunPreCookingOptions {
-	model: CookingModel;
+	model: CompletionModel;
 	input: PreCookingInput;
+	observability?: RuntimeTraceObserver;
 }
 
 /** Prepares the selected recipe for the pre-cooking phase. */
 export async function runPreCooking({
 	model,
 	input,
+	observability,
 }: RunPreCookingOptions): Promise<PreCookingOutput> {
-	const validatedInput = PreCookingInputSchema.parse(input);
-	const preCookingPrompt = createPreCookingPrompt(validatedInput);
+	return observeRuntimeExecution({
+		phase: "pre-cooking",
+		modelIdentifier: model.modelId,
+		observability,
+		execute: async () => {
+			const validatedInput = PreCookingInputSchema.parse(input);
+			const preCookingPrompt = createPreCookingPrompt(validatedInput);
 
-	const prompt = `
+			const prompt = `
 ${COOKING_INSTRUCTIONS}
 
 ${preCookingPrompt}
 `.trim();
 
-	const result = await generateCompletion({
-		model,
-		prompt,
-		outputSchema: PreCookingOutputSchema,
-	});
+			const modelStartedAt = performance.now();
+			const result = await generateCompletion({
+				model,
+				prompt,
+				outputSchema: PreCookingOutputSchema,
+			});
 
-	return result.output;
+			return {
+				output: result.output,
+				resultVariant: "cooking_plan" as const,
+				executionPath: "model" as const,
+				modelDurationMs: performance.now() - modelStartedAt,
+				inputTokens: result.usage.inputTokens,
+				outputTokens: result.usage.outputTokens,
+			};
+		},
+	});
 }

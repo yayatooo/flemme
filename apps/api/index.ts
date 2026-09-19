@@ -52,15 +52,27 @@ const recommendationRunner = model
 	: undefined;
 const activeCookingRunner = model
 	? (input: Parameters<typeof runActiveCooking>[0]["input"]) =>
-			runActiveCooking({ model, input })
+			runActiveCooking({
+				model,
+				input,
+				observability: recommendationObservability,
+			})
 	: undefined;
 const completionRunner = model
 	? (input: Parameters<typeof runCompletion>[0]["input"]) =>
-			runCompletion({ model, input })
+			runCompletion({
+				model,
+				input,
+				observability: recommendationObservability,
+			})
 	: undefined;
 const preCookingRunner = model
 	? (input: Parameters<typeof runPreCooking>[0]["input"]) =>
-			runPreCooking({ model, input })
+			runPreCooking({
+				model,
+				input,
+				observability: recommendationObservability,
+			})
 	: undefined;
 const app = createApp({
 	authFoundation: { auth, webOrigin: authEnvironment.WEB_ORIGIN },
