@@ -23,7 +23,7 @@ export function AuthShell({
 			<div className="w-full max-w-md space-y-3">
 				<Link
 					to="/"
-					className="flex min-h-14 items-center rounded-2xl bg-card px-4 font-heading text-2xl tracking-tight no-underline shadow-control outline-none focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					className="flex min-h-14 items-center justify-center px-4 font-heading text-2xl tracking-tight no-underline outline-none focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 					aria-label="Flemme home"
 				>
 					Flemme<span className="text-primary">.</span>
