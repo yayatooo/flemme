@@ -10,7 +10,7 @@ execution modes:
   case runs whose outputs are scored by deterministic metrics. They are not
   offline or fully deterministic executions.
 - `eval:judge` calls both the live target model and a qualitative judge. It is
-  stochastic and separately authorized from deterministic scoring.
+  stochastic and intentionally separate from deterministic scoring.
 
 None of these Bun-local commands sends records to Lens. Lens ingestion and
 runtime tracing use separate isolated boundaries.
@@ -44,7 +44,7 @@ out the case but cannot forward cancellation into an in-flight provider call.
 
 The four-phase coverage audit established a final combined result of 26/26
 cases and 121/121 deterministic metric evaluations across 17 metrics. The
-result combines the unchanged-case results from the authorized incremental
+result combines the unchanged-case results from the incremental
 phase runs, the corrected one-case `active-resume` rerun, and the previously
 verified unchanged Completion baseline. The initial `active-resume` run exposed
 an over-constrained expectation that required an optional ingredient
@@ -77,9 +77,9 @@ configured pricing table. Judge scores are stochastic and are not a required
 deterministic CI gate.
 
 The most recent qualitative baseline remains the 2026-09-19 run documented in
-`docs/evals/flemme-evals-observability-implementation-report.md`: 4/4 cases and
-5/5 metrics passed at threshold 0.8. The four-phase coverage audit did not rerun
-the qualitative judge.
+the [four-phase coverage audit](../../../docs/evals/flemme-four-phase-eval-coverage-audit.md):
+4/4 cases and 5/5 metrics passed at threshold 0.8. The coverage audit did not
+rerun the qualitative judge.
 
 ## Known observability gaps
 
@@ -95,11 +95,8 @@ It catches false `available` claims without pretending to solve aliases such as
 “skillet” versus “frying pan.” Qualitative judge checks cover broader semantic
 quality separately and never decide schema, enum, action, or state rules.
 
-The first Lens ingestion smoke is implemented in the separate Node 24-only
-`tools/lens-eval-smoke` package. It emits one static synthetic eval with payload
-capture disabled. Lens remains absent from these Bun evals and every production
-entry point. A separate Recommendation-only runtime canary now uses the same
-Node 24 isolation boundary; other phases and a general rollout have not started.
-Local eval coverage spans Recommendation, Pre-Cooking, Active Cooking, and
-Completion. The Recommendation-only Lens record and Recommendation-only runtime
-trace therefore do not imply that local eval coverage is Recommendation-only.
+Lens ingestion smoke and runtime tracing are implemented for all four phases in
+the separate Node 24-only `tools/lens-eval-smoke` package. Payload capture is
+disabled, and Lens remains absent from these Bun eval runners. The local eval
+suite, ingestion smoke, and runtime traces are separate systems even though all
+three cover Recommendation, Pre-Cooking, Active Cooking, and Completion.

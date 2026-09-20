@@ -1,7 +1,6 @@
 # Flemme four-phase eval coverage audit
 
 Audit date: 2026-09-20
-Starting commit: `6b6d6bd79caa117243bb49fcfe80006ae3206cf8`
 
 ## Scope and terminology
 
@@ -14,14 +13,13 @@ Pre-Cooking, Active Cooking, and Completion. Every fixture is synthetic.
   whose outputs are scored with deterministic metrics. They are not offline or
   fully deterministic executions.
 - `eval:judge` runs live target-model cases plus stochastic qualitative judge
-  metrics. It requires separate authorization.
+  metrics and is intentionally separate from deterministic contract scoring.
 - Lens eval ingestion and runtime observability are separate systems. They are
   not reporters for the local suites.
 
-Local eval coverage spans all four phases. The Lens UI currently contains only
-the bounded synthetic Recommendation eval-ingestion smoke, and runtime tracing
-currently covers Recommendation only. Neither boundary limits the four-phase
-local eval suite.
+Local eval coverage, Lens ingestion smoke, and runtime tracing now each span all
+four phases. They remain separate execution systems with different purposes and
+privacy boundaries.
 
 ## Authoritative commands
 
@@ -39,7 +37,7 @@ bun run --filter @flemme/agent eval:active-cooking
 bun run --filter @flemme/agent eval:completion
 bun run --filter @flemme/agent eval:all
 
-# Live target model plus qualitative judge; separately authorized
+# Live target model plus qualitative judge
 bun run --filter @flemme/agent eval:judge
 ```
 
@@ -53,7 +51,7 @@ bun run --filter @flemme/agent typecheck
 The repository-level verification commands are `bun test`, `bun run
 typecheck`, `bun run build`, and `bun install --frozen-lockfile`.
 
-## Authorized live baseline
+## Verified live baseline
 
 Exactly one `bun run --filter @flemme/agent eval:all` execution ran the
 original 24 synthetic cases with the resolved `gpt-5.6-luna` target model.
@@ -100,8 +98,7 @@ and grounded synthesis—not schema, enum, cardinality, or state validation.
 | Active Cooking | `active-pause` | `active-cooking-calm-helpfulness` |
 | Completion | `completion-recorded-change` | `completion-grounded-synthesis` |
 
-No qualitative judge ran during this audit. The previous verified baseline
-remains the 2026-09-19 run recorded in the implementation report: 4/4 cases and
+The verified qualitative baseline remains the 2026-09-19 result: 4/4 cases and
 5/5 metrics passed at threshold 0.8, using 6,106 evaluation tokens. Target
 usage and cost were unavailable in that run's context.
 
@@ -111,14 +108,14 @@ The final result combines unchanged-case results rather than claiming a second
 complete-suite execution:
 
 - Recommendation passed 10/10 cases and 70/70 deterministic metric
-  evaluations in its one authorized incremental run.
-- Pre-Cooking passed 3/3 and 12/12 in its one authorized incremental run.
+  evaluations in its incremental validation.
+- Pre-Cooking passed 3/3 and 12/12 in its incremental validation.
 - The Active Cooking incremental run passed 9/10 and 29/30. Its only failure,
   `active-resume`, came from an over-constrained case expectation that required
   an optional ingredient `record-change` alongside the required `resume`.
 - Removing only that extra expectation changed no production behavior. Focused
   offline tests prove standalone `resume` passes, while no action and an
-  unrelated lifecycle action fail. One authorized targeted `active-resume`
+  unrelated lifecycle action fail. One targeted `active-resume`
   generation then passed 1/1 and 3/3. Its safe action evidence was two actions:
   `record-change` and `resume`.
 - Completion definitions were unchanged and retain their previously verified
@@ -134,7 +131,8 @@ complete-suite execution:
 
 The incremental phase validation used 22 provider generations; the targeted
 correction used exactly one more. Provider token usage remained unavailable.
-No raw target response is retained. No qualitative judge ran during this task.
+No raw target response is retained. The combined result did not invoke a new
+qualitative judge and therefore retains the verified baseline above.
 
 ## Metric catalog
 
@@ -223,7 +221,7 @@ No raw target output is persisted here.
 | Household and preference context | `covered` | Household, cuisine-signal, fallback cases and usefulness judge |
 | Available-time practicality | `covered` | Time-constrained case plus live-passing time-practicality metric |
 | One-to-three cardinality | `covered` | Schema and variant/cardinality metric |
-| Clarification and no-viable variants | `partially-covered` | Both are schema-valid and allowed by insufficient-context cases; the authorized run produced no-viable responses, while the contract intentionally leaves the choice context-dependent |
+| Clarification and no-viable variants | `partially-covered` | Both are schema-valid and allowed by insufficient-context cases; the verified run produced no-viable responses, while the contract intentionally leaves the choice context-dependent |
 | No invented inventory/equipment/preferences | `covered` | Deterministic inventory/equipment checks plus qualitative personalization checks |
 | Honest optional/missing handling | `covered` | Missing-ingredient case and optional-separation metric |
 
@@ -310,14 +308,14 @@ over-constrained `active-resume` expectation was removed.
 - Targeted `active-resume`: 1/1 case and 3/3 metrics passed with exactly one
   `gpt-5.6-luna` provider generation, zero eval/provider retries, and no raw
   output persistence.
-- Full repository tests: 515/515 passed with 2,381 assertions against a
-  task-owned PostgreSQL 16 container on an OS-assigned loopback port. The URL
-  was supplied only through process environment. The container used tmpfs,
+- Full repository tests: 515/515 passed with 2,381 assertions against an
+  isolated temporary PostgreSQL 16 container on an OS-assigned loopback port.
+  The URL was supplied only through process environment. The container used tmpfs,
   was removed after the run, and the existing `flemme-postgres` container and
   volumes were not used or modified.
 - Root typecheck, production build, scoped Biome, frozen Bun installs,
   `git diff --check`, and the changed-file credential scan are recorded in the
   final local commit verification.
 
-No qualitative judge, Lens reporter, runtime trace, deployment, or push ran
-during this continuation.
+The verification made no qualitative-judge, Lens-reporter, runtime-trace,
+deployment, or push operation.

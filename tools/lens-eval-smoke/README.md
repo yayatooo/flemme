@@ -154,5 +154,6 @@ are excluded.
 Normal API delivery is fail-open, bounded to 16 in-flight loopback requests,
 and has no retry or persistent queue. A sanitized diagnostic code may be
 written locally. The dedicated canary explicitly flushes and fails closed so it
-can prove delivery. Production rollout remains blocked on manual Lens UI
-confirmation and a deliberate API shutdown/flush design.
+can prove delivery. The four traces have been manually confirmed in local Lens.
+Production rollout still requires a deliberate relay lifecycle and application
+shutdown/flush design.

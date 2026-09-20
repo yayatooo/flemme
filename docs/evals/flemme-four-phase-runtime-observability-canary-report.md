@@ -48,11 +48,11 @@ ID is used only as the run ID and is never supplied as a remote trace parent.
 Each run ends explicitly, its root observation ends before flush, Lens flushes
 before close, and no synthetic missing parent is created.
 
-The original Recommendation-only canary command and stable names remain
-available. Normal runtime behavior remains disabled by default with sample rate
-zero. Delivery remains loopback-only, capped at 16 pending requests, bounded by
-timeout, non-blocking, fail-open, without retry or persistent queue, and without
-global signal handlers.
+The original single-phase Recommendation canary command and stable names remain
+available for backward compatibility. Normal runtime behavior remains disabled
+by default with sample rate zero. Delivery remains loopback-only, capped at 16
+pending requests, bounded by timeout, non-blocking, fail-open, without retry or
+persistent queue, and without global signal handlers.
 
 ## Privacy verification
 
@@ -92,15 +92,15 @@ ClickHouse readback for the four exact trace IDs found:
 - scoped Biome, frozen root and isolated installs, and `git diff --check`: passed;
 - changed-file credential-candidate scan: zero.
 
-Database-backed tests used a task-owned PostgreSQL 16 container on loopback port
-32770 with tmpfs storage. It was removed after verification. The existing
+Database-backed tests used an isolated temporary PostgreSQL 16 container on
+loopback port 32770 with tmpfs storage. It was removed after verification. The existing
 `flemme-postgres` container and its volume remained untouched and healthy.
 
-## Manual checkpoint and remaining work
+## Manual verification and remaining work
 
-Open `http://127.0.0.1:18080`, select **Flemme Local**, open **Traces**, and
-search for each trace ID in the table above. Confirm the trace summary and its
-single agent observation are successful and contain no input/output content.
+The four trace IDs in the table above were manually confirmed in the local Lens
+UI. Each trace summary and its single agent observation were successful and
+contained no input/output content.
 
 Production deployment has not started. A deployed relay/sidecar lifecycle,
 production sampling and release policy, authentication and network boundary,

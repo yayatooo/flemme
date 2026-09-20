@@ -29,9 +29,9 @@ For non-trivial work:
 6. Validate.
 7. Update progress.
 
-Implementation plans belong in:
-
-`docs/plans/`
+Durable decisions belong in the relevant product, architecture, module, or
+operational document. Temporary execution plans are working material and are
+not retained as repository documentation after completion.
 
 ## Missing Requirements
 

@@ -39,6 +39,6 @@ messages, plans, ingredients, equipment, household/preferences, actions,
 progress, identities, headers, credentials, environment dumps, raw exceptions,
 and arbitrary metadata are forbidden.
 
-The local four-phase canary command and manual Lens verification procedure are
-documented in
-`docs/evals/flemme-four-phase-runtime-observability-canary-report.md`.
+The local four-phase canary command and Lens verification evidence are
+documented in the
+[four-phase runtime report](../../../../docs/evals/flemme-four-phase-runtime-observability-canary-report.md).

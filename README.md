@@ -808,7 +808,7 @@ also require `MUX_API_KEY` and `BASE_URL`. The complete walkthrough is in
 [`docs/testing/swagger-cooking-flow.md`](docs/testing/swagger-cooking-flow.md).
 For a code-oriented explanation of how the API layers and cooking flows fit
 together, read
-[`docs/api-flow-learning-guide.md`](docs/api-flow-learning-guide.md).
+[`docs/modules/api.md`](docs/modules/api.md).
 
 ---
 
@@ -991,6 +991,10 @@ rules and resolution usage.
 # Design Documentation
 
 Product design is part of the implementation contract.
+
+Start with the [documentation index](docs/README.md),
+[business context](docs/business-context.md), and
+[UI context](docs/ui-context.md).
 
 Important design topics include:
 

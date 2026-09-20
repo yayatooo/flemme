@@ -19,8 +19,10 @@ and login, automatic sign-in, logout and session restoration. A4 enables Google
 login/registration through POST `/auth/sign-in/social` and GET
 `/auth/callback/google`. GET `/auth/get-session` retains Better Auth's native
 200/null behavior. Application-owned GET `/auth/me` uses the common current-user
-boundary and returns only `{ user: { id, email } }`; it never exposes session or
-provider tokens, account details, or Product Domain resources.
+boundary and returns only the canonical user identity (`id`, `email`, display
+`name`, and nullable provider `image`). PATCH `/auth/me` updates only the display
+name. Neither endpoint exposes session or provider tokens, account details, or
+Product Domain resources.
 Use the Google browser flow below for manual authentication.
 
 In Google Cloud Console, create an OAuth **Web application** client. Configure
@@ -100,9 +102,12 @@ persistence work, while those Agent-backed routes return the controlled
 
 ```text
 GET   /auth/me
+PATCH /auth/me
 GET   /health
 GET   /openapi.json
 GET   /docs
+GET   /onboarding
+POST  /onboarding/complete
 GET   /favorites
 POST  /favorites
 DELETE /favorites/:id
@@ -114,14 +119,19 @@ GET   /kitchen
 PUT   /kitchen
 GET   /inventory
 PUT   /inventory
+PUT   /inventory/items
 POST  /inventory/items
 PUT   /inventory/items/:id
 DELETE /inventory/items/:id
 POST  /cooking/recommendations
 POST  /cooking/pre-cooking
 POST  /cooking-sessions
+GET   /cooking-sessions/resumable
+GET   /cooking-sessions/history
 GET   /cooking-sessions/:id
+PATCH /cooking-sessions/:id
 GET   /cooking-sessions/:id/nutrition
+POST  /cooking-sessions/:id/nutrition
 PATCH /cooking-sessions/:id/progress
 POST  /cooking-sessions/:id/active-cooking
 POST  /cooking-sessions/:id/completion
@@ -214,9 +224,9 @@ update stores completion lifecycle fields and both snapshots together. Clients
 cannot seed or submit `nutritionSnapshot`, and partial or unavailable coverage
 does not prevent a valid session from completing.
 
-Favorites are intentionally not exposed yet. Under the current session-backed
-favorite model, future API logic should only favorite an owned, completed
-session with a valid selected-recipe snapshot.
+Favorites expose a session-backed saved-meal library. Creating a favorite
+requires an owned, completed session with a valid selected-recipe snapshot;
+deleting a favorite does not delete Cooking History.
 
 Run the real PostgreSQL integration tests with:
 

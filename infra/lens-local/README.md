@@ -76,8 +76,8 @@ Never omit `-p flemme-lens-local` from the destructive command.
 ## Isolated Node 24 boundary
 
 Lens SDK experiments must run outside Flemme's Bun workspaces. Use the pinned
-Node 24 image below; do not add `@anvia/lens` to a Flemme package until the
-manual account, project, and key checkpoint is complete.
+Node 24 image below; do not add `@anvia/lens` to a Flemme package. Account,
+project, and ingestion-key setup remains isolated to the local stack.
 
 ```sh
 docker run --rm \
@@ -90,21 +90,23 @@ manager or application runtime.
 
 ## Eval ingestion smoke
 
-After the manual owner, project, and ingestion-key setup is complete, run the
-single payload-free synthetic eval from the repository root:
+After the owner, project, and ingestion-key setup is complete, run the isolated
+tests and either the backward-compatible Recommendation smoke or the four-phase
+payload-free smoke from the repository root:
 
 ```sh
 bun install --cwd tools/lens-eval-smoke --frozen-lockfile
 bun run --cwd tools/lens-eval-smoke test
 bun run --cwd tools/lens-eval-smoke smoke
+bun run --cwd tools/lens-eval-smoke smoke:four-phase
 ```
 
 The last command invokes Node 24 and explicitly loads only
 `infra/lens-local/.env.flemme-agent`. See
-`tools/lens-eval-smoke/README.md` for the privacy contract and Lens UI cleanup
-instructions.
+`tools/lens-eval-smoke/README.md` for the privacy contract, the deterministic
+four-phase runtime canary, and Lens UI verification instructions.
 
-## Manual checkpoint
+## Initial account and key setup
 
 After the stack is healthy, open `http://127.0.0.1:18080` and create the first
 owner account. The first account closes public bootstrap registration. From the
