@@ -25,7 +25,7 @@ function onboardingDecisionFixture(
 test("loads canonical onboarding status from the backend", async () => {
 	const expected = onboardingDecisionFixture(false, "household");
 	globalThis.fetch = (async (input) => {
-		expect(new URL(String(input)).pathname).toBe("/onboarding");
+		expect(new URL(String(input)).pathname).toBe("/api/onboarding");
 		return Response.json(expected);
 	}) as typeof fetch;
 	const queryClient = new QueryClient();
@@ -40,7 +40,7 @@ test("fresh users resume at Profile without self-redirecting", () => {
 	expect(resolveOnboardingRedirect(status, "/app", "app")).toBe(
 		"/onboarding/profile",
 	);
-	expect(resolveOnboardingRedirect(status, "/onboarding", "onboarding")).toBe(
+	expect(resolveOnboardingRedirect(status, "/api/onboarding", "onboarding")).toBe(
 		"/onboarding/profile",
 	);
 	expect(
@@ -64,7 +64,7 @@ test("inventory decisions advance to the explicit completion page", () => {
 test("completed users enter Home and cannot reopen completion", () => {
 	const status = onboardingDecisionFixture(true, null);
 	expect(resolveOnboardingRedirect(status, "/app", "app")).toBeNull();
-	expect(resolveOnboardingRedirect(status, "/onboarding", "onboarding")).toBe(
+	expect(resolveOnboardingRedirect(status, "/api/onboarding", "onboarding")).toBe(
 		"/app",
 	);
 	expect(

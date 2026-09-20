@@ -109,7 +109,7 @@ let otherUserId = "";
 async function createSession(
 	session: CreateCookingSessionRequest["session"] = completionReadySession,
 ) {
-	const response = await app.request("/cooking-sessions", {
+	const response = await app.request("/api/cooking-sessions", {
 		method: "POST",
 		headers: headers(ownerUserId),
 		body: JSON.stringify({
@@ -129,7 +129,7 @@ async function updateProgress(
 	sessionId: string,
 	session: CreateCookingSessionRequest["session"],
 ) {
-	return app.request(`/cooking-sessions/${sessionId}/progress`, {
+	return app.request(`/api/cooking-sessions/${sessionId}/progress`, {
 		method: "PATCH",
 		headers: headers(ownerUserId),
 		body: JSON.stringify({ session }),
@@ -152,7 +152,7 @@ async function generate(
 	body: unknown,
 	userId = ownerUserId,
 ) {
-	return app.request(`/cooking-sessions/${sessionId}/completion`, {
+	return app.request(`/api/cooking-sessions/${sessionId}/completion`, {
 		method: "POST",
 		headers: headers(userId),
 		body: JSON.stringify(body),
@@ -160,7 +160,7 @@ async function generate(
 }
 
 async function restore(sessionId: string) {
-	const response = await app.request(`/cooking-sessions/${sessionId}`, {
+	const response = await app.request(`/api/cooking-sessions/${sessionId}`, {
 		headers: headers(ownerUserId),
 	});
 	return CookingSessionResponseSchema.parse(await response.json());
@@ -181,7 +181,7 @@ describe("Completion AI API integration", () => {
 	test("generates from an owned completed session and persists canonical output", async () => {
 		const created = await createSession();
 		const renameResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{
 				method: "PATCH",
 				headers: headers(ownerUserId),
@@ -372,7 +372,7 @@ describe("Completion AI API integration", () => {
 		const blank = await generate(created.id, { message: "   " });
 		const clientState = await generate(created.id, { cookingPlan });
 		const unauthenticated = await app.request(
-			`/cooking-sessions/${created.id}/completion`,
+			`/api/cooking-sessions/${created.id}/completion`,
 			{
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -400,7 +400,7 @@ describe("Completion AI API integration", () => {
 		await completeSession(unconfiguredSession.id);
 		const unconfiguredApp = createApp({ authFoundation, db });
 		const unconfigured = await unconfiguredApp.request(
-			`/cooking-sessions/${unconfiguredSession.id}/completion`,
+			`/api/cooking-sessions/${unconfiguredSession.id}/completion`,
 			{
 				method: "POST",
 				headers: headers(ownerUserId),
@@ -418,14 +418,14 @@ describe("Completion AI API integration", () => {
 	});
 
 	test("publishes the authenticated Completion endpoint in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = z
 			.object({ paths: z.record(z.string(), z.unknown()) })
 			.parse(await response.json());
 
 		expect(response.status).toBe(200);
 		expect(Object.keys(specification.paths)).toContain(
-			"/cooking-sessions/{id}/completion",
+			"/api/cooking-sessions/{id}/completion",
 		);
 	});
 });

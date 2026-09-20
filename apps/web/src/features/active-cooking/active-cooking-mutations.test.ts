@@ -240,7 +240,7 @@ test("double Next sends exactly one progress mutation and caches its response", 
 	expect(duplicate).toBeNull();
 	expect(requests).toHaveLength(1);
 	expect(requests[0]?.path).toBe(
-		`/cooking-sessions/${cookingSessionId}/progress`,
+		`/api/cooking-sessions/${cookingSessionId}/progress`,
 	);
 	expect(requests[0]?.body).toEqual({ session: persisted.session });
 	expect(
@@ -321,7 +321,7 @@ test("rename sends one metadata mutation, shares the session lock, and caches th
 	expect(duplicate).toBeNull();
 	expect(requests).toEqual([
 		{
-			path: `/cooking-sessions/${cookingSessionId}`,
+			path: `/api/cooking-sessions/${cookingSessionId}`,
 			method: "PATCH",
 			body: { customName: "Weeknight chicken" },
 		},
@@ -354,7 +354,7 @@ test("clearing a rename sends null without an agent or progress request", async 
 		customName: null,
 	});
 
-	expect(paths).toEqual([`/cooking-sessions/${cookingSessionId}`]);
+	expect(paths).toEqual([`/api/cooking-sessions/${cookingSessionId}`]);
 	expect(
 		queryClient.getQueryData<CookingSessionResponse>(
 			cookingSessionQueryKey(cookingSessionId),
@@ -385,7 +385,7 @@ test("assistant guidance without actions performs no progress request", async ()
 
 	expect(result?.output.reply).toContain("Lower the heat");
 	expect(paths).toEqual([
-		`/cooking-sessions/${cookingSessionId}/active-cooking`,
+		`/api/cooking-sessions/${cookingSessionId}/active-cooking`,
 	]);
 	expect(
 		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
@@ -418,7 +418,7 @@ test("off-topic redirect renders normally without any product mutation request",
 	expect(result?.output.reply).toContain("this cooking session");
 	expect(result?.output.reply.toLowerCase()).not.toContain("html");
 	expect(paths).toEqual([
-		`/cooking-sessions/${cookingSessionId}/active-cooking`,
+		`/api/cooking-sessions/${cookingSessionId}/active-cooking`,
 	]);
 	expect(
 		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),
@@ -455,8 +455,8 @@ test("assistant structured advance performs one explicit progress mutation", asy
 
 	expect(result?.actionError).toBeUndefined();
 	expect(paths).toEqual([
-		`/cooking-sessions/${cookingSessionId}/active-cooking`,
-		`/cooking-sessions/${cookingSessionId}/progress`,
+		`/api/cooking-sessions/${cookingSessionId}/active-cooking`,
+		`/api/cooking-sessions/${cookingSessionId}/progress`,
 	]);
 	const cached = queryClient.getQueryData<CookingSessionResponse>(
 		cookingSessionQueryKey(cookingSessionId),

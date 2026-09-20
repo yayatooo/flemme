@@ -34,7 +34,7 @@ async function createUser() {
 }
 
 async function putProfile(userId: string, body: unknown) {
-	return app.request("/profile", {
+	return app.request("/api/profile", {
 		method: "PUT",
 		headers: headers(userId),
 		body: JSON.stringify(body),
@@ -42,7 +42,7 @@ async function putProfile(userId: string, body: unknown) {
 }
 
 async function getProfile(userId: string) {
-	return app.request("/profile", { headers: headers(userId) });
+	return app.request("/api/profile", { headers: headers(userId) });
 }
 
 afterAll(async () => {
@@ -180,7 +180,7 @@ describe("Profile API integration", () => {
 	test("rejects missing sessions and sessions for deleted users", async () => {
 		const userId = await createUser();
 		await db.delete(users).where(eq(users.id, userId));
-		const missingSessionResponse = await app.request("/profile");
+		const missingSessionResponse = await app.request("/api/profile");
 		const deletedUserResponse = await getProfile(userId);
 
 		expect(missingSessionResponse.status).toBe(401);
@@ -194,13 +194,13 @@ describe("Profile API integration", () => {
 	});
 
 	test("registers GET and PUT profile operations in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<string, { get?: unknown; put?: unknown } | undefined>;
 		};
 
 		expect(response.status).toBe(200);
-		expect(specification.paths["/profile"]?.get).toBeDefined();
-		expect(specification.paths["/profile"]?.put).toBeDefined();
+		expect(specification.paths["/api/profile"]?.get).toBeDefined();
+		expect(specification.paths["/api/profile"]?.put).toBeDefined();
 	});
 });

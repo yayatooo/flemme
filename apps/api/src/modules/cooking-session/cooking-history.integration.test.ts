@@ -83,7 +83,7 @@ async function createSession(userId: string, name: string) {
 		optionalIngredients: [],
 		warnings: [],
 	};
-	const response = await app.request("/cooking-sessions", {
+	const response = await app.request("/api/cooking-sessions", {
 		method: "POST",
 		headers: headers(userId),
 		body: JSON.stringify({
@@ -148,7 +148,7 @@ async function completeSession(
 }
 
 async function history(userId: string, query = "") {
-	const response = await app.request(`/cooking-sessions/history${query}`, {
+	const response = await app.request(`/api/cooking-sessions/history${query}`, {
 		headers: headers(userId),
 	});
 	return {

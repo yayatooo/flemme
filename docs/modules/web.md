@@ -15,7 +15,7 @@ secrets and provider tokens never belong in browser configuration or storage.
   pre-cooking, active cooking, completion, nutrition, history, favorites,
   inventory, and profile flows.
 
-Route guards restore identity through `/auth/me` and resolve onboarding state
+Route guards restore identity through `/api/auth/me` and resolve onboarding state
 through the API. A Product Domain `401` clears the query cache and returns to
 login; documented missing-resource `404` responses drive onboarding rather
 than invalidating authentication. Logout clears server session and cached

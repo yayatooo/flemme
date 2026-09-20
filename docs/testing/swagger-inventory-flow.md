@@ -1,17 +1,17 @@
 # Swagger Inventory Flow
 
 Start the API with `bun run --filter @flemme/api dev` and open
-`http://localhost:3000/docs` after signing in through apps/web in the same
+`http://localhost:3000/api/docs` after signing in through apps/web in the same
 browser. Follow the [session authentication guide](swagger-cooking-flow.md#session-authentication).
 No AI provider is required. Use a disposable test account: these operations
 persist real changes.
 
-1. GET `/inventory`. A user without a parent gets 404 `INVENTORY_NOT_FOUND`;
+1. GET `/api/inventory`. A user without a parent gets 404 `INVENTORY_NOT_FOUND`;
    GET does not initialize persistence. An existing empty parent returns
    `{ "items": [] }`.
-2. PUT `/inventory` creates an empty inventory parent for the current user
+2. PUT `/api/inventory` creates an empty inventory parent for the current user
    and returns `{ "items": [] }`. It is idempotent and preserves existing items.
-3. POST `/inventory/items` with the following body. Expect 201; copy its `id`.
+3. POST `/api/inventory/items` with the following body. Expect 201; copy its `id`.
 
 ```json
 {
@@ -25,7 +25,7 @@ persist real changes.
 
 4. GET inventory and confirm the item and Indonesian canonical display name.
    Repeating POST returns 409 `DUPLICATE_INVENTORY_ITEM`.
-5. PUT `/inventory/items/{id}` using the body below. All four fields are required;
+5. PUT `/api/inventory/items/{id}` using the body below. All four fields are required;
    `ingredientKey` is immutable and is not accepted in PUT.
 
 ```json
@@ -53,7 +53,7 @@ conversion requirements. Conditions are exactly `fresh`, `use_soon`, `unknown`.
 Creation defaults condition to unknown and isApproximate to false.
 
 Responses expose id, ingredientKey, name, quantity, unit, isApproximate and
-condition, never user/inventory foreign keys or timestamps. GET sorts by key.
+condition, never user/api/inventory foreign keys or timestamps. GET sorts by key.
 Legacy persisted keys such as `salt` remain readable using the key as the name
 fallback; new writes require a production key such as `table-salt`. No legacy
 key is automatically mapped to another ingredient.

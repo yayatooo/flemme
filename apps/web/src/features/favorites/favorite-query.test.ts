@@ -62,7 +62,7 @@ test("Favorite page query uses bounded pagination and seeds session caches", asy
 		items: [favorite],
 		nextOffset: null,
 	});
-	expect(requests).toEqual(["/favorites?limit=10&offset=10"]);
+	expect(requests).toEqual(["/api/favorites?limit=10&offset=10"]);
 	expect(
 		queryClient.getQueryData(favoriteBySessionQueryKey(sessionId)),
 	).toEqual(favorite);
@@ -81,7 +81,7 @@ test("session-scoped Favorite restoration uses the canonical filtered list endpo
 		favorite,
 	);
 	expect(requests).toEqual([
-		`/favorites?limit=1&offset=0&cookingSessionId=${sessionId}`,
+		`/api/favorites?limit=1&offset=0&cookingSessionId=${sessionId}`,
 	]);
 	expect(
 		queryClient.getQueryData(favoriteBySessionQueryKey(sessionId)),
@@ -111,7 +111,7 @@ test("Favorite creation posts only the session identity and invalidates canonica
 	expect(await executeCreateFavorite(queryClient, sessionId)).toEqual(favorite);
 	expect(requests).toEqual([
 		{
-			path: "/favorites",
+			path: "/api/favorites",
 			method: "POST",
 			body: { cookingSessionId: sessionId },
 		},
@@ -165,8 +165,8 @@ test("duplicate response converges through the session-filtered persisted Favori
 
 	expect(await executeCreateFavorite(queryClient, sessionId)).toEqual(favorite);
 	expect(requests).toEqual([
-		"POST /favorites",
-		`GET /favorites?limit=1&offset=0&cookingSessionId=${sessionId}`,
+		"POST /api/favorites",
+		`GET /api/favorites?limit=1&offset=0&cookingSessionId=${sessionId}`,
 	]);
 });
 
@@ -203,7 +203,7 @@ test("remove waits for one delete then synchronizes Favorites, History, Nutritio
 	resolveDelete?.(new Response(null, { status: 204 }));
 	await Promise.all([first, duplicate]);
 
-	expect(requests).toEqual([`DELETE /favorites/${favorite.id}`]);
+	expect(requests).toEqual([`DELETE /api/favorites/${favorite.id}`]);
 	expect(
 		queryClient.getQueryData<{ pages: FavoritesResponse[] }>(
 			favoritesQueryKey(),

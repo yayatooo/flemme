@@ -97,7 +97,7 @@ let ownerUserId = "";
 let otherUserId = "";
 
 async function createSession(userId: string): Promise<CookingSessionResponse> {
-	const response = await app.request("/cooking-sessions", {
+	const response = await app.request("/api/cooking-sessions", {
 		method: "POST",
 		headers: authenticatedHeaders(userId),
 		body: JSON.stringify(createRequest),
@@ -126,14 +126,14 @@ afterAll(async () => {
 
 describe("cooking-session API integration", () => {
 	test("reports process health without authentication", async () => {
-		const response = await app.request("/health");
+		const response = await app.request("/api/health");
 
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ status: "ok" });
 	});
 
 	test("serves OpenAPI documentation and Swagger UI", async () => {
-		const specificationResponse = await app.request("/openapi.json");
+		const specificationResponse = await app.request("/api/openapi.json");
 		const specification = z
 			.object({
 				openapi: z.literal("3.1.0"),
@@ -144,25 +144,25 @@ describe("cooking-session API integration", () => {
 		expect(specificationResponse.status).toBe(200);
 		expect(Object.keys(specification.paths)).toEqual(
 			expect.arrayContaining([
-				"/health",
-				"/profile",
-				"/household",
-				"/kitchen",
-				"/cooking/recommendations",
-				"/cooking/pre-cooking",
-				"/cooking-sessions",
-				"/cooking-sessions/resumable",
-				"/cooking-sessions/history",
-				"/cooking-sessions/{id}",
-				"/cooking-sessions/{id}/progress",
-				"/cooking-sessions/{id}/nutrition",
-				"/cooking-sessions/{id}/complete",
-				"/cooking-sessions/{id}/active-cooking",
-				"/cooking-sessions/{id}/completion",
+				"/api/health",
+				"/api/profile",
+				"/api/household",
+				"/api/kitchen",
+				"/api/cooking/recommendations",
+				"/api/cooking/pre-cooking",
+				"/api/cooking-sessions",
+				"/api/cooking-sessions/resumable",
+				"/api/cooking-sessions/history",
+				"/api/cooking-sessions/{id}",
+				"/api/cooking-sessions/{id}/progress",
+				"/api/cooking-sessions/{id}/nutrition",
+				"/api/cooking-sessions/{id}/complete",
+				"/api/cooking-sessions/{id}/active-cooking",
+				"/api/cooking-sessions/{id}/completion",
 			]),
 		);
 
-		const swaggerResponse = await app.request("/docs");
+		const swaggerResponse = await app.request("/api/docs");
 
 		expect(swaggerResponse.status).toBe(200);
 		expect(swaggerResponse.headers.get("content-type")).toContain("text/html");
@@ -171,7 +171,7 @@ describe("cooking-session API integration", () => {
 
 	test("requires a session for cooking routes", async () => {
 		const response = await app.request(
-			`/cooking-sessions/${crypto.randomUUID()}`,
+			`/api/cooking-sessions/${crypto.randomUUID()}`,
 		);
 		const error = ErrorResponseSchema.parse(await response.json());
 
@@ -187,7 +187,7 @@ describe("cooking-session API integration", () => {
 		expect(created.session.currentStepId).toBe("start-cooking");
 
 		const restoredResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{ headers: authenticatedHeaders(ownerUserId) },
 		);
 		const restored = CookingSessionResponseSchema.parse(
@@ -199,7 +199,7 @@ describe("cooking-session API integration", () => {
 		expect(restored.cookingPlan).toEqual(cookingPlan);
 
 		const progressToFinalResponse = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
+			`/api/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -231,7 +231,7 @@ describe("cooking-session API integration", () => {
 			notes: [],
 		};
 		const prematureCompletionResponse = await app.request(
-			`/cooking-sessions/${created.id}/complete`,
+			`/api/cooking-sessions/${created.id}/complete`,
 			{
 				method: "POST",
 				headers: authenticatedHeaders(ownerUserId),
@@ -248,7 +248,7 @@ describe("cooking-session API integration", () => {
 		);
 
 		const finalProgressResponse = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
+			`/api/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -271,7 +271,7 @@ describe("cooking-session API integration", () => {
 		expect(finalProgressResponse.status).toBe(200);
 
 		const completionResponse = await app.request(
-			`/cooking-sessions/${created.id}/complete`,
+			`/api/cooking-sessions/${created.id}/complete`,
 			{
 				method: "POST",
 				headers: authenticatedHeaders(ownerUserId),
@@ -289,7 +289,7 @@ describe("cooking-session API integration", () => {
 		expect(completed.nutritionSnapshot?.status).toBe("complete");
 
 		const completedRestoreResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{ headers: authenticatedHeaders(ownerUserId) },
 		);
 		const completedRestore = CookingSessionResponseSchema.parse(
@@ -304,7 +304,7 @@ describe("cooking-session API integration", () => {
 		);
 
 		const completedRenameResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -328,7 +328,7 @@ describe("cooking-session API integration", () => {
 		const originalProgress = created.session;
 
 		const renamedResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -346,7 +346,7 @@ describe("cooking-session API integration", () => {
 		expect(renamed.session).toEqual(originalProgress);
 
 		const pausedResponse = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
+			`/api/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -363,7 +363,7 @@ describe("cooking-session API integration", () => {
 			await pausedResponse.json(),
 		);
 		const pausedRenameResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -379,7 +379,7 @@ describe("cooking-session API integration", () => {
 		expect(pausedRename.session).toEqual(paused.session);
 
 		const clearedResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -397,7 +397,7 @@ describe("cooking-session API integration", () => {
 		expect(cleared.session).toEqual(paused.session);
 
 		const restoredResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{ headers: authenticatedHeaders(ownerUserId) },
 		);
 		const restored = CookingSessionResponseSchema.parse(
@@ -413,18 +413,21 @@ describe("cooking-session API integration", () => {
 			"   ",
 			"x".repeat(COOKING_SESSION_CUSTOM_NAME_MAX_LENGTH + 1),
 		]) {
-			const response = await app.request(`/cooking-sessions/${created.id}`, {
-				method: "PATCH",
-				headers: authenticatedHeaders(ownerUserId),
-				body: JSON.stringify({ customName }),
-			});
+			const response = await app.request(
+				`/api/cooking-sessions/${created.id}`,
+				{
+					method: "PATCH",
+					headers: authenticatedHeaders(ownerUserId),
+					body: JSON.stringify({ customName }),
+				},
+			);
 			expect(response.status).toBe(400);
 		}
 	});
 
 	test("returns not found for a missing session", async () => {
 		const response = await app.request(
-			`/cooking-sessions/${crypto.randomUUID()}`,
+			`/api/cooking-sessions/${crypto.randomUUID()}`,
 			{ headers: authenticatedHeaders(ownerUserId) },
 		);
 		const error = ErrorResponseSchema.parse(await response.json());
@@ -435,7 +438,7 @@ describe("cooking-session API integration", () => {
 
 	test("returns not found when renaming a missing session", async () => {
 		const response = await app.request(
-			`/cooking-sessions/${crypto.randomUUID()}`,
+			`/api/cooking-sessions/${crypto.randomUUID()}`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -450,7 +453,7 @@ describe("cooking-session API integration", () => {
 
 	test("rejects access by another user", async () => {
 		const created = await createSession(ownerUserId);
-		const response = await app.request(`/cooking-sessions/${created.id}`, {
+		const response = await app.request(`/api/cooking-sessions/${created.id}`, {
 			headers: authenticatedHeaders(otherUserId),
 		});
 		const error = ErrorResponseSchema.parse(await response.json());
@@ -461,7 +464,7 @@ describe("cooking-session API integration", () => {
 
 	test("rejects cross-user session rename", async () => {
 		const created = await createSession(ownerUserId);
-		const response = await app.request(`/cooking-sessions/${created.id}`, {
+		const response = await app.request(`/api/cooking-sessions/${created.id}`, {
 			method: "PATCH",
 			headers: authenticatedHeaders(otherUserId),
 			body: JSON.stringify({ customName: "Not my dish" }),
@@ -475,7 +478,7 @@ describe("cooking-session API integration", () => {
 	test("rejects progress outside the persisted plan", async () => {
 		const created = await createSession(ownerUserId);
 		const response = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
+			`/api/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -499,7 +502,7 @@ describe("cooking-session API integration", () => {
 	test("abandons an active session and prevents reactivation", async () => {
 		const created = await createSession(ownerUserId);
 		const abandonedResponse = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
+			`/api/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -520,7 +523,7 @@ describe("cooking-session API integration", () => {
 		expect(abandoned.cookingPlan).toEqual(cookingPlan);
 
 		const abandonedRenameResponse = await app.request(
-			`/cooking-sessions/${created.id}`,
+			`/api/cooking-sessions/${created.id}`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -535,7 +538,7 @@ describe("cooking-session API integration", () => {
 		expect(abandonedRename.session.status).toBe("abandoned");
 
 		const reactivateResponse = await app.request(
-			`/cooking-sessions/${created.id}/progress`,
+			`/api/cooking-sessions/${created.id}/progress`,
 			{
 				method: "PATCH",
 				headers: authenticatedHeaders(ownerUserId),
@@ -562,7 +565,7 @@ describe("cooking-session API integration", () => {
 			where ${cookingSessions.id} = ${created.id}
 		`);
 
-		const response = await app.request(`/cooking-sessions/${created.id}`, {
+		const response = await app.request(`/api/cooking-sessions/${created.id}`, {
 			headers: authenticatedHeaders(ownerUserId),
 		});
 		const error = ErrorResponseSchema.parse(await response.json());

@@ -40,7 +40,7 @@ test("production authentication issues secure host-only session cookies", async 
 	const email = `a8-secure-${crypto.randomUUID()}@example.com`;
 	try {
 		const response = await secureApp.request(
-			`${secureURL}/auth/sign-up/email`,
+			`${secureURL}/api/auth/sign-up/email`,
 			{
 				method: "POST",
 				headers: { Origin: secureOrigin, "Content-Type": "application/json" },
@@ -64,17 +64,39 @@ test("production authentication issues secure host-only session cookies", async 
 	}
 });
 test("framework endpoints stay public while product identity requires a session", async () => {
-	const response = await request("/auth/get-session");
+	const response = await request("/api/auth/get-session");
 	expect(response.status).toBe(200);
 	expect(await response.json()).toBeNull();
 	expect(response.headers.get("set-cookie")).toBeNull();
-	expect((await request("/auth/nonexistent")).status).toBe(404);
-	expect((await request("/health")).status).toBe(200);
-	expect((await request("/profile")).status).toBe(401);
-	expect((await request("/auth/me")).status).toBe(401);
+	expect((await request("/api/auth/nonexistent")).status).toBe(404);
+	expect((await request("/api/health")).status).toBe(200);
+	expect((await request("/api/profile")).status).toBe(401);
+	expect((await request("/api/auth/me")).status).toBe(401);
+	expect((await request("/health")).status).toBe(404);
+	expect((await request("/profile")).status).toBe(404);
+	expect((await request("/auth/get-session")).status).toBe(404);
+});
+
+test("readiness is separate from liveness and reflects database state", async () => {
+	const readyApp = createApp({
+		authFoundation: { auth, webOrigin: env.WEB_ORIGIN },
+		db,
+		readinessCheck: async () => true,
+	});
+	const unavailableApp = createApp({
+		authFoundation: { auth, webOrigin: env.WEB_ORIGIN },
+		db,
+		readinessCheck: async () => false,
+	});
+	expect((await readyApp.request("/api/health")).status).toBe(200);
+	expect((await readyApp.request("/api/ready")).status).toBe(200);
+	expect((await unavailableApp.request("/api/health")).status).toBe(200);
+	const unavailable = await unavailableApp.request("/api/ready");
+	expect(unavailable.status).toBe(503);
+	expect(await unavailable.json()).toEqual({ status: "unavailable" });
 });
 test("credentialed CORS preflight precedes protected route authentication", async () => {
-	for (const path of ["/auth/get-session", "/profile"]) {
+	for (const path of ["/api/auth/get-session", "/api/profile"]) {
 		const response = await request(path, {
 			method: "OPTIONS",
 			headers: {
@@ -94,17 +116,17 @@ test("credentialed CORS preflight precedes protected route authentication", asyn
 			"Content-Type",
 		);
 	}
-	const allowed = await request("/auth/get-session", {
+	const allowed = await request("/api/auth/get-session", {
 		headers: { Origin: env.WEB_ORIGIN },
 	});
 	expect(allowed.headers.get("access-control-allow-origin")).toBe(
 		env.WEB_ORIGIN,
 	);
-	const denied = await request("/auth/get-session", {
+	const denied = await request("/api/auth/get-session", {
 		headers: { Origin: "https://evil.example" },
 	});
 	expect(denied.headers.get("access-control-allow-origin")).toBeNull();
-	const deniedPreflight = await request("/profile", {
+	const deniedPreflight = await request("/api/profile", {
 		method: "OPTIONS",
 		headers: {
 			Origin: "https://evil.example",
@@ -112,7 +134,7 @@ test("credentialed CORS preflight precedes protected route authentication", asyn
 		},
 	});
 	expect(deniedPreflight.headers.get("access-control-allow-origin")).toBeNull();
-	const deniedMutation = await request("/auth/sign-out", {
+	const deniedMutation = await request("/api/auth/sign-out", {
 		method: "POST",
 		headers: {
 			Origin: "https://evil.example",

@@ -1,14 +1,14 @@
 # Swagger Favorites Flow
 
 Run `bun run --filter @flemme/api dev`, sign in through apps/web, then open
-`http://localhost:3000/docs` in the same browser. Follow the
+`http://localhost:3000/api/docs` in the same browser. Follow the
 [session authentication guide](swagger-cooking-flow.md#session-authentication).
 Favorites needs no AI.
-Use an owned session completed via `POST /cooking-sessions/{id}/complete`;
+Use an owned session completed via `POST /api/cooking-sessions/{id}/complete`;
 Completion AI alone does not persist completion.
 
-1. GET `/favorites`: an empty collection returns 200 `{ "items": [] }`.
-2. POST `/favorites` with `{ "cookingSessionId": "<completed-session-uuid>" }`.
+1. GET `/api/favorites`: an empty collection returns 200 `{ "items": [] }`.
+2. POST `/api/favorites` with `{ "cookingSessionId": "<completed-session-uuid>" }`.
    Expect 201; copy the returned favorite `id`.
 3. GET favorites and confirm the session ID, createdAt, and historical recipe
    summary (name, description, servings, estimatedDuration).
@@ -18,8 +18,8 @@ Completion AI alone does not persist completion.
    `INVALID_PERSISTED_SNAPSHOT`, as in the existing session API.
 6. Another user's session returns 403 `COOKING_SESSION_FORBIDDEN`; a missing
    session returns 404 `COOKING_SESSION_NOT_FOUND`.
-7. DELETE `/favorites/{id}`: expect 204, then confirm removal through GET.
-8. GET `/cooking-sessions/{cookingSessionId}`: completed history, recipe,
+7. DELETE `/api/favorites/{id}`: expect 204, then confirm removal through GET.
+8. GET `/api/cooking-sessions/{cookingSessionId}`: completed history, recipe,
    completion and nutrition must remain unchanged.
 
 Cross-user deletion returns 403 `FAVORITE_FORBIDDEN`; missing favorite returns

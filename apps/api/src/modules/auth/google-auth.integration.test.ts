@@ -21,6 +21,7 @@ const env = {
 	BETTER_AUTH_SECRET: crypto.randomUUID() + crypto.randomUUID(),
 	BETTER_AUTH_URL: "http://localhost:3000",
 	WEB_ORIGIN: "http://localhost:5173",
+	GOOGLE_AUTH_ENABLED: "true",
 	GOOGLE_CLIENT_ID: "a4-test-client",
 	GOOGLE_CLIENT_SECRET: "a4-test-secret",
 	NODE_ENV: "test",
@@ -84,7 +85,7 @@ class CookieJar {
 	}
 }
 async function initiate(jar: CookieJar) {
-	const response = await jar.request("/auth/sign-in/social", {
+	const response = await jar.request("/api/auth/sign-in/social", {
 		provider: "google",
 		callbackURL: `${env.WEB_ORIGIN}/`,
 		errorCallbackURL: `${env.WEB_ORIGIN}/?auth=error`,
@@ -100,7 +101,7 @@ async function initiate(jar: CookieJar) {
 	expect(url.origin).toBe("https://accounts.google.com");
 	expect(url.pathname).toBe("/o/oauth2/v2/auth");
 	expect(url.searchParams.get("redirect_uri")).toBe(
-		`${env.BETTER_AUTH_URL}/auth/callback/google`,
+		`${env.BETTER_AUTH_URL}/api/auth/callback/google`,
 	);
 	expect(url.searchParams.get("client_id")).toBe(env.GOOGLE_CLIENT_ID);
 	expect(url.searchParams.get("scope")?.split(" ").sort()).toEqual([
@@ -146,7 +147,7 @@ async function callback(
 			const form = new URLSearchParams(String(init?.body));
 			expect(form.get("code")).toBe("test-authorization-code");
 			expect(form.get("redirect_uri")).toBe(
-				`${env.BETTER_AUTH_URL}/auth/callback/google`,
+				`${env.BETTER_AUTH_URL}/api/auth/callback/google`,
 			);
 			expect(form.get("client_id")).toBe(env.GOOGLE_CLIENT_ID);
 			expect(form.get("client_secret")).toBe(env.GOOGLE_CLIENT_SECRET);
@@ -171,7 +172,7 @@ async function callback(
 	const network = spyOn(globalThis, "fetch").mockImplementation(transport);
 	try {
 		const response = await jar.request(
-			`/auth/callback/google?code=test-authorization-code&state=${url.searchParams.get("state")}`,
+			`/api/auth/callback/google?code=test-authorization-code&state=${url.searchParams.get("state")}`,
 		);
 		expect(exchanges).toBe(1);
 		return response;
@@ -240,22 +241,22 @@ test("Google callback provisions one UUID identity, restores sessions and preser
 				.where(eq(table.userId, user.id)),
 		).toHaveLength(0);
 	}
-	const restored = await (await jar.request("/auth/get-session")).json();
+	const restored = await (await jar.request("/api/auth/get-session")).json();
 	expect(restored).toMatchObject({
 		user: { id: user.id, email: claims.email },
 		session: { userId: user.id },
 	});
 	expect(JSON.stringify(restored)).not.toContain('"token"');
 	expect(JSON.stringify(restored)).not.toContain("test-only-access");
-	expect((await jar.request("/profile")).status).toBe(404);
+	expect((await jar.request("/api/profile")).status).toBe(404);
 	expect(
 		(
-			await jar.request("/auth/me", undefined, {
+			await jar.request("/api/auth/me", undefined, {
 				"x-flemme-user-id": crypto.randomUUID(),
 			})
 		).status,
 	).toBe(200);
-	expect(await (await jar.request("/auth/me")).json()).toEqual({
+	expect(await (await jar.request("/api/auth/me")).json()).toEqual({
 		user: {
 			id: user.id,
 			email: claims.email,
@@ -303,14 +304,14 @@ test("Google callback provisions one UUID identity, restores sessions and preser
 			.where(eq(authSessions.userId, user.id)),
 	).toHaveLength(2);
 	expect(
-		await (await returning.request("/auth/get-session")).json(),
+		await (await returning.request("/api/auth/get-session")).json(),
 	).toMatchObject({ user: { id: user.id, name: claims.name } });
-	expect((await jar.request("/auth/sign-out", {})).status).toBe(200);
-	expect(await (await jar.request("/auth/get-session")).json()).toBeNull();
+	expect((await jar.request("/api/auth/sign-out", {})).status).toBe(200);
+	expect(await (await jar.request("/api/auth/get-session")).json()).toBeNull();
 	expect(
-		await (await returning.request("/auth/get-session")).json(),
+		await (await returning.request("/api/auth/get-session")).json(),
 	).toMatchObject({ user: { id: user.id } });
-	const duplicate = await new CookieJar().request("/auth/sign-up/email", {
+	const duplicate = await new CookieJar().request("/api/auth/sign-up/email", {
 		email: claims.email,
 		name: "Password attempt",
 		password: "abcdefgh",
@@ -332,7 +333,7 @@ test("same-email Google callback cannot link or change an existing password iden
 	const passwordJar = new CookieJar();
 	expect(
 		(
-			await passwordJar.request("/auth/sign-up/email", {
+			await passwordJar.request("/api/auth/sign-up/email", {
 				name: "Password Owner",
 				email: claims.email,
 				password: "abcdefgh",
@@ -369,23 +370,23 @@ test("same-email Google callback cannot link or change an existing password iden
 			.from(authSessions)
 			.where(eq(authSessions.userId, user.id)),
 	).toHaveLength(1);
-	expect(await (await jar.request("/auth/get-session")).json()).toBeNull();
+	expect(await (await jar.request("/api/auth/get-session")).json()).toBeNull();
 	expect(
-		await (await passwordJar.request("/auth/get-session")).json(),
+		await (await passwordJar.request("/api/auth/get-session")).json(),
 	).toMatchObject({ user: { id: user.id, emailVerified: false } });
 });
 
 test("redirect/origin/scope/state guards reject unsafe Google flows without provisioning", async () => {
 	const jar = new CookieJar();
 	for (const key of ["callbackURL", "newUserCallbackURL", "errorCallbackURL"]) {
-		const response = await jar.request("/auth/sign-in/social", {
+		const response = await jar.request("/api/auth/sign-in/social", {
 			provider: "google",
 			[key]: "https://evil.example/steal",
 		});
 		expect(response.status).toBe(403);
 	}
 	const hostile = await jar.request(
-		"/auth/sign-in/social",
+		"/api/auth/sign-in/social",
 		{ provider: "google" },
 		{ Origin: "https://evil.example" },
 	);
@@ -395,7 +396,7 @@ test("redirect/origin/scope/state guards reject unsafe Google flows without prov
 		{ scopes: ["https://www.googleapis.com/auth/drive"] },
 		{ additionalParams: { access_type: "offline" } },
 	]) {
-		const response = await jar.request("/auth/sign-in/social", {
+		const response = await jar.request("/api/auth/sign-in/social", {
 			provider: "google",
 			...extra,
 		});
@@ -404,7 +405,7 @@ test("redirect/origin/scope/state guards reject unsafe Google flows without prov
 			code: "GOOGLE_IDENTITY_SCOPES_ONLY",
 		});
 	}
-	const directToken = await jar.request("/auth/sign-in/social", {
+	const directToken = await jar.request("/api/auth/sign-in/social", {
 		provider: "google",
 		idToken: { token: "not-a-google-token" },
 	});
@@ -423,7 +424,7 @@ test("redirect/origin/scope/state guards reject unsafe Google flows without prov
 	);
 	try {
 		const response = await new CookieJar().request(
-			`/auth/callback/google?code=invalid&state=${url.searchParams.get("state")}`,
+			`/api/auth/callback/google?code=invalid&state=${url.searchParams.get("state")}`,
 		);
 		expect(response.status).toBe(302);
 		expect(

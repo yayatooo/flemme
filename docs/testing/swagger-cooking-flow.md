@@ -44,16 +44,16 @@ BASE_URL
 
 Do not put their values into Swagger, request bodies, screenshots, or logs.
 
-- Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
-- OpenAPI: [http://localhost:3000/openapi.json](http://localhost:3000/openapi.json)
+- Swagger UI: [http://localhost:3000/docs](http://localhost:3000/api/docs)
+- OpenAPI: [http://localhost:3000/openapi.json](http://localhost:3000/api/openapi.json)
 
 ## Session authentication
 
 1. Start `apps/web` and open `http://localhost:5173/login`.
 2. Register or sign in with email/password, or choose **Continue with Google**
    and finish the browser flow. Google returns through
-   `http://localhost:3000/auth/callback/google`.
-3. Open `http://localhost:3000/auth/me` in the same browser and confirm your
+   `http://localhost:3000/api/auth/callback/google`.
+3. Open `http://localhost:3000/api/auth/me` in the same browser and confirm your
    canonical identity.
 4. Open Swagger in that browser and execute protected requests. The browser
    sends the HttpOnly cookie automatically; Swagger cannot read or manually
@@ -71,12 +71,12 @@ credentials or cookie jars:
 curl -c /tmp/flemme-session.cookies \
   -H 'Origin: http://localhost:5173' -H 'Content-Type: application/json' \
   -d '{"email":"tester@example.com","password":"your-test-password"}' \
-  http://localhost:3000/auth/sign-in/email
-curl -b /tmp/flemme-session.cookies http://localhost:3000/auth/me
-curl -b /tmp/flemme-session.cookies http://localhost:3000/profile
+  http://localhost:3000/api/auth/sign-in/email
+curl -b /tmp/flemme-session.cookies http://localhost:3000/api/auth/me
+curl -b /tmp/flemme-session.cookies http://localhost:3000/api/profile
 curl -b /tmp/flemme-session.cookies -c /tmp/flemme-session.cookies \
   -H 'Origin: http://localhost:5173' -H 'Content-Type: application/json' \
-  -d '{}' http://localhost:3000/auth/sign-out
+  -d '{}' http://localhost:3000/api/auth/sign-out
 rm /tmp/flemme-session.cookies
 ```
 
@@ -118,7 +118,7 @@ COOKING_SESSION_ID    = id returned by Step 4
 
 ## Step 1 — Generate recommendations
 
-Open `POST /cooking/recommendations`, select **Try it out**, and execute:
+Open `POST /api/cooking/recommendations`, select **Try it out**, and execute:
 
 ```json
 {
@@ -182,7 +182,7 @@ SELECTED_RECIPE
 
 ## Step 3 — Generate the Pre-Cooking plan
 
-Open `POST /cooking/pre-cooking`, select **Try it out**, and assemble the body
+Open `POST /api/cooking/pre-cooking`, select **Try it out**, and assemble the body
 below. Replace the `SELECTED_RECIPE` placeholder with the exact JSON object from
 Step 2; the placeholder itself is not valid API input.
 
@@ -242,7 +242,7 @@ plan, create a Cooking Session, or mutate inventory.
 
 ## Step 4 — Create the Cooking Session
 
-Open `POST /cooking-sessions`, select **Try it out**, and assemble the body
+Open `POST /api/cooking-sessions`, select **Try it out**, and assemble the body
 below. Replace each placeholder with the complete object or ID saved above.
 
 ```json
@@ -279,7 +279,7 @@ already-generated snapshots and initial progress; it does not invoke AI.
 
 ## Step 5 — Restore the Cooking Session
 
-Open `GET /cooking-sessions/{id}`, set `id` to `COOKING_SESSION_ID`, and
+Open `GET /api/cooking-sessions/{id}`, set `id` to `COOKING_SESSION_ID`, and
 execute.
 
 Verify:
@@ -296,7 +296,7 @@ progress. Restore does not call any Agent.
 
 ## Step 6 — Preview deterministic nutrition
 
-Open `GET /cooking-sessions/{id}/nutrition`, set `id` to
+Open `GET /api/cooking-sessions/{id}/nutrition`, set `id` to
 `COOKING_SESSION_ID`, and execute. The client sends no ingredient body.
 
 The API recalculates from the persisted `cookingPlan` and the selected recipe's
@@ -313,7 +313,7 @@ because egg size is ambiguous, sweet soy sauce and generic cooking oil are not
 resolved, qualified units are unsupported, and salt may lack a quantity. Do
 not replace this with zero totals.
 
-Run `GET /cooking-sessions/{id}` again and verify the session is byte-equivalent
+Run `GET /api/cooking-sessions/{id}` again and verify the session is byte-equivalent
 to Step 5. Nutrition preview is allowed for owned active, paused, completed,
 and abandoned sessions. It performs no mutation, Agent call, inventory read or
 write, or runtime USDA request.
@@ -330,7 +330,7 @@ relational progress:
 
 Choose the step after `FIRST_STEP_ID`. It may be the next step in the same stage
 or the first step in the next stage. Open
-`PATCH /cooking-sessions/{id}/progress`, use `COOKING_SESSION_ID`, and execute:
+`PATCH /api/cooking-sessions/{id}/progress`, use `COOKING_SESSION_ID`, and execute:
 
 ```json
 {
@@ -367,7 +367,7 @@ have marked complete, but deliberately omit `FINAL_STEP_ID`:
 ```
 
 After the PATCH returns HTTP 200, open
-`POST /cooking-sessions/{id}/complete`. Use this explicitly manual/synthetic
+`POST /api/cooking-sessions/{id}/complete`. Use this explicitly manual/synthetic
 Completion snapshot for persistence validation:
 
 ```json
@@ -395,7 +395,7 @@ not the same as having completed the final step. Completion AI is not invoked.
 
 ## Step 9 — Mark the final step completed
 
-Open `PATCH /cooking-sessions/{id}/progress` again. Keep the final step current
+Open `PATCH /api/cooking-sessions/{id}/progress` again. Keep the final step current
 and add `FINAL_STEP_ID` to the unique completed IDs:
 
 ```json
@@ -416,7 +416,7 @@ recorded as finished, but completion persistence has not happened yet.
 ## Step 10 — Generate Completion AI output before persistence
 
 The preferred flow now generates the final conversational summary from the
-completion-ready session. Open `POST /cooking-sessions/{id}/completion`, use
+completion-ready session. Open `POST /api/cooking-sessions/{id}/completion`, use
 `COOKING_SESSION_ID`, and submit either an optional final message:
 
 ```json
@@ -437,7 +437,7 @@ that the final step is present in `completedStepIds`. It then projects
 `status: "completed"` only inside the Agent input.
 
 Save the returned `{ reply, summary, notes }` object as `COMPLETION_OUTPUT`.
-Immediately run `GET /cooking-sessions/{id}` and verify:
+Immediately run `GET /api/cooking-sessions/{id}` and verify:
 
 ```text
 phase = active_cooking
@@ -456,7 +456,7 @@ POST /complete   = lifecycle and snapshot persistence
 
 ## Step 11 — Persist completion and trusted nutrition
 
-Open `POST /cooking-sessions/{id}/complete`. Prefer the `COMPLETION_OUTPUT`
+Open `POST /api/cooking-sessions/{id}/complete`. Prefer the `COMPLETION_OUTPUT`
 returned by Completion AI as `completionSnapshot`. The manual/synthetic
 snapshot from Step 8 remains only a fallback for persistence-only acceptance
 testing. Omit `nutritionSnapshot`; the strict request rejects that field.
@@ -481,7 +481,7 @@ valid completion.
 
 ## Step 12 — Restore and verify the completed session
 
-Run `GET /cooking-sessions/{id}` again with `COOKING_SESSION_ID`.
+Run `GET /api/cooking-sessions/{id}` again with `COOKING_SESSION_ID`.
 
 Verify:
 
@@ -501,7 +501,7 @@ round trip without regenerating AI output.
 ## Optional Active Cooking AI interaction
 
 Use this while the Cooking Session is `active` or `paused`. Open
-`POST /cooking-sessions/{id}/active-cooking`, set `id` to
+`POST /api/cooking-sessions/{id}/active-cooking`, set `id` to
 `COOKING_SESSION_ID`, and submit only the latest message:
 
 ```json
@@ -516,11 +516,11 @@ the Agent-owned `{ reply, actions }` shape. The Agent may propose `advance`,
 `previous-step`, `pause`, `resume`, `record-change`, `complete-cooking`,
 `abandon-cooking`, or `clarify`.
 
-Immediately run `GET /cooking-sessions/{id}` and verify the plan, progress,
+Immediately run `GET /api/cooking-sessions/{id}` and verify the plan, progress,
 status, snapshots, and timestamps are unchanged. Active Cooking output is a
 proposal only. If the caller accepts a proposed state change, it must calculate
 the appropriate state from the immutable plan and explicitly call
-`PATCH /cooking-sessions/{id}/progress`.
+`PATCH /api/cooking-sessions/{id}/progress`.
 
 Completed and abandoned sessions reject Active Cooking interaction with HTTP
 409. No message history is stored in v0.1.
@@ -558,17 +558,17 @@ an optional inspection aid, not an acceptance requirement.
 ## Current boundary
 
 ```text
-POST /cooking/recommendations          → Recommendation Agent, no persistence
+POST /api/cooking/recommendations          → Recommendation Agent, no persistence
 Select Recipe                         → manual/client decision
-POST /cooking/pre-cooking             → Pre-Cooking Agent, no persistence
-POST /cooking-sessions                → persistence, no AI
-GET /cooking-sessions/{id}            → restore, no AI
-GET /cooking-sessions/{id}/nutrition  → deterministic preview, no persistence/AI/network
-POST /cooking-sessions/{id}/active-cooking → Active Cooking Agent, no persistence
-PATCH /cooking-sessions/{id}/progress → persistence, no AI
-POST /cooking-sessions/{id}/completion → Completion Agent, no persistence
-POST /cooking-sessions/{id}/complete  → guarded completion + nutrition persistence, no AI/network
-GET /cooking-sessions/{id}            → completed restore, no AI
+POST /api/cooking/pre-cooking             → Pre-Cooking Agent, no persistence
+POST /api/cooking-sessions                → persistence, no AI
+GET /api/cooking-sessions/{id}            → restore, no AI
+GET /api/cooking-sessions/{id}/nutrition  → deterministic preview, no persistence/AI/network
+POST /api/cooking-sessions/{id}/active-cooking → Active Cooking Agent, no persistence
+PATCH /api/cooking-sessions/{id}/progress → persistence, no AI
+POST /api/cooking-sessions/{id}/completion → Completion Agent, no persistence
+POST /api/cooking-sessions/{id}/complete  → guarded completion + nutrition persistence, no AI/network
+GET /api/cooking-sessions/{id}            → completed restore, no AI
 ```
 
 The endpoint accepts only `completionSnapshot`; nutrition is always

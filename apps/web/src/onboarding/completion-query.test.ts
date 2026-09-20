@@ -20,7 +20,7 @@ test("completion persists once and returns Home", async () => {
 		nextStep: null,
 	};
 	globalThis.fetch = (async (input, init) => {
-		expect(new URL(String(input)).pathname).toBe("/onboarding/complete");
+		expect(new URL(String(input)).pathname).toBe("/api/onboarding/complete");
 		expect(init?.method).toBe("POST");
 		requests += 1;
 		return json(completed);
@@ -37,7 +37,7 @@ test("completion persists once and returns Home", async () => {
 test("incomplete completion refreshes status and resumes the actual step", async () => {
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/onboarding/complete" && init?.method === "POST") {
+		if (path === "/api/onboarding/complete" && init?.method === "POST") {
 			return json(
 				{
 					error: {

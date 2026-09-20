@@ -1,13 +1,13 @@
 # Swagger Kitchen / Equipment API v0.1
 
 Start the API with `bun run --filter @flemme/api dev`, sign in through apps/web,
-then open http://localhost:3000/docs in the same browser. Follow the
+then open http://localhost:3000/api/docs in the same browser. Follow the
 [session authentication guide](swagger-cooking-flow.md#session-authentication).
 PostgreSQL must be running; use `docker-compose up -d` if needed.
 
-1. Execute `GET /kitchen`. An existing kitchen returns its equipment; a user
+1. Execute `GET /api/kitchen`. An existing kitchen returns its equipment; a user
    without a kitchen receives HTTP 404 `KITCHEN_NOT_FOUND`. GET creates nothing.
-2. Execute `PUT /kitchen` with:
+2. Execute `PUT /api/kitchen` with:
 
    ```json
    { "equipment": ["kompor", "wajan", "blender"] }

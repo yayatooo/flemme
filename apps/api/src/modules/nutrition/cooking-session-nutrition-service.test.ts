@@ -143,7 +143,7 @@ describe("calculateCookingSessionNutrition", () => {
 			authFoundation: createSessionAuth({} as never).authFoundation,
 			db: {} as never,
 		});
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<
 				string,
@@ -177,11 +177,11 @@ describe("calculateCookingSessionNutrition", () => {
 
 		expect(response.status).toBe(200);
 		expect(specification.paths).toHaveProperty(
-			"/cooking-sessions/{id}/nutrition",
+			"/api/cooking-sessions/{id}/nutrition",
 		);
 		expect(
 			JSON.stringify(
-				specification.paths["/cooking-sessions/{id}/complete"]?.post
+				specification.paths["/api/cooking-sessions/{id}/complete"]?.post
 					?.requestBody,
 			),
 		).not.toContain("nutritionSnapshot");

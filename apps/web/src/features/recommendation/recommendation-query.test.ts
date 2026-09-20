@@ -53,7 +53,7 @@ test("Home submission sends only the current session request", async () => {
 		"  Something spicy with chicken  ",
 	);
 	expect(readRequest()).toEqual({
-		url: "http://localhost:3000/cooking/recommendations",
+		url: "http://localhost:3000/api/cooking/recommendations",
 		method: "POST",
 		body: {
 			session: { request: "Something spicy with chicken" },

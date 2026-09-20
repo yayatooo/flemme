@@ -18,8 +18,12 @@ if (!databaseUrl) {
 	throw new Error("DATABASE_URL is missing");
 }
 
-const email = (Bun.env.DEV_USER_EMAIL ?? "dev@flemme.local").toLowerCase();
-const password = Bun.env.DEV_USER_PASSWORD ?? "flemme-local-development";
+const email = Bun.env.DEV_USER_EMAIL?.toLowerCase();
+const password = Bun.env.DEV_USER_PASSWORD;
+
+if (!email || !password) {
+	throw new Error("DEV_USER_EMAIL and DEV_USER_PASSWORD are required");
+}
 const passwordHash = await Bun.password.hash(password);
 const { client, db } = createDatabase(databaseUrl);
 

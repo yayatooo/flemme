@@ -96,7 +96,7 @@ let userId = "";
 let contextlessUserId = "";
 
 async function requestPreCooking(currentUserId: string, body: unknown) {
-	return app.request("/cooking/pre-cooking", {
+	return app.request("/api/cooking/pre-cooking", {
 		method: "POST",
 		headers: headers(currentUserId),
 		body: JSON.stringify(body),
@@ -253,7 +253,7 @@ describe("pre-cooking API integration", () => {
 		runner = async () => preCookingOutput;
 		const deletedUserId = await createAuthenticatedUser();
 		await db.delete(users).where(eq(users.id, deletedUserId));
-		const missingResponse = await app.request("/cooking/pre-cooking", {
+		const missingResponse = await app.request("/api/cooking/pre-cooking", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ selectedRecipe, session: {} }),
@@ -311,7 +311,7 @@ describe("pre-cooking API integration", () => {
 			authFoundation,
 			db,
 		});
-		const response = await unconfiguredApp.request("/cooking/pre-cooking", {
+		const response = await unconfiguredApp.request("/api/cooking/pre-cooking", {
 			method: "POST",
 			headers: headers(userId),
 			body: JSON.stringify({ selectedRecipe, session: {} }),
@@ -325,7 +325,7 @@ describe("pre-cooking API integration", () => {
 	});
 
 	test("publishes the authenticated pre-cooking endpoint in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = z
 			.object({
 				components: z.object({
@@ -346,10 +346,12 @@ describe("pre-cooking API integration", () => {
 					security: z.array(z.object({ CurrentUser: z.array(z.string()) })),
 				}),
 			})
-			.parse(specification.paths["/cooking/pre-cooking"]);
+			.parse(specification.paths["/api/cooking/pre-cooking"]);
 
 		expect(response.status).toBe(200);
-		expect(Object.keys(specification.paths)).toContain("/cooking/pre-cooking");
+		expect(Object.keys(specification.paths)).toContain(
+			"/api/cooking/pre-cooking",
+		);
 		expect(preCookingOperation.post.security).toEqual([{ CurrentUser: [] }]);
 	});
 });

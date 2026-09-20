@@ -35,7 +35,7 @@ async function createUser() {
 }
 
 async function putKitchen(userId: string, body: unknown) {
-	return app.request("/kitchen", {
+	return app.request("/api/kitchen", {
 		method: "PUT",
 		headers: headers(userId),
 		body: JSON.stringify(body),
@@ -43,7 +43,7 @@ async function putKitchen(userId: string, body: unknown) {
 }
 
 async function getKitchen(userId: string) {
-	return app.request("/kitchen", { headers: headers(userId) });
+	return app.request("/api/kitchen", { headers: headers(userId) });
 }
 
 afterAll(async () => {
@@ -202,7 +202,7 @@ describe("Kitchen API integration", () => {
 	test("rejects missing sessions and sessions for deleted users", async () => {
 		const userId = await createUser();
 		await db.delete(users).where(eq(users.id, userId));
-		const missingSessionResponse = await app.request("/kitchen");
+		const missingSessionResponse = await app.request("/api/kitchen");
 		const deletedUserResponse = await getKitchen(userId);
 
 		expect(missingSessionResponse.status).toBe(401);
@@ -216,13 +216,13 @@ describe("Kitchen API integration", () => {
 	});
 
 	test("registers GET and PUT Kitchen operations in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<string, { get?: unknown; put?: unknown } | undefined>;
 		};
 
 		expect(response.status).toBe(200);
-		expect(specification.paths["/kitchen"]?.get).toBeDefined();
-		expect(specification.paths["/kitchen"]?.put).toBeDefined();
+		expect(specification.paths["/api/kitchen"]?.get).toBeDefined();
+		expect(specification.paths["/api/kitchen"]?.put).toBeDefined();
 	});
 });

@@ -10,6 +10,8 @@ import {
 } from "../auth/auth-actions";
 import { redirectAuthenticatedUser } from "../auth/auth-guards";
 import { AuthShell } from "../auth/auth-shell";
+import { GoogleSignInOption } from "../auth/google-sign-in-option";
+import { GOOGLE_AUTH_ENABLED } from "../config";
 
 export const Route = createFileRoute("/login")({
 	validateSearch: (search: Record<string, unknown>): { error?: string } => {
@@ -123,24 +125,11 @@ function LoginPage() {
 				>
 					{submitting ? "Signing in…" : "Sign in"}
 				</Button>
-				<div className="flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
-					<span>or</span>
-				</div>
-				<Button
-					variant="outline"
-					className="w-full rounded-xl border-transparent bg-muted shadow-none"
-					type="button"
+				<GoogleSignInOption
+					enabled={GOOGLE_AUTH_ENABLED}
 					disabled={submitting}
 					onClick={continueWithGoogle}
-				>
-					<span
-						className="grid size-6 place-items-center rounded-lg bg-lavender font-black"
-						aria-hidden="true"
-					>
-						G
-					</span>
-					Continue with Google
-				</Button>
+				/>
 			</form>
 		</AuthShell>
 	);

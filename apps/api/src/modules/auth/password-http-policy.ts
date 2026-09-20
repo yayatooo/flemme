@@ -7,7 +7,7 @@ export const passwordHttpPolicy = {
 		const path = new URL(request.url).pathname.replace(/\/$/, "");
 		if (
 			request.method !== "POST" ||
-			!["/auth/sign-up/email", "/auth/sign-in/email"].includes(path)
+			!["/api/auth/sign-up/email", "/api/auth/sign-in/email"].includes(path)
 		)
 			return;
 		const type = request.headers.get("content-type")?.split(";")[0];

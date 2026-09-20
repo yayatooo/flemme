@@ -10,12 +10,12 @@ contracts into the HTTP layer.
 - Better Auth email/password and Google authentication with server-managed
   HttpOnly cookies.
 - One canonical current-user boundary for protected Product Domain routes.
-- OpenAPI generation and Swagger UI at `/openapi.json` and `/docs`.
+- OpenAPI generation and Swagger UI at `/api/openapi.json` and `/api/docs`.
 - Profile, Household, Kitchen, Inventory, onboarding, favorites, Cooking
   Session, cooking-phase, and nutrition orchestration.
 - Ownership checks and PostgreSQL access through application services.
 
-`GET /health` reports process health without authentication. It is not a
+`GET /api/health` reports process health without authentication. It is not a
 database, provider, or downstream readiness guarantee. Missing Agent provider
 configuration does not prevent health, documentation, or persistence routes
 from starting; Agent-backed routes return a controlled configuration error.
@@ -28,7 +28,7 @@ or mutating a Cooking Session. Session creation explicitly persists the chosen
 recipe and generated plan snapshots.
 
 Active Cooking restores the owned plan and progress and returns guidance plus
-proposed actions. It does not apply them. `PATCH /cooking-sessions/:id/progress`
+proposed actions. It does not apply them. `PATCH /api/cooking-sessions/:id/progress`
 is the explicit persistence boundary for accepted progress changes.
 
 Completion generation restores the plan and final progress and returns a

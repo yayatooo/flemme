@@ -12,25 +12,46 @@ import { authSchemaOptions } from "./auth-schema-options";
 import { googleHttpPolicy } from "./google-http-policy";
 import { passwordHttpPolicy } from "./password-http-policy";
 
-export function createAuthServer(db: FlemmeDatabase, input: AuthEnvironment) {
-	const env = readAuthEnvironment(input);
+function isAuthEnvironment(
+	input: AuthEnvironment | Record<string, string | undefined>,
+): input is AuthEnvironment {
+	return typeof input.GOOGLE_AUTH_ENABLED === "boolean";
+}
+
+function createGoogleProvider(env: AuthEnvironment) {
+	if (!env.GOOGLE_AUTH_ENABLED) return {};
+	const clientId = env.GOOGLE_CLIENT_ID;
+	const clientSecret = env.GOOGLE_CLIENT_SECRET;
+	if (!clientId || !clientSecret) {
+		throw new Error(
+			"Invalid Auth configuration: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required",
+		);
+	}
+	return {
+		google: {
+			clientId,
+			clientSecret,
+			accessType: "online" as const,
+			includeGrantedScopes: false,
+			disableDefaultScope: true,
+			scope: ["openid", "email", "profile"],
+			disableIdTokenSignIn: true,
+		},
+	};
+}
+
+export function createAuthServer(
+	db: FlemmeDatabase,
+	input: AuthEnvironment | Record<string, string | undefined>,
+) {
+	const env = isAuthEnvironment(input) ? input : readAuthEnvironment(input);
 	return betterAuth({
 		...authSchemaOptions,
 		baseURL: env.BETTER_AUTH_URL,
-		basePath: "/auth",
+		basePath: "/api/auth",
 		secret: env.BETTER_AUTH_SECRET,
 		trustedOrigins: [env.WEB_ORIGIN],
-		socialProviders: {
-			google: {
-				clientId: env.GOOGLE_CLIENT_ID,
-				clientSecret: env.GOOGLE_CLIENT_SECRET,
-				accessType: "online",
-				includeGrantedScopes: false,
-				disableDefaultScope: true,
-				scope: ["openid", "email", "profile"],
-				disableIdTokenSignIn: true,
-			},
-		},
+		socialProviders: createGoogleProvider(env),
 		// Provider tokens and provider management are not public Flemme features.
 		disabledPaths: [
 			"/get-access-token",
@@ -70,7 +91,10 @@ export function createAuthServer(db: FlemmeDatabase, input: AuthEnvironment) {
 			minPasswordLength: 8,
 			maxPasswordLength: 128,
 		},
-		plugins: [passwordHttpPolicy, googleHttpPolicy],
+		plugins: [
+			passwordHttpPolicy,
+			...(env.GOOGLE_AUTH_ENABLED ? [googleHttpPolicy] : []),
+		],
 		rateLimit: {
 			enabled: true,
 			storage: "memory",

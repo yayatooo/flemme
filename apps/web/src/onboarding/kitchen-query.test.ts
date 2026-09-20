@@ -83,8 +83,8 @@ test("successful save replaces Kitchen and advances to Initial Inventory", async
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
 		requests.push({ path, method: init?.method ?? "GET" });
-		if (path === "/kitchen" && init?.method === "PUT") return json(payload);
-		if (path === "/onboarding")
+		if (path === "/api/kitchen" && init?.method === "PUT") return json(payload);
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,
@@ -102,14 +102,14 @@ test("successful save replaces Kitchen and advances to Initial Inventory", async
 		),
 	).toBe("/onboarding/inventory");
 	expect(queryClient.getQueryData(kitchenQueryKey)).toEqual(payload);
-	expect(requests[0]).toEqual({ path: "/kitchen", method: "PUT" });
+	expect(requests[0]).toEqual({ path: "/api/kitchen", method: "PUT" });
 });
 
 test("post-onboarding save returns to app", async () => {
 	const payload = { equipment: ["air-fryer"] } as const;
 	globalThis.fetch = (async (input) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/onboarding")
+		if (path === "/api/onboarding")
 			return json({
 				completed: true,
 				completedAt: "2026-09-15T00:00:00.000Z",

@@ -48,7 +48,7 @@ test("selected recipe generates one validated pre-cooking plan", async () => {
 
 	const plan = await requestPreCookingPlan(new QueryClient(), selection);
 	expect(request).toEqual({
-		url: "http://localhost:3000/cooking/pre-cooking",
+		url: "http://localhost:3000/api/cooking/pre-cooking",
 		method: "POST",
 		body: {
 			selectedRecipe: recommendationFixture,

@@ -27,7 +27,7 @@ test("display name save performs one mutation and updates shared identity", asyn
 	let requests = 0;
 	globalThis.fetch = (async (input, init) => {
 		requests += 1;
-		expect(new URL(String(input)).pathname).toBe("/auth/me");
+		expect(new URL(String(input)).pathname).toBe("/api/auth/me");
 		expect(init?.method).toBe("PATCH");
 		expect(JSON.parse(String(init?.body))).toEqual({ name: "Tiara Putri" });
 		return Response.json({ user: updated });
@@ -52,7 +52,7 @@ test("preference save replaces the canonical context cache with one request", as
 	let requests = 0;
 	globalThis.fetch = (async (input, init) => {
 		requests += 1;
-		expect(new URL(String(input)).pathname).toBe("/profile");
+		expect(new URL(String(input)).pathname).toBe("/api/profile");
 		expect(init?.method).toBe("PUT");
 		expect(JSON.parse(String(init?.body))).toEqual(updated);
 		return Response.json(updated);
@@ -91,7 +91,7 @@ test("household save updates the existing household cache", async () => {
 	let requests = 0;
 	globalThis.fetch = (async (input, init) => {
 		requests += 1;
-		expect(new URL(String(input)).pathname).toBe("/household");
+		expect(new URL(String(input)).pathname).toBe("/api/household");
 		expect(init?.method).toBe("PUT");
 		return Response.json(updated);
 	}) as typeof fetch;

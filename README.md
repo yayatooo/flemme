@@ -801,9 +801,9 @@ bun run --filter @flemme/api dev
 ```
 
 Sign in through [apps/web](http://localhost:5173/login), then open
-[Swagger UI](http://localhost:3000/docs) in the same browser. Protected requests
+[Swagger UI](http://localhost:3000/api/docs) in the same browser. Protected requests
 use the browser's Better Auth HttpOnly session cookie.
-The Recommendation route is `POST /cooking/recommendations`; real Agent calls
+The Recommendation route is `POST /api/cooking/recommendations`; real Agent calls
 also require `MUX_API_KEY` and `BASE_URL`. The complete walkthrough is in
 [`docs/testing/swagger-cooking-flow.md`](docs/testing/swagger-cooking-flow.md).
 For a code-oriented explanation of how the API layers and cooking flows fit

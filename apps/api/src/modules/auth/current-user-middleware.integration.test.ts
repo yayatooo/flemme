@@ -142,32 +142,32 @@ async function expectUnauthenticated(response: Response) {
 
 const resourceId = crypto.randomUUID();
 const protectedRoutes = [
-	["GET", "/auth/me"],
-	["PATCH", "/auth/me"],
-	["GET", "/profile"],
-	["PUT", "/profile"],
-	["GET", "/household"],
-	["PUT", "/household"],
-	["GET", "/kitchen"],
-	["PUT", "/kitchen"],
-	["GET", "/inventory"],
-	["POST", "/inventory/items"],
-	["PUT", `/inventory/items/${resourceId}`],
-	["DELETE", `/inventory/items/${resourceId}`],
-	["GET", "/favorites"],
-	["POST", "/favorites"],
-	["DELETE", `/favorites/${resourceId}`],
-	["POST", "/cooking/recommendations"],
-	["POST", "/cooking/pre-cooking"],
-	["POST", "/cooking-sessions"],
-	["GET", "/cooking-sessions/resumable"],
-	["GET", "/cooking-sessions/history"],
-	["GET", `/cooking-sessions/${resourceId}`],
-	["PATCH", `/cooking-sessions/${resourceId}/progress`],
-	["POST", `/cooking-sessions/${resourceId}/complete`],
-	["GET", `/cooking-sessions/${resourceId}/nutrition`],
-	["POST", `/cooking-sessions/${resourceId}/active-cooking`],
-	["POST", `/cooking-sessions/${resourceId}/completion`],
+	["GET", "/api/auth/me"],
+	["PATCH", "/api/auth/me"],
+	["GET", "/api/profile"],
+	["PUT", "/api/profile"],
+	["GET", "/api/household"],
+	["PUT", "/api/household"],
+	["GET", "/api/kitchen"],
+	["PUT", "/api/kitchen"],
+	["GET", "/api/inventory"],
+	["POST", "/api/inventory/items"],
+	["PUT", `/api/inventory/items/${resourceId}`],
+	["DELETE", `/api/inventory/items/${resourceId}`],
+	["GET", "/api/favorites"],
+	["POST", "/api/favorites"],
+	["DELETE", `/api/favorites/${resourceId}`],
+	["POST", "/api/cooking/recommendations"],
+	["POST", "/api/cooking/pre-cooking"],
+	["POST", "/api/cooking-sessions"],
+	["GET", "/api/cooking-sessions/resumable"],
+	["GET", "/api/cooking-sessions/history"],
+	["GET", `/api/cooking-sessions/${resourceId}`],
+	["PATCH", `/api/cooking-sessions/${resourceId}/progress`],
+	["POST", `/api/cooking-sessions/${resourceId}/complete`],
+	["GET", `/api/cooking-sessions/${resourceId}/nutrition`],
+	["POST", `/api/cooking-sessions/${resourceId}/active-cooking`],
+	["POST", `/api/cooking-sessions/${resourceId}/completion`],
 ] as const;
 
 async function expectProtectedRoutesRejected(headers: Record<string, string>) {
@@ -188,7 +188,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	const jar = new CookieJar();
 	await expectProtectedRoutesRejected({});
 	const openapi = (await (
-		await sessionApp.request("/openapi.json")
+		await sessionApp.request("/api/openapi.json")
 	).json()) as {
 		components: {
 			securitySchemes: Record<string, Record<string, unknown>>;
@@ -201,19 +201,19 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		name: "better-auth.session_token",
 	});
 	expect(openapi.components.securitySchemes.DevelopmentUser).toBeUndefined();
-	expect(openapi.paths["/auth/me"]?.get?.security).toEqual([
+	expect(openapi.paths["/api/auth/me"]?.get?.security).toEqual([
 		{ CurrentUser: [] },
 	]);
-	expect(openapi.paths["/auth/me"]?.patch?.security).toEqual([
+	expect(openapi.paths["/api/auth/me"]?.patch?.security).toEqual([
 		{ CurrentUser: [] },
 	]);
-	expect(openapi.paths["/profile"]?.get?.security).toEqual([
+	expect(openapi.paths["/api/profile"]?.get?.security).toEqual([
 		{ CurrentUser: [] },
 	]);
 
 	expect(
 		(
-			await jar.request("/auth/sign-up/email", {
+			await jar.request("/api/auth/sign-up/email", {
 				name: "A5 User",
 				email: address,
 				password: "abcdefgh",
@@ -226,15 +226,15 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		.where(eq(users.email, address));
 	if (!user) throw new Error("A5 user missing");
 	await expectProtectedRoutesRejected({ "x-flemme-user-id": user.id });
-	expect(await (await jar.request("/auth/me")).json()).toEqual({
+	expect(await (await jar.request("/api/auth/me")).json()).toEqual({
 		user: { id: user.id, email: address, name: "A5 User", image: null },
 	});
 	for (const path of [
-		"/profile",
-		"/household",
-		"/kitchen",
-		"/inventory",
-		"/favorites",
+		"/api/profile",
+		"/api/household",
+		"/api/kitchen",
+		"/api/inventory",
+		"/api/favorites",
 	]) {
 		expect((await jar.request(path)).status).not.toBe(401);
 	}
@@ -242,7 +242,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	const otherJar = new CookieJar();
 	expect(
 		(
-			await otherJar.request("/auth/sign-up/email", {
+			await otherJar.request("/api/auth/sign-up/email", {
 				name: "A5 Other User",
 				email: otherAddress,
 				password: "abcdefgh",
@@ -256,14 +256,14 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	if (!otherUser) throw new Error("A5 other user missing");
 	expect(
 		await (
-			await jar.request("/auth/me", undefined, {
+			await jar.request("/api/auth/me", undefined, {
 				"x-flemme-user-id": otherUser.id,
 			})
 		).json(),
 	).toEqual({
 		user: { id: user.id, email: address, name: "A5 User", image: null },
 	});
-	const updateNameResponse = await domainRequest(jar, "/auth/me", "PATCH", {
+	const updateNameResponse = await domainRequest(jar, "/api/auth/me", "PATCH", {
 		name: "  A5 Profile Cook  ",
 	});
 	expect(updateNameResponse.status).toBe(200);
@@ -281,9 +281,14 @@ test("only live Better Auth sessions authenticate protected routes and select do
 			.from(users)
 			.where(eq(users.id, user.id)),
 	).toEqual([{ name: "A5 Profile Cook" }]);
-	const invalidNameResponse = await domainRequest(jar, "/auth/me", "PATCH", {
-		name: "   ",
-	});
+	const invalidNameResponse = await domainRequest(
+		jar,
+		"/api/auth/me",
+		"PATCH",
+		{
+			name: "   ",
+		},
+	);
 	expect(invalidNameResponse.status).toBe(400);
 	expect(
 		await db
@@ -295,7 +300,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		(
 			await domainRequest(
 				jar,
-				"/profile",
+				"/api/profile",
 				"PUT",
 				{
 					foodPreferences: ["savory"],
@@ -305,10 +310,10 @@ test("only live Better Auth sessions authenticate protected routes and select do
 			)
 		).status,
 	).toBe(200);
-	expect((await otherJar.request("/profile")).status).toBe(404);
+	expect((await otherJar.request("/api/profile")).status).toBe(404);
 	expect(
 		(
-			await domainRequest(jar, "/household", "PUT", {
+			await domainRequest(jar, "/api/household", "PUT", {
 				adults: 2,
 				children: 1,
 				toddlers: 0,
@@ -317,14 +322,14 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	).toBe(200);
 	expect(
 		(
-			await domainRequest(jar, "/kitchen", "PUT", {
+			await domainRequest(jar, "/api/kitchen", "PUT", {
 				equipment: ["wok"],
 			})
 		).status,
 	).toBe(200);
 	const inventoryResponse = await domainRequest(
 		jar,
-		"/inventory/items",
+		"/api/inventory/items",
 		"POST",
 		{
 			name: "Egg",
@@ -340,7 +345,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		(
 			await domainRequest(
 				otherJar,
-				`/inventory/items/${inventoryItem.id}`,
+				`/api/inventory/items/${inventoryItem.id}`,
 				"PUT",
 				{
 					name: "Egg",
@@ -355,7 +360,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 
 	expect(
 		(
-			await domainRequest(jar, "/cooking/recommendations", "POST", {
+			await domainRequest(jar, "/api/cooking/recommendations", "POST", {
 				session: { request: "Use my saved context.", servings: 2 },
 			})
 		).status,
@@ -370,7 +375,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 	});
 	expect(
 		(
-			await domainRequest(jar, "/cooking/recommendations", "POST", {
+			await domainRequest(jar, "/api/cooking/recommendations", "POST", {
 				inventory: [],
 				kitchen: { equipment: [] },
 				household: { adults: 1, children: 0, toddlers: 0 },
@@ -391,7 +396,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 
 	const cookingSessionResponse = await domainRequest(
 		jar,
-		"/cooking-sessions",
+		"/api/cooking-sessions",
 		"POST",
 		cookingSessionRequest,
 	);
@@ -400,14 +405,19 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		id: string;
 	};
 	expect(
-		(await domainRequest(jar, `/cooking-sessions/${cookingSession.id}`, "GET"))
-			.status,
+		(
+			await domainRequest(
+				jar,
+				`/api/cooking-sessions/${cookingSession.id}`,
+				"GET",
+			)
+		).status,
 	).toBe(200);
 	expect(
 		(
 			await domainRequest(
 				otherJar,
-				`/cooking-sessions/${cookingSession.id}`,
+				`/api/cooking-sessions/${cookingSession.id}`,
 				"GET",
 				undefined,
 				{ "x-flemme-user-id": user.id },
@@ -418,14 +428,14 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		(
 			await domainRequest(
 				jar,
-				`/cooking-sessions/${cookingSession.id}/nutrition`,
+				`/api/cooking-sessions/${cookingSession.id}/nutrition`,
 				"GET",
 			)
 		).status,
 	).not.toBe(401);
 	expect(
 		(
-			await domainRequest(jar, "/cooking/pre-cooking", "POST", {
+			await domainRequest(jar, "/api/cooking/pre-cooking", "POST", {
 				selectedRecipe,
 				session: { request: "Prepare this.", servings: 2 },
 			})
@@ -441,7 +451,7 @@ test("only live Better Auth sessions authenticate protected routes and select do
 		"x-flemme-user-id": user.id,
 	});
 
-	const authenticated = await jar.request("/profile");
+	const authenticated = await jar.request("/api/profile");
 	expect(authenticated.status).toBe(200);
 	expect(await authenticated.json()).toEqual({
 		foodPreferences: ["savory"],
@@ -473,13 +483,13 @@ test("only live Better Auth sessions authenticate protected routes and select do
 			target: authSessions.id,
 			set: { expiresAt: new Date(Date.now() + 86_400_000) },
 		});
-	expect((await jar.request("/profile")).status).toBe(200);
+	expect((await jar.request("/api/profile")).status).toBe(200);
 	const oldCookie = jar.header;
-	expect((await jar.request("/auth/sign-out", {})).status).toBe(200);
+	expect((await jar.request("/api/auth/sign-out", {})).status).toBe(200);
 	await expectProtectedRoutesRejected({ Cookie: oldCookie });
 	await expectProtectedRoutesRejected({
 		Cookie: oldCookie,
 		"x-flemme-user-id": user.id,
 	});
-	await expectUnauthenticated(await jar.request("/auth/me"));
+	await expectUnauthenticated(await jar.request("/api/auth/me"));
 });

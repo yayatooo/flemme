@@ -127,7 +127,7 @@ async function createSession(
 		recommendations: [selectedRecipe],
 	};
 	const ready = options.ready ?? false;
-	const response = await app.request("/cooking-sessions", {
+	const response = await app.request("/api/cooking-sessions", {
 		method: "POST",
 		headers: headers(options.userId ?? ownerUserId),
 		body: JSON.stringify({
@@ -153,7 +153,7 @@ async function preview(
 	userId = ownerUserId,
 ): Promise<{ response: Response; result: RecipeNutritionResult }> {
 	const response = await app.request(
-		`/cooking-sessions/${sessionId}/nutrition`,
+		`/api/cooking-sessions/${sessionId}/nutrition`,
 		{ headers: headers(userId) },
 	);
 	const result = RecipeNutritionResultSchema.parse(await response.json());
@@ -162,7 +162,7 @@ async function preview(
 }
 
 async function restore(sessionId: string) {
-	const response = await app.request(`/cooking-sessions/${sessionId}`, {
+	const response = await app.request(`/api/cooking-sessions/${sessionId}`, {
 		headers: headers(ownerUserId),
 	});
 
@@ -202,7 +202,7 @@ async function markCompleted(
 }
 
 async function generate(sessionId: string, userId = ownerUserId) {
-	return app.request(`/cooking-sessions/${sessionId}/nutrition`, {
+	return app.request(`/api/cooking-sessions/${sessionId}/nutrition`, {
 		method: "POST",
 		headers: headers(userId),
 	});
@@ -212,7 +212,7 @@ async function complete(
 	sessionId: string,
 	body: unknown = { completionSnapshot },
 ) {
-	return app.request(`/cooking-sessions/${sessionId}/complete`, {
+	return app.request(`/api/cooking-sessions/${sessionId}/complete`, {
 		method: "POST",
 		headers: headers(ownerUserId),
 		body: JSON.stringify(body),
@@ -303,11 +303,11 @@ describe("Nutrition API integration", () => {
 	test("enforces preview ownership and missing-session behavior", async () => {
 		const created = await createSession(completePlan);
 		const forbidden = await app.request(
-			`/cooking-sessions/${created.id}/nutrition`,
+			`/api/cooking-sessions/${created.id}/nutrition`,
 			{ headers: headers(otherUserId) },
 		);
 		const missing = await app.request(
-			`/cooking-sessions/${crypto.randomUUID()}/nutrition`,
+			`/api/cooking-sessions/${crypto.randomUUID()}/nutrition`,
 			{ headers: headers(ownerUserId) },
 		);
 
@@ -532,7 +532,7 @@ describe("Nutrition API integration", () => {
 			},
 		};
 		const selectedRecipe = recipeForPlan(completePlan);
-		const createResponse = await app.request("/cooking-sessions", {
+		const createResponse = await app.request("/api/cooking-sessions", {
 			method: "POST",
 			headers: headers(ownerUserId),
 			body: JSON.stringify({
@@ -569,7 +569,7 @@ describe("Nutrition API integration", () => {
 	});
 
 	test("publishes preview, canonical generation, and server-owned completion contracts in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<
 				string,
@@ -579,18 +579,18 @@ describe("Nutrition API integration", () => {
 
 		expect(response.status).toBe(200);
 		expect(specification.paths).toHaveProperty(
-			"/cooking-sessions/{id}/nutrition",
+			"/api/cooking-sessions/{id}/nutrition",
 		);
 		expect(
-			specification.paths["/cooking-sessions/{id}/nutrition"]?.post,
+			specification.paths["/api/cooking-sessions/{id}/nutrition"]?.post,
 		).toBeDefined();
 		expect(
-			specification.paths["/cooking-sessions/{id}/nutrition"]?.post
+			specification.paths["/api/cooking-sessions/{id}/nutrition"]?.post
 				?.requestBody,
 		).toBeUndefined();
 		expect(
 			JSON.stringify(
-				specification.paths["/cooking-sessions/{id}/complete"]?.post
+				specification.paths["/api/cooking-sessions/{id}/complete"]?.post
 					?.requestBody,
 			),
 		).not.toContain("nutritionSnapshot");

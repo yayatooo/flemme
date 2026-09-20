@@ -13,20 +13,20 @@ bun run --filter @flemme/db db:migrate
 bun run --filter @flemme/api dev
 ```
 
-Sign in through apps/web and open [Swagger UI](http://localhost:3000/docs) in
+Sign in through apps/web and open [Swagger UI](http://localhost:3000/api/docs) in
 the same browser. Follow the
 [session authentication guide](swagger-cooking-flow.md#session-authentication).
 
 ## Read the current household
 
-Execute `GET /household`.
+Execute `GET /api/household`.
 
 An account with an existing household returns HTTP 200. Otherwise it returns
 HTTP 404 with `HOUSEHOLD_NOT_FOUND`; GET does not create defaults.
 
 ## Create or replace household counts
 
-Execute `PUT /household`:
+Execute `PUT /api/household`:
 
 ```json
 {
@@ -37,7 +37,7 @@ Execute `PUT /household`:
 ```
 
 Expected result: HTTP 200 with the same complete household value. Execute
-`GET /household` again to verify persistence.
+`GET /api/household` again to verify persistence.
 
 A second PUT replaces all three counts rather than merging state:
 

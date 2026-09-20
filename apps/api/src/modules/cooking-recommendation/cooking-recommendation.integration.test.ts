@@ -74,7 +74,7 @@ let userId = "";
 let contextlessUserId = "";
 
 async function requestRecommendation(currentUserId: string, body: unknown) {
-	return app.request("/cooking/recommendations", {
+	return app.request("/api/cooking/recommendations", {
 		method: "POST",
 		headers: headers(currentUserId),
 		body: JSON.stringify(body),
@@ -182,7 +182,7 @@ describe("cooking recommendation API integration", () => {
 			capturedContext = context;
 			return recommendationOutput;
 		};
-		const added = await app.request("/inventory/items", {
+		const added = await app.request("/api/inventory/items", {
 			method: "POST",
 			headers: headers(userId),
 			body: JSON.stringify({ name: "Beras" }),
@@ -215,7 +215,7 @@ describe("cooking recommendation API integration", () => {
 				),
 			);
 		if (!salt) throw new Error("Missing seeded salt");
-		const removed = await app.request(`/inventory/items/${salt.id}`, {
+		const removed = await app.request(`/api/inventory/items/${salt.id}`, {
 			method: "DELETE",
 			headers: headers(userId),
 		});
@@ -281,7 +281,7 @@ describe("cooking recommendation API integration", () => {
 		runner = async () => recommendationOutput;
 		const deletedUserId = await createAuthenticatedUser();
 		await db.delete(users).where(eq(users.id, deletedUserId));
-		const missingResponse = await app.request("/cooking/recommendations", {
+		const missingResponse = await app.request("/api/cooking/recommendations", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ session: {} }),
@@ -331,11 +331,14 @@ describe("cooking recommendation API integration", () => {
 			authFoundation,
 			db,
 		});
-		const response = await unconfiguredApp.request("/cooking/recommendations", {
-			method: "POST",
-			headers: headers(userId),
-			body: JSON.stringify({ session: {} }),
-		});
+		const response = await unconfiguredApp.request(
+			"/api/cooking/recommendations",
+			{
+				method: "POST",
+				headers: headers(userId),
+				body: JSON.stringify({ session: {} }),
+			},
+		);
 		const error = ErrorResponseSchema.parse(await response.json());
 
 		expect(response.status).toBe(503);
@@ -345,14 +348,14 @@ describe("cooking recommendation API integration", () => {
 	});
 
 	test("publishes the recommendation endpoint in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = z
 			.object({ paths: z.record(z.string(), z.unknown()) })
 			.parse(await response.json());
 
 		expect(response.status).toBe(200);
 		expect(Object.keys(specification.paths)).toContain(
-			"/cooking/recommendations",
+			"/api/cooking/recommendations",
 		);
 	});
 });

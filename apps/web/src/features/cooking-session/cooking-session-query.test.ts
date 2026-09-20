@@ -79,7 +79,7 @@ test("Start Cooking sends only one real Cooking Session create request", async (
 	expect(session.id).toBe(cookingSessionId);
 	expect(requests).toHaveLength(1);
 	expect(requests[0]).toEqual({
-		url: "http://localhost:3000/cooking-sessions",
+		url: "http://localhost:3000/api/cooking-sessions",
 		method: "POST",
 		body: buildCreateCookingSessionRequest(creationInput),
 	});
@@ -173,7 +173,7 @@ test("refresh-safe session query restores a custom name by ID without transient 
 	);
 
 	expect(requestedUrl).toBe(
-		`http://localhost:3000/cooking-sessions/${cookingSessionId}`,
+		`http://localhost:3000/api/cooking-sessions/${cookingSessionId}`,
 	);
 	expect(restored).toEqual(renamedSession);
 	expect(getCookingSessionDisplayName(restored)).toBe("Refresh-safe dish");

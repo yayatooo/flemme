@@ -32,7 +32,7 @@ test("resumable query restores server state and seeds the canonical session cach
 	const response = await fetchResumableCookingSession(queryClient);
 	expect(response).toEqual({ session: cookingSessionFixture });
 	expect(requests).toEqual([
-		{ path: "/cooking-sessions/resumable", method: "GET" },
+		{ path: "/api/cooking-sessions/resumable", method: "GET" },
 	]);
 	expect(
 		queryClient.getQueryData(cookingSessionQueryKey(cookingSessionId)),

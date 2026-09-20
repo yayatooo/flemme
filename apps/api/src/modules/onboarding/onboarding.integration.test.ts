@@ -50,13 +50,13 @@ describe("Onboarding API integration", () => {
 	test("reports and rejects the first incomplete required step", async () => {
 		const userId = await createUser();
 		await db.insert(userProfiles).values({ userId });
-		const statusResponse = await app.request("/onboarding", {
+		const statusResponse = await app.request("/api/onboarding", {
 			headers: headers(userId),
 		});
 		const status = OnboardingStatusResponseSchema.parse(
 			await statusResponse.json(),
 		);
-		const completionResponse = await app.request("/onboarding/complete", {
+		const completionResponse = await app.request("/api/onboarding/complete", {
 			method: "POST",
 			headers: headers(userId),
 		});
@@ -77,12 +77,12 @@ describe("Onboarding API integration", () => {
 		await createRequiredContext(userId);
 		const ready = OnboardingStatusResponseSchema.parse(
 			await (
-				await app.request("/onboarding", { headers: headers(userId) })
+				await app.request("/api/onboarding", { headers: headers(userId) })
 			).json(),
 		);
 		const first = OnboardingStatusResponseSchema.parse(
 			await (
-				await app.request("/onboarding/complete", {
+				await app.request("/api/onboarding/complete", {
 					method: "POST",
 					headers: headers(userId),
 				})
@@ -90,7 +90,7 @@ describe("Onboarding API integration", () => {
 		);
 		const second = OnboardingStatusResponseSchema.parse(
 			await (
-				await app.request("/onboarding/complete", {
+				await app.request("/api/onboarding/complete", {
 					method: "POST",
 					headers: headers(userId),
 				})
@@ -119,19 +119,21 @@ describe("Onboarding API integration", () => {
 		const otherUserId = await createUser();
 		await createRequiredContext(completedUserId);
 		await createRequiredContext(otherUserId, false);
-		await app.request("/onboarding/complete", {
+		await app.request("/api/onboarding/complete", {
 			method: "POST",
 			headers: headers(completedUserId),
 		});
 
 		const completed = OnboardingStatusResponseSchema.parse(
 			await (
-				await app.request("/onboarding", { headers: headers(completedUserId) })
+				await app.request("/api/onboarding", {
+					headers: headers(completedUserId),
+				})
 			).json(),
 		);
 		const other = OnboardingStatusResponseSchema.parse(
 			await (
-				await app.request("/onboarding", { headers: headers(otherUserId) })
+				await app.request("/api/onboarding", { headers: headers(otherUserId) })
 			).json(),
 		);
 
@@ -144,14 +146,15 @@ describe("Onboarding API integration", () => {
 	});
 
 	test("requires authentication and publishes both operations", async () => {
-		expect((await app.request("/onboarding")).status).toBe(401);
+		expect((await app.request("/api/onboarding")).status).toBe(401);
 		expect(
-			(await app.request("/onboarding/complete", { method: "POST" })).status,
+			(await app.request("/api/onboarding/complete", { method: "POST" }))
+				.status,
 		).toBe(401);
 		const specification = (await (
-			await app.request("/openapi.json")
+			await app.request("/api/openapi.json")
 		).json()) as { paths: Record<string, unknown> };
-		expect(specification.paths["/onboarding"]).toBeDefined();
-		expect(specification.paths["/onboarding/complete"]).toBeDefined();
+		expect(specification.paths["/api/onboarding"]).toBeDefined();
+		expect(specification.paths["/api/onboarding/complete"]).toBeDefined();
 	});
 });

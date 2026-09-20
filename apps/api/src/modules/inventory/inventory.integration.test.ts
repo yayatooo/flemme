@@ -27,7 +27,7 @@ async function user() {
 }
 async function request(
 	uid: string,
-	path = "/inventory",
+	path = "/api/inventory",
 	method = "GET",
 	body?: unknown,
 ) {
@@ -60,7 +60,7 @@ test("inventory lifecycle, missing versus empty and cooking context visibility",
 	expect(
 		await db.select().from(inventories).where(eq(inventories.userId, uid)),
 	).toHaveLength(0);
-	const created = await request(uid, "/inventory/items", "POST", input);
+	const created = await request(uid, "/api/inventory/items", "POST", input);
 	expect(created.status).toBe(201);
 	const item = InventoryItemResponseSchema.parse(await created.json());
 	expect(item.name).toBe("Egg");
@@ -76,7 +76,7 @@ test("inventory lifecycle, missing versus empty and cooking context visibility",
 	};
 	const updated = await request(
 		uid,
-		`/inventory/items/${item.id}`,
+		`/api/inventory/items/${item.id}`,
 		"PUT",
 		values,
 	);
@@ -98,7 +98,7 @@ test("inventory lifecycle, missing versus empty and cooking context visibility",
 		InventoryResponseSchema.parse(await (await request(uid)).json()).items,
 	).toHaveLength(1);
 	expect(
-		(await request(uid, `/inventory/items/${item.id}`, "DELETE")).status,
+		(await request(uid, `/api/inventory/items/${item.id}`, "DELETE")).status,
 	).toBe(204);
 	expect(
 		InventoryResponseSchema.parse(await (await request(uid)).json()),
@@ -112,7 +112,7 @@ test("PUT /inventory initializes and returns existing inventory state", async ()
 		await db.select().from(inventories).where(eq(inventories.userId, uid)),
 	).toHaveLength(0);
 
-	const first = await request(uid, "/inventory", "PUT");
+	const first = await request(uid, "/api/inventory", "PUT");
 	expect(first.status).toBe(200);
 	expect(InventoryResponseSchema.parse(await first.json())).toEqual({
 		items: [],
@@ -124,7 +124,7 @@ test("PUT /inventory initializes and returns existing inventory state", async ()
 		await db.select().from(inventories).where(eq(inventories.userId, uid)),
 	).toHaveLength(1);
 
-	const second = await request(uid, "/inventory", "PUT");
+	const second = await request(uid, "/api/inventory", "PUT");
 	expect(second.status).toBe(200);
 	expect(InventoryResponseSchema.parse(await second.json())).toEqual({
 		items: [],
@@ -133,10 +133,10 @@ test("PUT /inventory initializes and returns existing inventory state", async ()
 		await db.select().from(inventories).where(eq(inventories.userId, uid)),
 	).toHaveLength(1);
 
-	const created = await request(uid, "/inventory/items", "POST", input);
+	const created = await request(uid, "/api/inventory/items", "POST", input);
 	expect(created.status).toBe(201);
 	const item = InventoryItemResponseSchema.parse(await created.json());
-	const repeated = await request(uid, "/inventory", "PUT");
+	const repeated = await request(uid, "/api/inventory", "PUT");
 	expect(repeated.status).toBe(200);
 	expect(InventoryResponseSchema.parse(await repeated.json()).items).toEqual(
 		expect.arrayContaining([
@@ -150,7 +150,7 @@ test("PUT /inventory initializes and returns existing inventory state", async ()
 
 test("resolved, unresolved, name-only and duplicate inventory creation", async () => {
 	const uid = await user();
-	const resolved = await request(uid, "/inventory/items", "POST", {
+	const resolved = await request(uid, "/api/inventory/items", "POST", {
 		name: "Telur",
 		quantity: null,
 		unit: null,
@@ -166,13 +166,13 @@ test("resolved, unresolved, name-only and duplicate inventory creation", async (
 	});
 	expect(
 		(
-			await request(uid, "/inventory/items", "POST", {
+			await request(uid, "/api/inventory/items", "POST", {
 				name: "egg",
 			})
 		).status,
 	).toBe(409);
 
-	const unresolved = await request(uid, "/inventory/items", "POST", {
+	const unresolved = await request(uid, "/api/inventory/items", "POST", {
 		name: "  Daun   Gedi ",
 		quantity: 2,
 		unit: "bunches",
@@ -188,7 +188,7 @@ test("resolved, unresolved, name-only and duplicate inventory creation", async (
 	});
 	expect(
 		(
-			await request(uid, "/inventory/items", "POST", {
+			await request(uid, "/api/inventory/items", "POST", {
 				name: "daun gedi",
 			})
 		).status,
@@ -198,7 +198,7 @@ test("editing names reruns resolution and controls duplicate identities", async 
 	const uid = await user();
 	const unresolved = InventoryItemResponseSchema.parse(
 		await (
-			await request(uid, "/inventory/items", "POST", {
+			await request(uid, "/api/inventory/items", "POST", {
 				name: "Daun gedi",
 				quantity: 2,
 				unit: "bunches",
@@ -207,7 +207,7 @@ test("editing names reruns resolution and controls duplicate identities", async 
 	);
 	const renamed = await request(
 		uid,
-		`/inventory/items/${unresolved.id}`,
+		`/api/inventory/items/${unresolved.id}`,
 		"PUT",
 		{
 			name: "Tomat",
@@ -229,12 +229,12 @@ test("editing names reruns resolution and controls duplicate identities", async 
 
 	const garlic = InventoryItemResponseSchema.parse(
 		await (
-			await request(uid, "/inventory/items", "POST", { name: "Garlic" })
+			await request(uid, "/api/inventory/items", "POST", { name: "Garlic" })
 		).json(),
 	);
 	expect(
 		(
-			await request(uid, `/inventory/items/${garlic.id}`, "PUT", {
+			await request(uid, `/api/inventory/items/${garlic.id}`, "PUT", {
 				name: "tomato",
 				quantity: null,
 				unit: null,
@@ -254,14 +254,14 @@ test("ownership, identity and malformed payload rejection", async () => {
 	const uid = await user(),
 		other = await user();
 	const item = InventoryItemResponseSchema.parse(
-		await (await request(uid, "/inventory/items", "POST", input)).json(),
+		await (await request(uid, "/api/inventory/items", "POST", input)).json(),
 	);
 	for (const method of ["PUT", "DELETE"]) {
 		expect(
 			(
 				await request(
 					other,
-					`/inventory/items/${item.id}`,
+					`/api/inventory/items/${item.id}`,
 					method,
 					method === "PUT"
 						? {
@@ -277,14 +277,21 @@ test("ownership, identity and malformed payload rejection", async () => {
 		).toBe(403);
 	}
 	expect(
-		(await request(other, `/inventory/items/${crypto.randomUUID()}`, "DELETE"))
-			.status,
+		(
+			await request(
+				other,
+				`/api/inventory/items/${crypto.randomUUID()}`,
+				"DELETE",
+			)
+		).status,
 	).toBe(404);
 	const deletedUserId = await user();
 	await db.delete(users).where(eq(users.id, deletedUserId));
 	expect((await request(deletedUserId)).status).toBe(401);
-	expect((await app.request("/inventory")).status).toBe(401);
-	expect((await app.request("/inventory", { method: "PUT" })).status).toBe(401);
+	expect((await app.request("/api/inventory")).status).toBe(401);
+	expect((await app.request("/api/inventory", { method: "PUT" })).status).toBe(
+		401,
+	);
 	for (const body of [
 		{ ...input, quantity: 0 },
 		{ ...input, quantity: -1 },
@@ -295,13 +302,13 @@ test("ownership, identity and malformed payload rejection", async () => {
 		{ ...input, condition: "expired" },
 		{ ...input, userId: other },
 	]) {
-		expect((await request(uid, "/inventory/items", "POST", body)).status).toBe(
-			400,
-		);
+		expect(
+			(await request(uid, "/api/inventory/items", "POST", body)).status,
+		).toBe(400);
 	}
 	expect(
 		(
-			await request(uid, `/inventory/items/${item.id}`, "PUT", {
+			await request(uid, `/api/inventory/items/${item.id}`, "PUT", {
 				...input,
 				ingredientKey: "egg",
 			})
@@ -338,7 +345,7 @@ test("legacy keys remain readable without alias remapping", async () => {
 });
 test("onboarding replacement resolves known names and preserves unknown names", async () => {
 	const uid = await user();
-	const response = await request(uid, "/inventory/items", "PUT", {
+	const response = await request(uid, "/api/inventory/items", "PUT", {
 		items: [
 			{ name: "Telur" },
 			{ name: "egg" },
@@ -379,7 +386,9 @@ test("onboarding replacement resolves known names and preserves unknown names", 
 		]),
 	);
 
-	const cleared = await request(uid, "/inventory/items", "PUT", { items: [] });
+	const cleared = await request(uid, "/api/inventory/items", "PUT", {
+		items: [],
+	});
 	expect(cleared.status).toBe(200);
 	expect(InventoryResponseSchema.parse(await cleared.json())).toEqual({
 		items: [],
@@ -389,7 +398,7 @@ test("onboarding replacement resolves known names and preserves unknown names", 
 test("Inventory mutations do not rewrite an existing Cooking Session plan", async () => {
 	const uid = await user();
 	const inventoryItem = InventoryItemResponseSchema.parse(
-		await (await request(uid, "/inventory/items", "POST", input)).json(),
+		await (await request(uid, "/api/inventory/items", "POST", input)).json(),
 	);
 	const recipe = {
 		name: "Inventory isolation dish",
@@ -436,14 +445,14 @@ test("Inventory mutations do not rewrite an existing Cooking Session plan", asyn
 
 	expect(
 		(
-			await request(uid, `/inventory/items/${inventoryItem.id}`, "PUT", {
+			await request(uid, `/api/inventory/items/${inventoryItem.id}`, "PUT", {
 				...input,
 				name: "Beras",
 			})
 		).status,
 	).toBe(200);
 	expect(
-		(await request(uid, `/inventory/items/${inventoryItem.id}`, "DELETE"))
+		(await request(uid, `/api/inventory/items/${inventoryItem.id}`, "DELETE"))
 			.status,
 	).toBe(204);
 	const restored = await service.get(uid, session.id);
@@ -454,13 +463,13 @@ test("Inventory mutations do not rewrite an existing Cooking Session plan", asyn
 });
 
 test("OpenAPI inventory operations", async () => {
-	const document = (await (await app.request("/openapi.json")).json()) as {
+	const document = (await (await app.request("/api/openapi.json")).json()) as {
 		paths: Record<string, Record<string, unknown>>;
 	};
-	expect(document.paths["/inventory"]?.get).toBeDefined();
-	expect(document.paths["/inventory"]?.put).toBeDefined();
-	expect(document.paths["/inventory/items"]?.post).toBeDefined();
-	expect(document.paths["/inventory/items"]?.put).toBeDefined();
-	expect(document.paths["/inventory/items/{id}"]?.put).toBeDefined();
-	expect(document.paths["/inventory/items/{id}"]?.delete).toBeDefined();
+	expect(document.paths["/api/inventory"]?.get).toBeDefined();
+	expect(document.paths["/api/inventory"]?.put).toBeDefined();
+	expect(document.paths["/api/inventory/items"]?.post).toBeDefined();
+	expect(document.paths["/api/inventory/items"]?.put).toBeDefined();
+	expect(document.paths["/api/inventory/items/{id}"]?.put).toBeDefined();
+	expect(document.paths["/api/inventory/items/{id}"]?.delete).toBeDefined();
 });

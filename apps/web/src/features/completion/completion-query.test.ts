@@ -66,7 +66,7 @@ test("generation sends one Completion request and seeds the canonical session ca
 	expect(output).toEqual(completionOutput);
 	expect(requests).toEqual([
 		{
-			path: `/cooking-sessions/${cookingSessionId}/completion`,
+			path: `/api/cooking-sessions/${cookingSessionId}/completion`,
 			method: "POST",
 			body: {},
 		},

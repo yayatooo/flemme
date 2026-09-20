@@ -87,7 +87,7 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 	const jar = new CookieJar();
 	const address = email();
 	const password = "abcdefgh";
-	const response = await jar.request("/auth/sign-up/email", {
+	const response = await jar.request("/api/auth/sign-up/email", {
 		name: "Rahmat",
 		email: `  ${address.toUpperCase()}  `,
 		password,
@@ -144,17 +144,17 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 		expect(
 			await db.select().from(table).where(eq(table.userId, user.id)),
 		).toHaveLength(0);
-	const restored = await json(await jar.request("/auth/get-session"));
+	const restored = await json(await jar.request("/api/auth/get-session"));
 	expect(restored.user).toMatchObject({ id: user.id });
 	expect(restored.session).toMatchObject({ id: session?.id, userId: user.id });
 	expect((restored.session as Record<string, unknown>).token).toBeUndefined();
-	expect(await (await jar.request("/auth/me")).json()).toEqual({
+	expect(await (await jar.request("/api/auth/me")).json()).toEqual({
 		user: { id: user.id, email: address, name: "Rahmat", image: null },
 	});
-	expect((await jar.request("/profile")).status).toBe(404);
+	expect((await jar.request("/api/profile")).status).toBe(404);
 	for (const duplicate of [address, address.toUpperCase()]) {
 		const duplicateResponse = await new CookieJar().request(
-			"/auth/sign-up/email",
+			"/api/auth/sign-up/email",
 			{ name: "Other", email: duplicate, password },
 		);
 		expect(duplicateResponse.status).toBe(422);
@@ -172,7 +172,7 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 			.where(eq(authAccounts.userId, user.id)),
 	).toHaveLength(1);
 	const oldCookie = [...jar.values].map(([k, v]) => `${k}=${v}`).join("; ");
-	const logout = await jar.request("/auth/sign-out", {});
+	const logout = await jar.request("/api/auth/sign-out", {});
 	expect(logout.status).toBe(200);
 	expect(logout.headers.getSetCookie().join(";")).toContain("Max-Age=0");
 	expect(
@@ -181,10 +181,10 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 			.from(authSessions)
 			.where(eq(authSessions.userId, user.id)),
 	).toHaveLength(0);
-	expect(await (await jar.request("/auth/get-session")).json()).toBeNull();
+	expect(await (await jar.request("/api/auth/get-session")).json()).toBeNull();
 	expect(
 		await (
-			await new CookieJar().request("/auth/get-session", undefined, {
+			await new CookieJar().request("/api/auth/get-session", undefined, {
 				Cookie: oldCookie,
 			})
 		).json(),
@@ -193,14 +193,14 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 	const unrelatedEmail = email();
 	expect(
 		(
-			await unrelated.request("/auth/sign-up/email", {
+			await unrelated.request("/api/auth/sign-up/email", {
 				name: "Independent",
 				email: unrelatedEmail,
 				password,
 			})
 		).status,
 	).toBe(200);
-	const login = await jar.request("/auth/sign-in/email", {
+	const login = await jar.request("/api/auth/sign-in/email", {
 		email: ` ${address.toUpperCase()} `,
 		password,
 	});
@@ -208,8 +208,12 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 	expect((await json(login)).token).toBeUndefined();
 	const another = new CookieJar();
 	expect(
-		(await another.request("/auth/sign-in/email", { email: address, password }))
-			.status,
+		(
+			await another.request("/api/auth/sign-in/email", {
+				email: address,
+				password,
+			})
+		).status,
 	).toBe(200);
 	expect(
 		await db
@@ -217,47 +221,47 @@ test("registration persists UUID identity, Argon2 credential/session; restore/lo
 			.from(authSessions)
 			.where(eq(authSessions.userId, user.id)),
 	).toHaveLength(2);
-	await jar.request("/auth/sign-out", {});
+	await jar.request("/api/auth/sign-out", {});
 	expect(
-		(await json(await another.request("/auth/get-session"))).user,
+		(await json(await another.request("/api/auth/get-session"))).user,
 	).toMatchObject({ id: user.id });
-	await another.request("/auth/sign-out", {});
+	await another.request("/api/auth/sign-out", {});
 	expect(
-		(await json(await unrelated.request("/auth/get-session"))).user,
+		(await json(await unrelated.request("/api/auth/get-session"))).user,
 	).toMatchObject({ email: unrelatedEmail });
-	await unrelated.request("/auth/sign-out", {});
+	await unrelated.request("/api/auth/sign-out", {});
 });
 
 test("password boundaries, invalid registration, generic credential failures and hostile origin", async () => {
 	for (const length of [7, 8, 128, 129]) {
 		const jar = new CookieJar();
-		const response = await jar.request("/auth/sign-up/email", {
+		const response = await jar.request("/api/auth/sign-up/email", {
 			name: "Boundary",
 			email: email(),
 			password: "a".repeat(length),
 		});
 		expect(response.status).toBe(length === 8 || length === 128 ? 200 : 400);
-		if (response.ok) await jar.request("/auth/sign-out", {});
+		if (response.ok) await jar.request("/api/auth/sign-out", {});
 	}
 	for (const body of [
 		{ email: email(), password: "abcdefgh" },
 		{ name: "Invalid", email: "bad", password: "abcdefgh" },
 	])
 		expect(
-			(await new CookieJar().request("/auth/sign-up/email", body)).status,
+			(await new CookieJar().request("/api/auth/sign-up/email", body)).status,
 		).toBe(400);
 	const address = email();
 	const jar = new CookieJar();
-	await jar.request("/auth/sign-up/email", {
+	await jar.request("/api/auth/sign-up/email", {
 		name: "User",
 		email: address,
 		password: "abcdefgh",
 	});
-	const wrong = await new CookieJar().request("/auth/sign-in/email", {
+	const wrong = await new CookieJar().request("/api/auth/sign-in/email", {
 		email: address,
 		password: "wrong-password",
 	});
-	const unknown = await new CookieJar().request("/auth/sign-in/email", {
+	const unknown = await new CookieJar().request("/api/auth/sign-in/email", {
 		email: email(),
 		password: "wrong-password",
 	});
@@ -265,26 +269,31 @@ test("password boundaries, invalid registration, generic credential failures and
 	expect(unknown.status).toBe(401);
 	expect(await json(wrong)).toEqual(await json(unknown));
 	const denied = await jar.request(
-		"/auth/sign-up/email",
+		"/api/auth/sign-up/email",
 		{ name: "Blocked", email: email(), password: "abcdefgh" },
 		{ Origin: "https://evil.example" },
 	);
 	expect(denied.status).toBe(403);
 	expect(denied.headers.get("access-control-allow-origin")).toBeNull();
-	await jar.request("/auth/sign-out", {});
+	await jar.request("/api/auth/sign-out", {});
 });
 
-test("migrated seed login preserves UUID/hash and does not revoke unrelated sessions", async () => {
+test("an explicitly configured migrated seed preserves UUID/hash and unrelated sessions", async () => {
+	const seedEmail = Bun.env.DEV_USER_EMAIL;
+	const seedPassword = Bun.env.DEV_USER_PASSWORD;
+	if (!seedEmail && !seedPassword) return;
+	if (!seedEmail || !seedPassword) {
+		throw new Error(
+			"DEV_USER_EMAIL and DEV_USER_PASSWORD must be configured together",
+		);
+	}
 	const [seed] = await db
 		.select({ user: users, account: authAccounts })
 		.from(users)
 		.innerJoin(authAccounts, eq(users.id, authAccounts.userId))
 		.where(
 			and(
-				eq(
-					users.email,
-					(Bun.env.DEV_USER_EMAIL ?? "dev@flemme.local").toLowerCase(),
-				),
+				eq(users.email, seedEmail.toLowerCase()),
 				eq(authAccounts.providerId, "credential"),
 			),
 		);
@@ -297,9 +306,9 @@ test("migrated seed login preserves UUID/hash and does not revoke unrelated sess
 		.from(authSessions)
 		.where(eq(authSessions.userId, seed.user.id));
 	const jar = new CookieJar();
-	const response = await jar.request("/auth/sign-in/email", {
+	const response = await jar.request("/api/auth/sign-in/email", {
 		email: seed.user.email,
-		password: Bun.env.DEV_USER_PASSWORD ?? "flemme-local-development",
+		password: seedPassword,
 	});
 	const after = await db
 		.select()
@@ -313,27 +322,27 @@ test("migrated seed login preserves UUID/hash and does not revoke unrelated sess
 	expect(response.status).toBe(200);
 	expect((await json(response)).user).toMatchObject({ id: seed.user.id });
 	expect(
-		(await json(await jar.request("/auth/get-session"))).user,
+		(await json(await jar.request("/api/auth/get-session"))).user,
 	).toMatchObject({ id: seed.user.id });
 	const [credential] = await db
 		.select()
 		.from(authAccounts)
 		.where(eq(authAccounts.id, seed.account.id));
 	expect(credential?.password).toBe(seed.account.password);
-	await jar.request("/auth/sign-out", {});
+	await jar.request("/api/auth/sign-out", {});
 	expect(
 		await db
 			.select()
 			.from(authSessions)
 			.where(eq(authSessions.userId, seed.user.id)),
 	).toEqual(before);
-	expect(await (await jar.request("/auth/get-session")).json()).toBeNull();
+	expect(await (await jar.request("/api/auth/get-session")).json()).toBeNull();
 });
 
 test("built-in password endpoint limiter rejects excess requests", async () => {
 	let last: Response | undefined;
 	for (let i = 0; i < 21; i++) {
-		last = await new CookieJar().request("/auth/sign-in/email", {});
+		last = await new CookieJar().request("/api/auth/sign-in/email", {});
 		if (last.status === 429) break;
 	}
 	expect(last?.status).toBe(429);

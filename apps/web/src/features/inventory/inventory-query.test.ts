@@ -50,7 +50,7 @@ test("Inventory query restores the canonical resolved and unresolved items", asy
 	expect(await requestInventory(queryClient)).toEqual({
 		items: [resolved, unresolved],
 	});
-	expect(requests).toEqual(["GET /inventory"]);
+	expect(requests).toEqual(["GET /api/inventory"]);
 });
 
 test("duplicate create submissions share one request and update canonical cache", async () => {
@@ -87,7 +87,7 @@ test("duplicate create submissions share one request and update canonical cache"
 	expect(await Promise.all([first, duplicate])).toEqual([resolved, resolved]);
 	expect(requests).toEqual([
 		{
-			path: "/inventory/items",
+			path: "/api/inventory/items",
 			method: "POST",
 			body: {
 				name: "Telur",

@@ -59,12 +59,12 @@ The authenticated Home implementation lives under `src/features/home`; its
 container, while section components own the cooking prompt, Quick Start,
 active-session summary, Inventory shortcut, and Recent Cooking presentation.
 The prompt and Quick Start populate the same `session.request` boundary. Home
-then posts only that request to `POST /cooking/recommendations`; persistent
+then posts only that request to `POST /api/cooking/recommendations`; persistent
 Profile, Household, Kitchen, Inventory, and preference context remains resolved
 by the API.
 
 Phase 9A makes Home session continuity server-authoritative.
-`GET /cooking-sessions/resumable` returns the most recently updated owned
+`GET /api/cooking-sessions/resumable` returns the most recently updated owned
 Cooking Session whose persisted status is `active` or `paused`, or `null` when
 none exists. The API owns deterministic selection because the current database
 model permits multiple resumable rows; ordering is `updatedAt`, `createdAt`, and
@@ -84,7 +84,7 @@ Cooking route remains the only owner of explicit paused-to-active Resume.
 
 Phase 9B models Cooking History as a read projection of persisted Cooking
 Sessions rather than a second lifecycle or storage system.
-`GET /cooking-sessions/history` selects only the authenticated user's
+`GET /api/cooking-sessions/history` selects only the authenticated user's
 `completed` rows, orders by `completedAt`, `createdAt`, and ID descending, and
 uses bounded offset pages with a default size of 10 and maximum size of 20. A
 left join to the canonical Favorite relation supplies read-only saved state.
@@ -105,7 +105,7 @@ restart. History remains inside the global authenticated AppShell with
 BottomNavigation visible.
 
 Phase 9C keeps Favorites as the canonical relation over completed Cooking
-Sessions and exposes it as a saved-meal library. `GET /favorites` remains
+Sessions and exposes it as a saved-meal library. `GET /api/favorites` remains
 owner-filtered, orders by Favorite `createdAt` and ID descending, and now uses
 bounded offset pages with a default size of 10 and maximum size of 20. An
 optional `cookingSessionId` filter supports the Nutrition saved-state lookup
@@ -173,7 +173,7 @@ The Pre-Cooking flow lives under `src/features/pre-cooking`.
 `/app/pre-cooking` requires the current selected recommendation and matching
 generation state, and remains inside the focused platform shell without global
 BottomNavigation. Its TanStack Query mutation posts the exact selection plus the
-current `session.request` to `POST /cooking/pre-cooking`; persistent Profile,
+current `session.request` to `POST /api/cooking/pre-cooking`; persistent Profile,
 Household, Kitchen, Inventory, and preference context remains API-owned. The
 browser validates output through the dedicated
 `@flemme/agent/pre-cooking-output` schema export and preserves that exact plan
@@ -189,7 +189,7 @@ The Cooking Session web boundary lives under `src/features/cooking-session`.
 Start Cooking validates the current handoff against the retained Recommendation
 snapshot, derives the first cooking-stage and step IDs without changing the
 plan, and posts the shared `CreateCookingSessionRequest` to
-`POST /cooking-sessions`. New progress starts active with no completed steps or
+`POST /api/cooking-sessions`. New progress starts active with no completed steps or
 changes. One synchronous query-cache lock plus the disabled pending action
 prevents duplicate browser submissions; a failed request leaves the plan and
 handoff available for retry. Creation invokes no Agent, Completion, Inventory,
@@ -201,7 +201,7 @@ complete create response seeds the stable session-ID query cache before
 navigation. `/app/cooking/$sessionId` reads only the persisted session response;
 it does not depend on Recommendation or Pre-Cooking memory. The initial
 placeholder intentionally contains no Active Cooking controls. A fresh page
-load restores through `GET /cooking-sessions/:id`, preserving API-owned
+load restores through `GET /api/cooking-sessions/:id`, preserving API-owned
 authentication, ownership, missing-session, and corrupt-snapshot behavior. The
 focused session route remains inside the centered platform canvas without
 BottomNavigation.
@@ -215,7 +215,7 @@ falling back by array order or completion count.
 
 Manual controls and accepted structured Agent actions derive one next mutable
 progress snapshot from the immutable persisted plan, submit it explicitly to
-`PATCH /cooking-sessions/:id/progress`, and replace the canonical query cache
+`PATCH /api/cooking-sessions/:id/progress`, and replace the canonical query cache
 only with the validated server response. One shared per-session mutation lock
 prevents conflicting progress writes. Pause, resume, recorded changes, and
 confirmed abandonment use this same boundary; abandonment is terminal and
@@ -263,7 +263,7 @@ leaves the canonical Cooking Session unchanged.
 Cooking Session naming is mutable display metadata owned by the application,
 not a recipe or Active Cooking mutation. The optional nullable `customName`
 lives on the persisted Cooking Session and is updated through authenticated
-`PATCH /cooking-sessions/:id` for owned sessions in any lifecycle state. The
+`PATCH /api/cooking-sessions/:id` for owned sessions in any lifecycle state. The
 boundary trims and validates the name, returns the latest complete validated
 session, and never rewrites `selectedRecipeSnapshot`, the approved cooking plan,
 progress, `changes`, Inventory, or Agent output. Active Cooking resolves the
@@ -282,7 +282,7 @@ retains the centered platform canvas and hides AppHeader and BottomNavigation.
 The Completion TanStack Query has a session-scoped key separate from the
 canonical Cooking Session query. A restored `completionSnapshot` renders
 directly without an Agent request. When the completed session has no snapshot,
-the browser sends only `POST /cooking-sessions/:id/completion`; the API loads the
+the browser sends only `POST /api/cooking-sessions/:id/completion`; the API loads the
 owned persisted plan and completed session, constructs the existing
 `CompletionInput`, and invokes the existing Agent runtime.
 
@@ -306,7 +306,7 @@ a completed session without Completion output returns to that prerequisite.
 
 The browser restores an existing `nutritionSnapshot` directly. When it is
 absent, the session-scoped Nutrition query sends one
-`POST /cooking-sessions/:id/nutrition`, validates the complete returned Cooking
+`POST /api/cooking-sessions/:id/nutrition`, validates the complete returned Cooking
 Session, and replaces the canonical session cache. Generation runs in a
 transaction-scoped row lock. Only an owned completed session with Completion
 output is eligible; the first request stores `nutrition_snapshot`, while
@@ -455,19 +455,20 @@ provider credentials.
 ## Web Authentication
 
 Auth A7 connects `apps/web` to the API through the official Better Auth React
-client configured only by public `VITE_API_URL`. Password and Google actions use
-the API-owned `/auth` routes with credentials; HttpOnly cookies remain the sole
+client configured by public `VITE_API_URL`, which defaults to same-origin
+`/api`. Password and enabled Google actions use the API-owned `/api/auth` routes
+with credentials; HttpOnly cookies remain the sole
 session transport. The User Platform never stores session or provider tokens.
 
-TanStack Query restores the canonical Flemme identity from `/auth/me`. Auth
+TanStack Query restores the canonical Flemme identity from `/api/auth/me`. Auth
 state owns only user/loading/authenticated status. Product Domain resources stay
 separate server state. Public landing, guest-only login/register, protected app
 entry and protected onboarding shell use awaited TanStack Router guards to avoid
 session-restore flicker.
 
 Onboarding status and completion are application-owned backend state. The
-`GET /onboarding` route resolves the first missing Profile, Household, Kitchen or Inventory
-decision and then the explicit Completion step. `POST /onboarding/complete`
+`GET /api/onboarding` route resolves the first missing Profile, Household, Kitchen or Inventory
+decision and then the explicit Completion step. `POST /api/onboarding/complete`
 server-verifies those prerequisites and idempotently persists
 `users.onboarding_completed_at`; an existing empty Inventory is a valid decision.
 TanStack Query caches this canonical status for route guards. Logout invalidates
@@ -476,7 +477,7 @@ Product Domain 401 clears the same state; domain 404s never invalidate Auth.
 
 ## API Foundation
 
-Auth A2 mounts Better Auth 1.7.4 at `/auth/*` with the existing Drizzle database
+Auth A2 mounts Better Auth 1.7.4 at `/api/auth/*` with the existing Drizzle database
 instance and A1 table mappings. Centralized credentialed CORS allows only
 WEB_ORIGIN, before authentication middleware. A3 enables password registration/login
 with Bun Argon2id, 8–128 character passwords and automatic session establishment,
@@ -490,7 +491,7 @@ fields stay Auth-owned; no Profile synchronization occurs. Implicit/explicit
 linking remains disabled: same-email password collisions fail with
 account_not_linked. Native provider token retrieval/refresh and linking routes
 are disabled. Redirect/state/PKCE remain framework-owned at
-/auth/callback/google; extra client scopes or authorization parameters are
+`/api/auth/callback/google`; extra client scopes or authorization parameters are
 rejected. Real Google signup, restoration, logout and returning-login acceptance
 are complete.
 
@@ -499,9 +500,9 @@ Auth v1 has one HTTP `currentUserId` boundary. The common middleware calls
 `users.id` UUID. Missing, invalid, expired and logged-out sessions return
 Flemme's `UNAUTHENTICATED` 401 without exposing framework internals. There is
 no alternative adapter, authentication selector, or fallback.
-Application-owned GET `/auth/me` runs through the same boundary and returns
+Application-owned GET `/api/auth/me` runs through the same boundary and returns
 canonical user ID, email, normalized name, and optional provider image.
-Authenticated PATCH `/auth/me` accepts only a trimmed non-empty display name and
+Authenticated PATCH `/api/auth/me` accepts only a trimmed non-empty display name and
 updates the same Auth-owned `users` row; email and image are not writable
 through this boundary. Product Domain services and ownership queries remain
 provider/session agnostic and unchanged.
@@ -515,7 +516,7 @@ and test utilities remain directly under `apps/api/src`. Routes validate HTTP
 input with Zod, services coordinate domain rules and `@flemme/db`, and database
 schema definitions remain inside `packages/db`.
 Hono OpenAPI route definitions generate the specification served at
-`/openapi.json`; Swagger UI is available at `/docs`.
+`/api/openapi.json`; Swagger UI is available at `/api/docs`.
 
 Persisted agent and nutrition JSONB snapshots are untrusted when restored. The
 API parses them through the runtime schema exported by the package that owns
@@ -523,7 +524,7 @@ the snapshot before returning or using them.
 
 Cooking Session nutrition is orchestrated in `apps/api` from the persisted
 Pre-Cooking plan and selected recipe serving count. The read-only preview and
-the existing explicit `POST /cooking-sessions/:id/complete` persistence path
+the existing explicit `POST /api/cooking-sessions/:id/complete` persistence path
 share one deterministic mapper that resolves only the production ingredient
 catalog, exact supported unit aliases, verified portion conversions, and
 committed USDA references. Preview performs no write; the explicit combined

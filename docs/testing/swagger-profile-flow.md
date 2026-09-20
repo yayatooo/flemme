@@ -14,20 +14,20 @@ bun run --filter @flemme/db db:migrate
 bun run --filter @flemme/api dev
 ```
 
-Sign in through apps/web and open [Swagger UI](http://localhost:3000/docs) in
+Sign in through apps/web and open [Swagger UI](http://localhost:3000/api/docs) in
 the same browser. Follow the
 [session authentication guide](swagger-cooking-flow.md#session-authentication).
 
 ## Read the current profile
 
-Execute `GET /profile`.
+Execute `GET /api/profile`.
 
 An account with an existing profile returns HTTP 200. Otherwise it returns HTTP
 404 with `PROFILE_NOT_FOUND`.
 
 ## Create or replace cooking preferences
 
-Execute `PUT /profile`:
+Execute `PUT /api/profile`:
 
 ```json
 {
@@ -42,7 +42,7 @@ The API does not accept `userId` and always writes the authorized user's row.
 
 ## Verify persistence
 
-Execute `GET /profile` again. It must return the values saved above.
+Execute `GET /api/profile` again. It must return the values saved above.
 
 The existing cooking-context service now supplies these arrays to
 Recommendation and Pre-Cooking whenever their corresponding request-level

@@ -41,7 +41,7 @@ async function user() {
 }
 
 async function createSession(userId: string) {
-	const response = await app.request("/cooking-sessions", {
+	const response = await app.request("/api/cooking-sessions", {
 		method: "POST",
 		headers: headers(userId),
 		body: JSON.stringify({
@@ -77,7 +77,7 @@ async function createSession(userId: string) {
 }
 
 async function getResumable(userId: string) {
-	const response = await app.request("/cooking-sessions/resumable", {
+	const response = await app.request("/api/cooking-sessions/resumable", {
 		headers: headers(userId),
 	});
 	return {
@@ -94,7 +94,7 @@ async function updateProgress(
 	sessionId: string,
 	session: Record<string, unknown>,
 ) {
-	return app.request(`/cooking-sessions/${sessionId}/progress`, {
+	return app.request(`/api/cooking-sessions/${sessionId}/progress`, {
 		method: "PATCH",
 		headers: headers(userId),
 		body: JSON.stringify({ session }),
@@ -119,7 +119,7 @@ test("returns only the authenticated user's active session with display data int
 	const otherId = await user();
 	const owned = await createSession(ownerId);
 	await createSession(otherId);
-	await app.request(`/cooking-sessions/${owned.id}`, {
+	await app.request(`/api/cooking-sessions/${owned.id}`, {
 		method: "PATCH",
 		headers: headers(ownerId),
 		body: JSON.stringify({ customName: "My resumable supper" }),
@@ -143,7 +143,7 @@ test("returns a paused session without implicitly resuming it", async () => {
 	});
 	const { payload } = await getResumable(userId);
 	const restoredResponse = await app.request(
-		`/cooking-sessions/${created.id}`,
+		`/api/cooking-sessions/${created.id}`,
 		{
 			headers: headers(userId),
 		},

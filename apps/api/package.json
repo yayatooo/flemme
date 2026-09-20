@@ -4,7 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"build": "bun build index.ts --target bun --outdir dist",
+		"build": "bun build index.ts --target bun --outdir dist && bun build ../../packages/db/src/migrate.ts --target bun --outfile dist/migrate.js",
 		"dev": "bun --env-file=../../.env --watch index.ts",
 		"test": "bun --env-file=../../.env test src",
 		"typecheck": "tsc --noEmit"

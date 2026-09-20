@@ -100,8 +100,8 @@ test("successful save updates Profile cache and advances a fresh user to Househo
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
 		requests.push({ path, method: init?.method ?? "GET" });
-		if (path === "/profile" && init?.method === "PUT") return json(payload);
-		if (path === "/onboarding")
+		if (path === "/api/profile" && init?.method === "PUT") return json(payload);
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,
@@ -119,15 +119,15 @@ test("successful save updates Profile cache and advances a fresh user to Househo
 		),
 	).toBe("/onboarding/household");
 	expect(queryClient.getQueryData(profileQueryKey)).toEqual(payload);
-	expect(requests[0]).toEqual({ path: "/profile", method: "PUT" });
+	expect(requests[0]).toEqual({ path: "/api/profile", method: "PUT" });
 });
 
 test("save recomputes and navigates to the actual incomplete step", async () => {
 	const payload = buildProfilePayload([], []);
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/profile" && init?.method === "PUT") return json(payload);
-		if (path === "/onboarding")
+		if (path === "/api/profile" && init?.method === "PUT") return json(payload);
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,
@@ -149,8 +149,8 @@ test("save resolves a complete user to app", async () => {
 	const payload = buildProfilePayload([], []);
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/profile" && init?.method === "PUT") return json(payload);
-		if (path === "/onboarding")
+		if (path === "/api/profile" && init?.method === "PUT") return json(payload);
+		if (path === "/api/onboarding")
 			return json({
 				completed: true,
 				completedAt: "2026-09-15T00:00:00.000Z",

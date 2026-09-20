@@ -68,7 +68,7 @@ test("generation sends one canonical Nutrition request and seeds the session cac
 	expect(output).toEqual(nutritionSnapshot);
 	expect(requests).toEqual([
 		{
-			path: `/cooking-sessions/${cookingSessionId}/nutrition`,
+			path: `/api/cooking-sessions/${cookingSessionId}/nutrition`,
 			method: "POST",
 		},
 	]);

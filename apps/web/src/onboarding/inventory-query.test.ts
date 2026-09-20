@@ -90,9 +90,9 @@ test("saving names advances to Completion and updates Inventory cache", async ()
 			method: init?.method ?? "GET",
 			body: init?.body as string,
 		});
-		if (path === "/inventory/items" && init?.method === "PUT")
+		if (path === "/api/inventory/items" && init?.method === "PUT")
 			return json(saved);
-		if (path === "/onboarding")
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,
@@ -109,7 +109,7 @@ test("saving names advances to Completion and updates Inventory cache", async ()
 	).toBe("/onboarding/complete");
 	expect(queryClient.getQueryData(inventoryQueryKey)).toEqual(saved);
 	expect(requests[0]).toEqual({
-		path: "/inventory/items",
+		path: "/api/inventory/items",
 		method: "PUT",
 		body: JSON.stringify({ items: [{ name: "Telur" }] }),
 	});
@@ -119,8 +119,8 @@ test("Add later initializes an empty Inventory and advances to Completion", asyn
 	const empty = { items: [] };
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/inventory" && init?.method === "PUT") return json(empty);
-		if (path === "/onboarding")
+		if (path === "/api/inventory" && init?.method === "PUT") return json(empty);
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,

@@ -1,9 +1,9 @@
 import { createAuthClient } from "better-auth/react";
-import { API_URL } from "../config";
+import { API_ORIGIN } from "../config";
 
 export const authClient = createAuthClient({
-	baseURL: API_URL,
-	basePath: "/auth",
+	baseURL: API_ORIGIN,
+	basePath: "/api/auth",
 	fetchOptions: { credentials: "include" },
 });
 export interface BrowserAuthOperations {

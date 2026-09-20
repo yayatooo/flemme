@@ -27,6 +27,7 @@ import { createProfileRoute } from "./modules/profile/profile-route";
 interface CreateAppInput {
 	authFoundation: { auth: AuthServer; webOrigin: string };
 	db: FlemmeDatabase;
+	readinessCheck?: () => Promise<boolean>;
 	activeCookingRunner?: ActiveCookingRunner;
 	completionRunner?: CompletionRunner;
 	recommendationRunner?: CookingRecommendationRunner;
@@ -36,6 +37,7 @@ interface CreateAppInput {
 export function createApp({
 	authFoundation,
 	db,
+	readinessCheck,
 	activeCookingRunner,
 	completionRunner,
 	recommendationRunner,
@@ -62,14 +64,16 @@ export function createApp({
 		description:
 			"Better Auth HttpOnly session cookie. Secure deployments may apply the framework's __Secure- prefix.",
 	});
-	app.use("/auth/me", currentUserMiddleware);
-	app.route("/auth/me", createCurrentUserRoute(db));
-	app.all("/auth/*", (context) => authFoundation.auth.handler(context.req.raw));
+	app.use("/api/auth/me", currentUserMiddleware);
+	app.route("/api/auth/me", createCurrentUserRoute(db));
+	app.all("/api/auth/*", (context) =>
+		authFoundation.auth.handler(context.req.raw),
+	);
 
 	app.openapi(
 		createRoute({
 			method: "get",
-			path: "/health",
+			path: "/api/health",
 			tags: ["Health"],
 			responses: {
 				200: {
@@ -84,49 +88,80 @@ export function createApp({
 		}),
 		(context) => context.json({ status: "ok" as const }, 200),
 	);
+	app.openapi(
+		createRoute({
+			method: "get",
+			path: "/api/ready",
+			tags: ["Health"],
+			responses: {
+				200: {
+					description: "API and database are ready",
+					content: {
+						"application/json": {
+							schema: z.object({ status: z.literal("ready") }),
+						},
+					},
+				},
+				503: {
+					description: "Database is unavailable",
+					content: {
+						"application/json": {
+							schema: z.object({ status: z.literal("unavailable") }),
+						},
+					},
+				},
+			},
+		}),
+		async (context) => {
+			const ready = await readinessCheck?.().catch(() => false);
+			return ready
+				? context.json({ status: "ready" as const }, 200)
+				: context.json({ status: "unavailable" as const }, 503);
+		},
+	);
 	for (const path of [
-		"/cooking/*",
-		"/cooking-sessions/*",
-		"/favorites",
-		"/favorites/*",
-		"/household",
-		"/household/*",
-		"/inventory",
-		"/onboarding",
-		"/onboarding/*",
-		"/inventory/*",
-		"/kitchen",
-		"/kitchen/*",
-		"/profile",
-		"/profile/*",
+		"/api/cooking/*",
+		"/api/cooking-sessions/*",
+		"/api/favorites",
+		"/api/favorites/*",
+		"/api/household",
+		"/api/household/*",
+		"/api/inventory",
+		"/api/onboarding",
+		"/api/onboarding/*",
+		"/api/inventory/*",
+		"/api/kitchen",
+		"/api/kitchen/*",
+		"/api/profile",
+		"/api/profile/*",
 	] as const) {
 		app.use(path, currentUserMiddleware);
 	}
 	app.route(
-		"/cooking/recommendations",
+		"/api/cooking/recommendations",
 		createCookingRecommendationRoute({ db, recommendationRunner }),
 	);
 	app.route(
-		"/cooking/pre-cooking",
+		"/api/cooking/pre-cooking",
 		createPreCookingRoute({ db, preCookingRunner }),
 	);
-	app.route("/profile", createProfileRoute(db));
-	app.route("/favorites", createFavoritesRoute(db));
-	app.route("/household", createHouseholdRoute(db));
-	app.route("/inventory", createInventoryRoute(db));
-	app.route("/onboarding", createOnboardingRoute(db));
-	app.route("/kitchen", createKitchenRoute(db));
-	app.route("/cooking-sessions", createCookingSessionRoute(db));
-	app.route("/cooking-sessions", createNutritionRoute(db));
+	app.route("/api/profile", createProfileRoute(db));
+	app.route("/api/favorites", createFavoritesRoute(db));
+	app.route("/api/household", createHouseholdRoute(db));
+	app.route("/api/inventory", createInventoryRoute(db));
+	app.route("/api/onboarding", createOnboardingRoute(db));
+	app.route("/api/kitchen", createKitchenRoute(db));
+	app.route("/api/cooking-sessions", createCookingSessionRoute(db));
+	app.route("/api/cooking-sessions", createNutritionRoute(db));
 	app.route(
-		"/cooking-sessions",
+		"/api/cooking-sessions",
 		createActiveCookingRoute({ db, activeCookingRunner }),
 	);
 	app.route(
-		"/cooking-sessions",
+		"/api/cooking-sessions",
 		createCompletionRoute({ db, completionRunner }),
 	);
-	app.doc("/openapi.json", {
+	app.doc("/api/openapi.json", {
 		openapi: "3.1.0",
 		info: {
 			title: "Flemme API",
@@ -135,8 +170,8 @@ export function createApp({
 		},
 	});
 	app.get(
-		"/docs",
-		swaggerUI({ url: "/openapi.json", persistAuthorization: true }),
+		"/api/docs",
+		swaggerUI({ url: "/api/openapi.json", persistAuthorization: true }),
 	);
 
 	app.onError((error, context) => {

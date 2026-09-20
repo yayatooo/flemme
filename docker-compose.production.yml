@@ -1,0 +1,106 @@
+x-api-image: &api-image
+  image: flemme-api:${FLEMME_IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+
+services:
+  postgres:
+    image: postgres:16.10-alpine3.22
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - private
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      API_HOST: 0.0.0.0
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+      WEB_ORIGIN: ${WEB_ORIGIN:?WEB_ORIGIN must be set}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?BETTER_AUTH_URL must be set}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}
+      GOOGLE_AUTH_ENABLED: ${GOOGLE_AUTH_ENABLED:-false}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MUX_API_KEY: ${MUX_API_KEY:-}
+      BASE_URL: ${BASE_URL:-}
+      FLEMME_OBSERVABILITY_ENABLED: ${FLEMME_OBSERVABILITY_ENABLED:-false}
+      FLEMME_OBSERVABILITY_SAMPLE_RATE: ${FLEMME_OBSERVABILITY_SAMPLE_RATE:-0}
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:?API_HOST_PORT must be set}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/ready').then((response) => { if (!response.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 12s
+    networks:
+      - private
+      - edge
+
+  web:
+    image: flemme-web:${FLEMME_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        GOOGLE_LOGIN_ENABLED: ${VITE_GOOGLE_AUTH_ENABLED:-false}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:?WEB_HOST_PORT must be set}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - edge
+
+  migrate:
+    <<: *api-image
+    profiles: ["operations"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+      DRIZZLE_MIGRATIONS_DIR: /app/drizzle
+    command: ["bun", "/app/migrate.js"]
+    networks:
+      - private
+
+volumes:
+  postgres-data:
+
+networks:
+  private:
+    internal: true
+  edge:

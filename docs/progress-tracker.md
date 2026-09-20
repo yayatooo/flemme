@@ -32,16 +32,17 @@ Last reviewed: 2026-09-20.
 
 ## Next milestone
 
-Deployment preparation is next. It includes choosing the staging topology,
-formalizing secret and migration ownership, defining the Node 24 observability
-relay lifecycle and shutdown flush, and preserving the current privacy and
-sampling defaults. See [Deployment readiness](deployment/README.md).
+Production deployment preparation now has a local container, routing, secret
+ownership, health, shutdown, and manual migration contract. Promotion and VPS
+mutation remain separate reviewed checkpoints. See
+[Deployment contract](deployment/README.md).
 
 The following work is not complete:
 
 - staging deployment;
 - staging smoke testing;
 - production enablement;
+- host Nginx/TLS configuration and public smoke testing;
 - the Flemme presentation.
 
 ## Active blockers and decisions

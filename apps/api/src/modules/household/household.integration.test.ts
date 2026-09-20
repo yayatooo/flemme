@@ -34,7 +34,7 @@ async function createUser() {
 }
 
 async function putHousehold(userId: string, body: unknown) {
-	return app.request("/household", {
+	return app.request("/api/household", {
 		method: "PUT",
 		headers: headers(userId),
 		body: JSON.stringify(body),
@@ -42,7 +42,7 @@ async function putHousehold(userId: string, body: unknown) {
 }
 
 async function getHousehold(userId: string) {
-	return app.request("/household", { headers: headers(userId) });
+	return app.request("/api/household", { headers: headers(userId) });
 }
 
 afterAll(async () => {
@@ -177,7 +177,7 @@ describe("Household API integration", () => {
 	test("rejects missing sessions and sessions for deleted users", async () => {
 		const userId = await createUser();
 		await db.delete(users).where(eq(users.id, userId));
-		const missingSessionResponse = await app.request("/household");
+		const missingSessionResponse = await app.request("/api/household");
 		const deletedUserResponse = await getHousehold(userId);
 
 		expect(missingSessionResponse.status).toBe(401);
@@ -191,13 +191,13 @@ describe("Household API integration", () => {
 	});
 
 	test("registers GET and PUT household operations in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = (await response.json()) as {
 			paths: Record<string, { get?: unknown; put?: unknown } | undefined>;
 		};
 
 		expect(response.status).toBe(200);
-		expect(specification.paths["/household"]?.get).toBeDefined();
-		expect(specification.paths["/household"]?.put).toBeDefined();
+		expect(specification.paths["/api/household"]?.get).toBeDefined();
+		expect(specification.paths["/api/household"]?.put).toBeDefined();
 	});
 });

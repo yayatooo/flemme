@@ -104,7 +104,7 @@ let ownerUserId = "";
 let otherUserId = "";
 
 async function createSession() {
-	const response = await app.request("/cooking-sessions", {
+	const response = await app.request("/api/cooking-sessions", {
 		method: "POST",
 		headers: headers(ownerUserId),
 		body: JSON.stringify(createRequest),
@@ -118,7 +118,7 @@ async function createSession() {
 }
 
 async function ask(sessionId: string, body: unknown, userId = ownerUserId) {
-	return app.request(`/cooking-sessions/${sessionId}/active-cooking`, {
+	return app.request(`/api/cooking-sessions/${sessionId}/active-cooking`, {
 		method: "POST",
 		headers: headers(userId),
 		body: JSON.stringify(body),
@@ -126,7 +126,7 @@ async function ask(sessionId: string, body: unknown, userId = ownerUserId) {
 }
 
 async function restore(sessionId: string) {
-	const response = await app.request(`/cooking-sessions/${sessionId}`, {
+	const response = await app.request(`/api/cooking-sessions/${sessionId}`, {
 		headers: headers(ownerUserId),
 	});
 
@@ -319,7 +319,7 @@ describe("Active Cooking API integration", () => {
 	test("allows resume guidance for a paused session without resuming it", async () => {
 		const sessionId = await createSession();
 		const pauseResponse = await app.request(
-			`/cooking-sessions/${sessionId}/progress`,
+			`/api/cooking-sessions/${sessionId}/progress`,
 			{
 				method: "PATCH",
 				headers: headers(ownerUserId),
@@ -358,7 +358,7 @@ describe("Active Cooking API integration", () => {
 	test("rejects a completed session without invoking the agent", async () => {
 		const sessionId = await createSession();
 		const finalProgressResponse = await app.request(
-			`/cooking-sessions/${sessionId}/progress`,
+			`/api/cooking-sessions/${sessionId}/progress`,
 			{
 				method: "PATCH",
 				headers: headers(ownerUserId),
@@ -381,7 +381,7 @@ describe("Active Cooking API integration", () => {
 		expect(finalProgressResponse.status).toBe(200);
 
 		const completionResponse = await app.request(
-			`/cooking-sessions/${sessionId}/complete`,
+			`/api/cooking-sessions/${sessionId}/complete`,
 			{
 				method: "POST",
 				headers: headers(ownerUserId),
@@ -465,7 +465,7 @@ describe("Active Cooking API integration", () => {
 		const sessionId = await createSession();
 		runner = async () => ({ reply: "Valid", actions: [] });
 		const unauthenticatedResponse = await app.request(
-			`/cooking-sessions/${sessionId}/active-cooking`,
+			`/api/cooking-sessions/${sessionId}/active-cooking`,
 			{
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -517,7 +517,7 @@ describe("Active Cooking API integration", () => {
 			db,
 		});
 		const response = await unconfiguredApp.request(
-			`/cooking-sessions/${sessionId}/active-cooking`,
+			`/api/cooking-sessions/${sessionId}/active-cooking`,
 			{
 				method: "POST",
 				headers: headers(ownerUserId),
@@ -531,14 +531,14 @@ describe("Active Cooking API integration", () => {
 	});
 
 	test("publishes the authenticated Active Cooking endpoint in OpenAPI", async () => {
-		const response = await app.request("/openapi.json");
+		const response = await app.request("/api/openapi.json");
 		const specification = z
 			.object({ paths: z.record(z.string(), z.unknown()) })
 			.parse(await response.json());
 
 		expect(response.status).toBe(200);
 		expect(Object.keys(specification.paths)).toContain(
-			"/cooking-sessions/{id}/active-cooking",
+			"/api/cooking-sessions/{id}/active-cooking",
 		);
 	});
 });

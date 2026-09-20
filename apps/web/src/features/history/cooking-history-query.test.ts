@@ -47,8 +47,8 @@ test("History query sends bounded offset pagination and validates the projection
 	expect(first).toEqual({ items: [item], nextOffset: 10 });
 	expect(second).toEqual({ items: [item], nextOffset: null });
 	expect(requests).toEqual([
-		"/cooking-sessions/history?limit=10&offset=0",
-		"/cooking-sessions/history?limit=10&offset=10",
+		"/api/cooking-sessions/history?limit=10&offset=0",
+		"/api/cooking-sessions/history?limit=10&offset=10",
 	]);
 });
 

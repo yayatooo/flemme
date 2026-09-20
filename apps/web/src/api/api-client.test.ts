@@ -13,7 +13,7 @@ test("sends credentialed requests and parses Flemme errors", async () => {
 		return Response.json({ items: [] });
 	}) as typeof fetch;
 
-	expect(await requestApi<{ items: [] }>("/inventory")).toEqual({ items: [] });
+	expect(await requestApi<{ items: [] }>("/api/inventory")).toEqual({ items: [] });
 	expect(credentials).toBe("include");
 
 	let invalidated = false;
@@ -27,7 +27,7 @@ test("sends credentialed requests and parses Flemme errors", async () => {
 			},
 			{ status: 401 },
 		)) as typeof fetch;
-	const failure = requestApi("/profile", undefined, () => {
+	const failure = requestApi("/api/profile", undefined, () => {
 		invalidated = true;
 	});
 	await expect(failure).rejects.toMatchObject({
@@ -41,7 +41,7 @@ test("keeps network failures separate from server errors", async () => {
 	globalThis.fetch = (async () => {
 		throw new TypeError("offline");
 	}) as typeof fetch;
-	await expect(requestApi("/profile")).rejects.toEqual(
+	await expect(requestApi("/api/profile")).rejects.toEqual(
 		new FlemmeApiError(0, "NETWORK_ERROR", "Unable to reach Flemme"),
 	);
 });

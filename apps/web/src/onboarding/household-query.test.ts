@@ -91,8 +91,8 @@ test("successful save replaces Household and advances to Kitchen", async () => {
 	globalThis.fetch = (async (input, init) => {
 		const path = new URL(String(input)).pathname;
 		requests.push({ path, method: init?.method ?? "GET" });
-		if (path === "/household" && init?.method === "PUT") return json(payload);
-		if (path === "/onboarding")
+		if (path === "/api/household" && init?.method === "PUT") return json(payload);
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,
@@ -110,14 +110,14 @@ test("successful save replaces Household and advances to Kitchen", async () => {
 		),
 	).toBe("/onboarding/kitchen");
 	expect(queryClient.getQueryData(householdQueryKey)).toEqual(payload);
-	expect(requests[0]).toEqual({ path: "/household", method: "PUT" });
+	expect(requests[0]).toEqual({ path: "/api/household", method: "PUT" });
 });
 
 test("save advances to the actual remaining step or app", async () => {
 	const payload = { adults: 1, children: 0, toddlers: 0 };
 	globalThis.fetch = (async (input) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/onboarding")
+		if (path === "/api/onboarding")
 			return json({
 				completed: false,
 				completedAt: null,
@@ -136,7 +136,7 @@ test("save advances to the actual remaining step or app", async () => {
 
 	globalThis.fetch = (async (input) => {
 		const path = new URL(String(input)).pathname;
-		if (path === "/onboarding")
+		if (path === "/api/onboarding")
 			return json({
 				completed: true,
 				completedAt: "2026-09-15T00:00:00.000Z",

@@ -12,6 +12,7 @@ import { createDatabase } from "@flemme/db";
 import { createApp } from "./src/app";
 import { readAuthEnvironment } from "./src/modules/auth/auth-environment";
 import { createAuthServer } from "./src/modules/auth/auth-server";
+import { readRuntimeEnvironment } from "./src/runtime-environment";
 
 const databaseUrl = Bun.env.DATABASE_URL;
 
@@ -19,17 +20,12 @@ if (!databaseUrl) {
 	throw new Error("DATABASE_URL is required to start @flemme/api");
 }
 
-const port = Number(Bun.env.PORT ?? 3000);
-
-if (!Number.isInteger(port) || port <= 0) {
-	throw new Error("PORT must be a positive integer");
-}
-
+const runtimeEnvironment = readRuntimeEnvironment(Bun.env);
 const authEnvironment = readAuthEnvironment(Bun.env);
 const recommendationObservability = createRecommendationTraceObserver(
 	readRecommendationObservabilityConfig(Bun.env),
 );
-const { db } = createDatabase(databaseUrl);
+const { client, db } = createDatabase(databaseUrl);
 const auth = createAuthServer(db, authEnvironment);
 await auth.$context;
 const apiKey = Bun.env.MUX_API_KEY;
@@ -77,15 +73,55 @@ const preCookingRunner = model
 const app = createApp({
 	authFoundation: { auth, webOrigin: authEnvironment.WEB_ORIGIN },
 	db,
+	readinessCheck: async () => {
+		const query = client`select 1 as ready`;
+		const timeout = setTimeout(() => query.cancel(), 2_000);
+		try {
+			await query;
+			return true;
+		} catch {
+			return false;
+		} finally {
+			clearTimeout(timeout);
+		}
+	},
 	activeCookingRunner,
 	completionRunner,
 	recommendationRunner,
 	preCookingRunner,
 });
 const server = Bun.serve({
-	hostname: "127.0.0.1",
-	port,
+	hostname: runtimeEnvironment.API_HOST,
+	port: runtimeEnvironment.PORT,
 	fetch: app.fetch,
 });
 
-console.log(`Flemme API listening on http://localhost:${server.port}`);
+console.log(
+	`Flemme API listening on http://${runtimeEnvironment.API_HOST}:${server.port}`,
+);
+
+let shutdownPromise: Promise<void> | undefined;
+
+function shutdown(signal: "SIGINT" | "SIGTERM") {
+	if (shutdownPromise) return shutdownPromise;
+	shutdownPromise = (async () => {
+		console.log(`Flemme API received ${signal}; shutting down.`);
+		let forceStop: ReturnType<typeof setTimeout> | undefined;
+		try {
+			await Promise.race([
+				server.stop(false),
+				new Promise<void>((resolve) => {
+					forceStop = setTimeout(resolve, 8_000);
+				}),
+			]);
+		} finally {
+			if (forceStop) clearTimeout(forceStop);
+			await server.stop(true);
+			await client.end({ timeout: 2 });
+		}
+	})();
+	return shutdownPromise;
+}
+
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
+process.once("SIGINT", () => void shutdown("SIGINT"));
