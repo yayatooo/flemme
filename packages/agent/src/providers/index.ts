@@ -1,4 +1,4 @@
 export {
-	createOpenAIModel,
-	type OpenAIModelConfig,
-} from "./openai";
+	createOpenRouterModel,
+	type OpenRouterModelConfig,
+} from "./openrouter";

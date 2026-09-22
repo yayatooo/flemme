@@ -2,7 +2,7 @@ import {
 	type ActiveCookingAction,
 	type ActiveCookingInput,
 	ActiveCookingInputSchema,
-	createOpenAIModel,
+	createOpenRouterModel,
 	runActiveCooking,
 } from "../index";
 import { AYAM_KECAP_COOKING_PLAN } from "../src/fixtures/ayam-kecap-cooking-plan";
@@ -173,11 +173,11 @@ const SCENARIOS = {
 
 type ScenarioName = keyof typeof SCENARIOS;
 
-function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
-	const value = Bun.env[name];
+function getRequiredOpenRouterApiKey() {
+	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;
 
 	if (!value) {
-		throw new Error(`${name} is missing`);
+		throw new Error("OPENROUTER_API_KEY is missing");
 	}
 
 	return value;
@@ -216,7 +216,7 @@ function printInput(name: ScenarioName, input: ActiveCookingInput) {
 
 async function runScenario(
 	name: ScenarioName,
-	model: ReturnType<typeof createOpenAIModel>,
+	model: ReturnType<typeof createOpenRouterModel>,
 ) {
 	const input = ActiveCookingInputSchema.parse(SCENARIOS[name]);
 	printInput(name, input);
@@ -253,10 +253,9 @@ if (
 	);
 }
 
-const model = createOpenAIModel({
-	apiKey: getRequiredEnvironmentVariable("MUX_API_KEY"),
-	baseUrl: getRequiredEnvironmentVariable("BASE_URL"),
-	modelId: "gpt-5.6-luna",
+const model = createOpenRouterModel({
+	apiKey: getRequiredOpenRouterApiKey(),
+	modelId: Bun.env.OPENROUTER_MODEL,
 });
 
 try {

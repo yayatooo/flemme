@@ -1,14 +1,14 @@
-import { createOpenAIModel } from "../src/providers";
+import { createOpenRouterModel } from "../src/providers";
 
-const DEFAULT_EVAL_MODEL_ID = "gpt-5.6-luna";
+const DEFAULT_EVAL_MODEL_ID = "deepseek/deepseek-v4.1-flash";
 
-function requiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
-	const value = Bun.env[name];
+function requiredOpenRouterApiKey() {
+	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;
+
 	if (!value) {
-		throw new Error(
-			`Eval configuration error: ${name} is required. Load the repository .env file or set ${name} before running live evals.`,
-		);
+		throw new Error("OPENROUTER_API_KEY is required");
 	}
+
 	return value;
 }
 
@@ -21,9 +21,8 @@ export function judgeModelId() {
 }
 
 export function createEvalModel(modelId = evalModelId()) {
-	return createOpenAIModel({
-		apiKey: requiredEnvironmentVariable("MUX_API_KEY"),
-		baseUrl: requiredEnvironmentVariable("BASE_URL"),
+	return createOpenRouterModel({
+		apiKey: requiredOpenRouterApiKey(),
 		modelId,
 	});
 }

@@ -10,11 +10,10 @@ Provider credentials are supplied by the application that invokes the agent.
 The package does not load environment files or own secrets.
 
 ```ts
-import { createOpenAIModel } from "@flemme/agent";
+import { createOpenRouterModel } from "@flemme/agent";
 
-const model = createOpenAIModel({
-  apiKey: process.env.MUX_API_KEY,
-  baseUrl: process.env.BASE_URL,
+const model = createOpenRouterModel({
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 ```
 
@@ -33,13 +32,14 @@ bun run --filter @flemme/agent runner
 The runner validates its built-in structured cooking context with
 `CookingRecommendationInputSchema` before invoking the agent and prints the
 schema-validated cooking recommendation output. Free-form command line prompt
-overrides are not currently supported. The development runner explicitly uses
-`gpt-5.6-luna`, which passed the native structured-output compatibility probe;
-this does not change the provider factory's default model.
+overrides are not currently supported. The development runner defaults to
+OpenRouter's `deepseek/deepseek-v4.1-flash`, which supports the structured
+output required by the cooking phases. Set `OPENROUTER_MODEL` to override it.
 
-The runner requires `MUX_API_KEY` and `BASE_URL`. It is only a local development
-entry point; importing `@flemme/agent` does not load the environment file or run
-a completion.
+The runner requires `OPENROUTER_API_KEY`. During the local migration,
+`OPEN_API_KEY` is also accepted as a compatibility alias. It is only a local
+development entry point; importing `@flemme/agent` does not load the environment
+file or run a completion.
 
 Run the development-only structured-output compatibility probe against the
 configured OpenAI-compatible gateway:
@@ -48,8 +48,8 @@ configured OpenAI-compatible gateway:
 bun run --filter @flemme/agent probe:structured-output
 ```
 
-The probe tests `glm-5.3-flash`, `deepseek-v4-flash-0731`, and `gpt-5.6-luna`
-individually with the same minimal native Anvia output schema.
+The probe tests `deepseek/deepseek-v4.1-flash` with the same minimal native
+Anvia output schema used by the runtime.
 
 Run Pre-Cooking independently with the deterministic Ayam Kecap development
 fixture:
@@ -59,7 +59,7 @@ bun run --filter @flemme/agent runner:pre-cooking
 ```
 
 The runner validates the fixture with `PreCookingInputSchema`, invokes
-`runPreCooking` with `gpt-5.6-luna`, and prints the complete structured plan.
+`runPreCooking` with DeepSeek V4.1 Flash, and prints the complete structured plan.
 
 List the available Active Cooking development scenarios:
 
@@ -75,7 +75,7 @@ bun run --filter @flemme/agent runner:active-cooking -- missing-ingredient
 ```
 
 Use `all` to invoke all ten scenarios sequentially. Each scenario validates its
-input, calls `runActiveCooking` with `gpt-5.6-luna`, and prints the validated
+input, calls `runActiveCooking` with DeepSeek V4.1 Flash, and prints the validated
 reply and proposed actions. The runner never applies those actions or mutates
 the supplied session.
 

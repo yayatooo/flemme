@@ -1,5 +1,5 @@
 import {
-	createOpenAIModel,
+	createOpenRouterModel,
 	type PreCookingInput,
 	PreCookingInputSchema,
 } from "../index";
@@ -75,21 +75,20 @@ const BASE_PRE_COOKING_INPUT: PreCookingInput = {
 	},
 };
 
-function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
-	const value = Bun.env[name];
+function getRequiredOpenRouterApiKey() {
+	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;
 
 	if (!value) {
-		throw new Error(`${name} is missing`);
+		throw new Error("OPENROUTER_API_KEY is missing");
 	}
 
 	return value;
 }
 
 try {
-	const model = createOpenAIModel({
-		apiKey: getRequiredEnvironmentVariable("MUX_API_KEY"),
-		baseUrl: getRequiredEnvironmentVariable("BASE_URL"),
-		modelId: "gpt-5.6-luna",
+	const model = createOpenRouterModel({
+		apiKey: getRequiredOpenRouterApiKey(),
+		modelId: Bun.env.OPENROUTER_MODEL,
 	});
 	const input = PreCookingInputSchema.parse(BASE_PRE_COOKING_INPUT);
 	const result = await runPreCooking({ model, input });

@@ -1,7 +1,7 @@
 import {
 	type CookingRecommendationInput,
 	CookingRecommendationInputSchema,
-	createOpenAIModel,
+	createOpenRouterModel,
 	runCookingAgent,
 } from "../index";
 
@@ -47,19 +47,18 @@ const BASE_CONTEXT: CookingRecommendationInput = {
 	},
 };
 
-function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
-	const value = Bun.env[name];
+function getRequiredOpenRouterApiKey() {
+	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;
 
 	if (!value) {
-		throw new Error(`${name} is missing`);
+		throw new Error("OPENROUTER_API_KEY is missing");
 	}
 
 	return value;
 }
-const model = createOpenAIModel({
-	apiKey: getRequiredEnvironmentVariable("MUX_API_KEY"),
-	baseUrl: getRequiredEnvironmentVariable("BASE_URL"),
-	modelId: "gpt-5.6-luna",
+const model = createOpenRouterModel({
+	apiKey: getRequiredOpenRouterApiKey(),
+	modelId: Bun.env.OPENROUTER_MODEL,
 });
 
 const context = CookingRecommendationInputSchema.parse(BASE_CONTEXT);

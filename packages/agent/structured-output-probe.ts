@@ -4,34 +4,29 @@ import {
 } from "@anvia/core";
 import { z } from "zod";
 
-import { createOpenAIModel } from "./src/providers";
+import { createOpenRouterModel } from "./src/providers";
 
 const StructuredOutputProbeSchema = z.object({
 	message: z.string(),
 	count: z.number(),
 });
 
-const MODEL_IDS = [
-	"glm-5.3-flash",
-	"deepseek-v4-flash-0731",
-	"gpt-5.6-luna",
-] as const;
+const MODEL_IDS = ["deepseek/deepseek-v4.1-flash"] as const;
 
-function getRequiredEnvironmentVariable(name: "BASE_URL" | "MUX_API_KEY") {
-	const value = Bun.env[name];
+function getRequiredOpenRouterApiKey() {
+	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;
 
 	if (!value) {
-		throw new Error(`${name} is missing`);
+		throw new Error("OPENROUTER_API_KEY is missing");
 	}
 
 	return value;
 }
 
-const apiKey = getRequiredEnvironmentVariable("MUX_API_KEY");
-const baseUrl = getRequiredEnvironmentVariable("BASE_URL");
+const apiKey = getRequiredOpenRouterApiKey();
 
 for (const modelId of MODEL_IDS) {
-	const model = createOpenAIModel({ apiKey, baseUrl, modelId });
+	const model = createOpenRouterModel({ apiKey, modelId });
 
 	try {
 		const result = await generateCompletion({

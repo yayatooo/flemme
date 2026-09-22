@@ -21,8 +21,8 @@ export {
 	readRuntimeObservabilityConfig,
 } from "./src/observability/recommendation-relay";
 export {
-	createOpenAIModel,
-	type OpenAIModelConfig,
+	createOpenRouterModel,
+	type OpenRouterModelConfig,
 } from "./src/providers";
 export { runCookingAgent } from "./src/runtime/cooking-agent";
 

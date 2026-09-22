@@ -30,11 +30,13 @@ bun run --filter @flemme/agent eval:all
 bun run --filter @flemme/agent eval:judge
 ```
 
-The live target-model and judge commands require `MUX_API_KEY` and `BASE_URL`.
+The live target-model and judge commands require `OPENROUTER_API_KEY`.
+`OPEN_API_KEY` is accepted as a local migration alias.
 `FLEMME_EVAL_MODEL_ID` is
-optional and defaults to the same `gpt-5.6-luna` model used by the existing
-development runners. Judge evals optionally use `FLEMME_EVAL_JUDGE_MODEL_ID`,
-falling back to the normal eval model. Never place values in this document.
+optional and defaults to the same `deepseek/deepseek-v4.1-flash` model used by
+the existing development runners. Judge evals optionally use
+`FLEMME_EVAL_JUDGE_MODEL_ID`, falling back to the normal eval model. Never place
+values in this document.
 
 Each live case is limited to 90 seconds and suites use concurrency 1. The public
 intent APIs do not currently accept an abort signal, so the Core suite can time
