@@ -11,7 +11,7 @@ const StructuredOutputProbeSchema = z.object({
 	count: z.number(),
 });
 
-const MODEL_IDS = ["deepseek/deepseek-v4.1-flash"] as const;
+const MODEL_IDS = ["openai/gpt-5.6-luna"] as const;
 
 function getRequiredOpenRouterApiKey() {
 	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;

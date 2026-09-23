@@ -33,8 +33,8 @@ The runner validates its built-in structured cooking context with
 `CookingRecommendationInputSchema` before invoking the agent and prints the
 schema-validated cooking recommendation output. Free-form command line prompt
 overrides are not currently supported. The development runner defaults to
-OpenRouter's `deepseek/deepseek-v4.1-flash`, which supports the structured
-output required by the cooking phases. Set `OPENROUTER_MODEL` to override it.
+OpenRouter's `openai/gpt-5.6-luna`, which supports the structured output
+required by the cooking phases. Set `OPENROUTER_MODEL` to override it.
 
 The runner requires `OPENROUTER_API_KEY`. During the local migration,
 `OPEN_API_KEY` is also accepted as a compatibility alias. It is only a local
@@ -48,7 +48,7 @@ configured OpenAI-compatible gateway:
 bun run --filter @flemme/agent probe:structured-output
 ```
 
-The probe tests `deepseek/deepseek-v4.1-flash` with the same minimal native
+The probe tests `openai/gpt-5.6-luna` with the same minimal native
 Anvia output schema used by the runtime.
 
 Run Pre-Cooking independently with the deterministic Ayam Kecap development
@@ -59,7 +59,7 @@ bun run --filter @flemme/agent runner:pre-cooking
 ```
 
 The runner validates the fixture with `PreCookingInputSchema`, invokes
-`runPreCooking` with DeepSeek V4.1 Flash, and prints the complete structured plan.
+`runPreCooking` with GPT-5.6 Luna, and prints the complete structured plan.
 
 List the available Active Cooking development scenarios:
 
@@ -75,7 +75,7 @@ bun run --filter @flemme/agent runner:active-cooking -- missing-ingredient
 ```
 
 Use `all` to invoke all ten scenarios sequentially. Each scenario validates its
-input, calls `runActiveCooking` with DeepSeek V4.1 Flash, and prints the validated
+input, calls `runActiveCooking` with GPT-5.6 Luna, and prints the validated
 reply and proposed actions. The runner never applies those actions or mutates
 the supplied session.
 

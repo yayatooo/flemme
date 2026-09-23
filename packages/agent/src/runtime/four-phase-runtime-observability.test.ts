@@ -97,6 +97,23 @@ describe("four-phase runtime equivalence", () => {
 		);
 	});
 
+	test("Pre-Cooking preserves exact selected-recipe equipment names", async () => {
+		const output = await runPreCooking({
+			model: model({
+				...AYAM_KECAP_COOKING_PLAN,
+				equipment: [{ name: "wok (required)", required: false }],
+			}),
+			input: BASE_PRE_COOKING_INPUT,
+		});
+
+		expect(output.equipment).toEqual(
+			BASE_PRE_COOKING_INPUT.selectedRecipe.equipment.map(({ name }) => ({
+				name,
+				required: true,
+			})),
+		);
+	});
+
 	test("Completion preserves output and emits one metadata-only trace", async () => {
 		const traces: RuntimeTrace[] = [];
 		const disabled = await runCompletion({

@@ -67,6 +67,9 @@ describe("Active Cooking scope guard", () => {
 		"What should I do next?",
 		"The oil is smoking, what should I do?",
 		"The pan caught fire.",
+		"sekarang aku harus ngapain?",
+		"balik satu step",
+		"batal masak, stop sesi ini",
 	])("keeps cooking and safety guidance in scope: %s", (message) => {
 		expect(resolveActiveCookingScope(input(message))).toEqual({
 			scope: "in_scope",

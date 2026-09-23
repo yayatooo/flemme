@@ -320,8 +320,8 @@ describe("pre-cooking API integration", () => {
 
 		expect(response.status).toBe(503);
 		expect(error.error.code).toBe("AGENT_NOT_CONFIGURED");
-		expect(error.error.message).not.toContain("MUX_API_KEY");
-		expect(error.error.message).not.toContain("BASE_URL");
+		expect(error.error.message).not.toContain("OPENROUTER_API_KEY");
+		expect(error.error.message).not.toContain("OPEN_API_KEY");
 	});
 
 	test("publishes the authenticated pre-cooking endpoint in OpenAPI", async () => {

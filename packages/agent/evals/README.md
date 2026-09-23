@@ -33,7 +33,7 @@ bun run --filter @flemme/agent eval:judge
 The live target-model and judge commands require `OPENROUTER_API_KEY`.
 `OPEN_API_KEY` is accepted as a local migration alias.
 `FLEMME_EVAL_MODEL_ID` is
-optional and defaults to the same `deepseek/deepseek-v4.1-flash` model used by
+optional and defaults to the same `openai/gpt-5.6-luna` model used by
 the existing development runners. Judge evals optionally use
 `FLEMME_EVAL_JUDGE_MODEL_ID`, falling back to the normal eval model. Never place
 values in this document.

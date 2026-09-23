@@ -1,6 +1,6 @@
 import { createOpenRouterModel } from "../src/providers";
 
-const DEFAULT_EVAL_MODEL_ID = "deepseek/deepseek-v4.1-flash";
+const DEFAULT_EVAL_MODEL_ID = "openai/gpt-5.6-luna";
 
 function requiredOpenRouterApiKey() {
 	const value = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;

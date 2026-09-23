@@ -13,10 +13,23 @@
 | API | Hono | HTTP application layer |
 | API Contract | Zod + Hono OpenAPI | Runtime validation and OpenAPI |
 | Agent | Anvia | Agent runtime |
-| Models | OpenAI / OpenRouter | Model providers |
+| Models | OpenRouter / GPT-5.6 Luna | Model provider and default model |
 | Database | PostgreSQL | Persistent application data |
 | ORM | Drizzle | Database schema and access |
 | Validation | Zod | Runtime contracts |
+
+The OpenRouter model boundary uses the OpenAI-compatible Chat Completions API.
+For every schema-backed completion it supplies OpenRouter's
+`provider.require_parameters` routing preference, ensuring OpenRouter selects
+only upstream endpoints that support the requested JSON Schema parameter.
+For non-streaming calls, the provider adapter represents optional fields as
+required nullable fields for OpenAI strict-mode compatibility, removes only
+the resulting null placeholders, and lets Anvia validate the response against
+the original Zod contract before it crosses the Agent boundary. Root
+discriminated unions are wrapped in an OpenAI-compatible object with an `anyOf`
+result and unwrapped before that validation. Streaming retains non-strict
+schema mode because incremental null normalization is not available at that
+boundary.
 
 ## Web UI Foundation
 

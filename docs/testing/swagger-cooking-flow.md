@@ -38,9 +38,11 @@ WEB_ORIGIN
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
 VITE_API_URL
-MUX_API_KEY
-BASE_URL
+OPENROUTER_API_KEY
 ```
+
+`OPENROUTER_MODEL` is optional and defaults to
+`openai/gpt-5.6-luna`.
 
 Do not put their values into Swagger, request bodies, screenshots, or logs.
 

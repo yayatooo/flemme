@@ -29,7 +29,10 @@ Plan semantics:
   include only the ingredient name rather than inventing an amount.
 - equipment describes what is required to execute this plan. Respect the supplied
   kitchen context, prefer faithful adaptations using available equipment, and do
-  not invent equipment availability.
+  not invent equipment availability. Include every available selected-recipe
+  equipment item that the plan uses, preserve its exact name, and mark it
+  required. Use one equipment item per entry; do not decorate names, combine
+  alternatives, or add explanatory text to a name.
 - preparationSteps contains ordered, practical actions performed before the
   active cooking process, such as washing, cutting, measuring, mixing, arranging
   ingredients, or preparing tools.

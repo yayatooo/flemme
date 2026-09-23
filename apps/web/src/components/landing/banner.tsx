@@ -42,7 +42,7 @@ export function LandingBanner() {
 			id="top"
 			className="flex flex-col bg-background lg:min-h-[clamp(45rem,78svh,51.25rem)]"
 		>
-			<div className="container mx-auto flex max-w-7xl flex-1 items-center px-5 pt-28 sm:px-6 sm:pt-32 lg:px-8 lg:pt-24">
+			<div className="container mx-auto flex max-w-7xl flex-1 items-center px-5 pt-10 sm:px-6 sm:pt-28 lg:px-8 lg:pt-24">
 				<div className="grid w-full items-start gap-x-6 gap-y-10 pb-14 sm:pb-18 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:grid-rows-[auto_1fr] lg:items-center lg:gap-y-10 lg:py-10">
 					<div className="relative z-10 lg:self-end">
 						<div className="flex items-center gap-3">

@@ -65,7 +65,7 @@ const COOKING_DOMAIN_PATTERN =
 	/\b(cook|cooked|cooking|done|doneness|ready|raw|burn|burning|burnt|smoke|smoking|fire|flame|heat|hot|stove|gas|pan|wok|pot|oven|oil|ingredient|substitute|substitution|swap|replace|equipment|knife|spatula|timer|timing|minute|serve|serving|portion|egg|eggs|chili|chilli|onion|onions|shallot|shallots|garlic|salt|sauce|water|taste|texture|color|colour|smell|stir|mix|turn|flip|boil|simmer|fry|saute|sauté|bake|grill|reduce|thicken|recipe|quantity|amount|api|kompor|wajan|panci|minyak|telur|cabai|bawang|garam|saus|matang|mentah|gosong|terbakar|asap|panas|aduk|rebus|goreng|tumis|panggang|rasa|tekstur|habis|belum)\b/i;
 
 const LIFECYCLE_PATTERN =
-	/\b(next( step)?|previous( step)?|go back|pause|resume|continue|stop cooking|abandon|finish cooking|mark (it|this|the step) (done|complete)|lanjut|kembali|jeda|berhenti|selesai)\b/i;
+	/\b(next( step)?|previous( step)?|go back|pause|resume|continue|stop cooking|stop (this )?session|abandon|finish cooking|mark (it|this|the step) (done|complete)|what (do|should) i do( now)?|lanjut|kembali|balik( satu)? (step|langkah)|jeda|berhenti|selesai|batal masak|stop sesi( ini)?|harus (apa|ngapain)|sekarang.{0,16}(apa|ngapain))\b/i;
 
 const QUANTITY_OR_SUBSTITUTION_PATTERN =
 	/\b(only have|i have|use instead|use .+ instead|less|more|reduce|increase|how much|how many|berapa|ganti|kurangi|tambah)\b/i;

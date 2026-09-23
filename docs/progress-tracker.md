@@ -1,6 +1,6 @@
 # Project status
 
-Last reviewed: 2026-09-20.
+Last reviewed: 2026-09-23.
 
 ## Current verified state
 
@@ -21,6 +21,23 @@ Last reviewed: 2026-09-20.
 - Authentication, onboarding, persistent cooking context, Cooking Sessions,
   nutrition, History, Favorites, Inventory, Profile, and the mobile-first Web
   flow are implemented within the documented package boundaries.
+- The Agent provider boundary now targets OpenRouter at its fixed official API
+  endpoint and defaults to `openai/gpt-5.6-luna`. API startup, local
+  runners, evals, and the structured-output probe use `OPENROUTER_API_KEY`, with
+  `OPEN_API_KEY` temporarily accepted for the current local migration. A live
+  probe confirmed that GPT-5.6 Luna returns schema-validated structured output
+  through the Anvia runtime. Structured requests also require
+  parameter-compatible OpenRouter endpoints through the provider-routing
+  preference, preventing selection of an upstream endpoint that cannot honor
+  JSON Schema output. The focused GPT-5.6 Luna Pre-Cooking rerun passes all 3
+  cases and all 12 deterministic metric evaluations; exact required-equipment
+  names are now preserved from the selected recipe snapshot.
+- All four GPT-5.6 Luna development runners are live-verified. Recommendation
+  now adapts its root discriminated union to OpenAI's strict schema boundary;
+  Pre-Cooking completes with validated output; all ten Active Cooking scenarios
+  complete, including Indonesian guidance, previous-step, and abandonment
+  phrasing; and all eight Completion scenarios complete. The standalone
+  structured-output probe also passes.
 
 ## Evidence
 

@@ -724,8 +724,8 @@ The local agent runners load provider configuration from the repository root
 `.env` file:
 
 ```env
-MUX_API_KEY=
-BASE_URL=
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=openai/gpt-5.6-luna
 ```
 
 Local PostgreSQL uses these additional variables:
@@ -742,9 +742,10 @@ Copy `.env.example` to `.env`, then supply your own local values. Keep
 `DATABASE_URL` consistent with the PostgreSQL user, password, database, and
 port. URL-encode reserved characters in the password portion of the URL.
 
-The development runners currently select `gpt-5.6-luna`, which has been verified
-against the configured OpenAI-compatible gateway. Importing `@flemme/agent`
-does not read `.env`; application code must pass provider credentials explicitly.
+The development runners default to OpenRouter's `openai/gpt-5.6-luna`.
+`OPENROUTER_MODEL` may override that model.
+Importing `@flemme/agent` does not read `.env`; application code must pass
+provider credentials explicitly.
 
 Keep local secrets out of Git.
 
@@ -804,7 +805,7 @@ Sign in through [apps/web](http://localhost:5173/login), then open
 [Swagger UI](http://localhost:3000/api/docs) in the same browser. Protected requests
 use the browser's Better Auth HttpOnly session cookie.
 The Recommendation route is `POST /api/cooking/recommendations`; real Agent calls
-also require `MUX_API_KEY` and `BASE_URL`. The complete walkthrough is in
+also require `OPENROUTER_API_KEY`. The complete walkthrough is in
 [`docs/testing/swagger-cooking-flow.md`](docs/testing/swagger-cooking-flow.md).
 For a code-oriented explanation of how the API layers and cooking flows fit
 together, read
@@ -909,21 +910,19 @@ Application code supplies the model and validated state explicitly:
 ```ts
 import {
   ActiveCookingInputSchema,
-  createOpenAIModel,
+  createOpenRouterModel,
   runActiveCooking,
 } from "@flemme/agent";
 
-const apiKey = process.env.MUX_API_KEY;
-const baseUrl = process.env.BASE_URL;
+const apiKey = process.env.OPENROUTER_API_KEY;
 
-if (!apiKey || !baseUrl) {
-  throw new Error("MUX_API_KEY and BASE_URL are required");
+if (!apiKey) {
+  throw new Error("OPENROUTER_API_KEY is required");
 }
 
-const model = createOpenAIModel({
+const model = createOpenRouterModel({
   apiKey,
-  baseUrl,
-  modelId: "gpt-5.6-luna",
+  modelId: "openai/gpt-5.6-luna",
 });
 
 const input = ActiveCookingInputSchema.parse({

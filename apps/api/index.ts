@@ -1,5 +1,5 @@
 import {
-	createOpenAIModel,
+	createOpenRouterModel,
 	createRecommendationTraceObserver,
 	readRecommendationObservabilityConfig,
 	runActiveCooking,
@@ -28,16 +28,13 @@ const recommendationObservability = createRecommendationTraceObserver(
 const { client, db } = createDatabase(databaseUrl);
 const auth = createAuthServer(db, authEnvironment);
 await auth.$context;
-const apiKey = Bun.env.MUX_API_KEY;
-const baseUrl = Bun.env.BASE_URL;
-const model =
-	apiKey && baseUrl
-		? createOpenAIModel({
-				apiKey,
-				baseUrl,
-				modelId: "gpt-5.6-luna",
-			})
-		: undefined;
+const openRouterApiKey = Bun.env.OPENROUTER_API_KEY ?? Bun.env.OPEN_API_KEY;
+const model = openRouterApiKey
+	? createOpenRouterModel({
+			apiKey: openRouterApiKey,
+			modelId: Bun.env.OPENROUTER_MODEL,
+		})
+	: undefined;
 const recommendationRunner = model
 	? (context: Parameters<typeof runCookingAgent>[0]["context"]) =>
 			runCookingAgent({

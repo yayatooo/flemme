@@ -12,7 +12,10 @@ application side effects.
   time, and current-request context remain explicit.
 - **Pre-Cooking** generates an immutable plan faithful to the selected recipe,
   with required ingredients and equipment, preparation, stable step IDs,
-  cooking stages, qualitative timing, and observable completion cues.
+  cooking stages, qualitative timing, and observable completion cues. Equipment
+  names are copied deterministically from the selected recipe snapshot and
+  marked required so model wording cannot rename an application-owned
+  requirement.
 - **Active Cooking** uses the frozen plan and mutable progress to provide calm,
   safety-aware guidance. Its typed actions propose navigation, pause/resume,
   completion/abandonment, or a recorded ingredient, equipment, serving, or

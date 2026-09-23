@@ -46,9 +46,16 @@ ${preCookingPrompt}
 				prompt,
 				outputSchema: PreCookingOutputSchema,
 			});
+			const output = {
+				...result.output,
+				equipment: validatedInput.selectedRecipe.equipment.map(({ name }) => ({
+					name,
+					required: true,
+				})),
+			};
 
 			return {
-				output: result.output,
+				output,
 				resultVariant: "cooking_plan" as const,
 				executionPath: "model" as const,
 				modelDurationMs: performance.now() - modelStartedAt,

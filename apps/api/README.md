@@ -93,10 +93,11 @@ Use the same localhost host throughout. See
 for browser and cookie-jar instructions.
 
 Real Recommendation, Pre-Cooking, Active Cooking, and Completion requests also
-require the existing Agent provider variables `MUX_API_KEY` and `BASE_URL`. If
-they are absent, the API remains available for health, documentation, and
-persistence work, while those Agent-backed routes return the controlled
-`AGENT_NOT_CONFIGURED` response.
+require `OPENROUTER_API_KEY` (`OPEN_API_KEY` is accepted as a local migration
+alias). `OPENROUTER_MODEL` optionally overrides the default
+`openai/gpt-5.6-luna` model. If the key is absent, the API remains
+available for health, documentation, and persistence work, while those
+Agent-backed routes return the controlled `AGENT_NOT_CONFIGURED` response.
 
 ## Routes
 
